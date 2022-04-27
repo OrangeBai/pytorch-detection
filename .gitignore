@@ -1,2 +1,3 @@
-/debug.log
-/.idea/
+debug.log
+config.py
+.idea/
