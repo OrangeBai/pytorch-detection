@@ -1,2 +1,2 @@
-DATA_PATH = r'/Users/OrangeBai/Main/Data'
-MODEL_PATH = r'/Users/OrangeBai/Main/Experiments'
+DATA_PATH = ""
+MODEL_PATH = ""
