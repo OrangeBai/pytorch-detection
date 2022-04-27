@@ -1,2 +1,2 @@
-DATA_PATH = ""
-MODEL_PATH = ""
+DATA_PATH = "/home/orange/Main/Data"
+MODEL_PATH = "/home/orange/Main/Experiment"
