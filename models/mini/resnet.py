@@ -124,31 +124,26 @@ class ResNet(nn.Module):
         return output
 
 
-def resnet18():
-    """ return a ResNet 18 object
-    """
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+class ResNet18(ResNet):
+    def __init__(self, block, num_classes=100):
+        super().__init__(block, [2, 2, 2, 2], num_classes)
 
 
-def resnet34():
-    """ return a ResNet 34 object
-    """
-    return ResNet(BasicBlock, [3, 4, 6, 3])
+class ResNet34(ResNet):
+    def __init__(self, block, num_classes=100):
+        super().__init__(block, [3, 4, 6, 3], num_classes)
 
 
-def resnet50():
-    """ return a ResNet 50 object
-    """
-    return ResNet(BottleNeck, [3, 4, 6, 3])
+class ResNet50(ResNet):
+    def __init__(self, block, num_classes=100):
+        super().__init__(block, [3, 4, 14, 3], num_classes)
 
 
-def resnet101():
-    """ return a ResNet 101 object
-    """
-    return ResNet(BottleNeck, [3, 4, 23, 3])
+class ResNet101(ResNet):
+    def __init__(self, block, num_classes=100):
+        super().__init__(block, [3, 4, 23, 3], num_classes)
 
 
-def resnet152():
-    """ return a ResNet 152 object
-    """
-    return ResNet(BottleNeck, [3, 8, 36, 3])
+class ResNet152(ResNet):
+    def __init__(self, block, num_classes=100):
+        super().__init__(block, [3, 4, 36, 3], num_classes)

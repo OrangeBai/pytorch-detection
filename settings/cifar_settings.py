@@ -15,10 +15,10 @@ def get_args():
     parser.add_argument('--batch_size', default=128, type=int)
 
     # scheduler settings
-    parser.add_argument('--lr_scheduler', default='milestones', choices=['static', 'milestones', 'exp', ',linear'])
+    parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
     parser.add_argument('--milestones', default=[0.5, 0.75])  # for milestone
 
-    parser.add_argument('--lr', default=0.1, type=float)
+    parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
     # SGD parameters
     parser.add_argument('--weight_decay', default=5e-4, type=float)

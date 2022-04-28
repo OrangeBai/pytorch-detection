@@ -25,13 +25,10 @@ def init_scheduler(args, optimizer):
     elif args.lr_scheduler == 'cycle':
         up = args.lr_step / 3
         down = 2 * args.lr_step / 3
-        lr_scheduler = CyclicLR(optimizer, base_lr=0.001, max_lr=0.1, step_size_up=up, step_size_down=down)
+        lr_scheduler = CyclicLR(optimizer, base_lr=0.01 * args.lr, max_lr=args.lr, step_size_up=up, step_size_down=down)
     elif args.lr_scheduler == 'linear':
         def lambda_rule(step):
-            base_lr = 0.0001
-            max_lr = 0.1
-            return max_lr - step * (max_lr - base_lr) / args.total_step
-
+            return (args.total_step - (step + 1)) / (args.total_step - step)
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     else:
         raise NameError('Scheduler {0} not found'.format(args.lr_scheduler))
