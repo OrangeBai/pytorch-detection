@@ -128,7 +128,7 @@ def build_model(args):
     modules = importlib.import_module(model_file_name)
     model = None
     for name, cls in modules.__dict__.items():
-        if name.lower() == args.net.lower():
+        if name.lower() in args.net.lower():
             model = cls
 
     if model is None:

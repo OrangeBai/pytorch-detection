@@ -70,26 +70,41 @@ class BottleNeck(nn.Module):
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, num_block, num_classes=100):
+    def __init__(self, args):
         super().__init__()
+        if args.net == 'resnet18':
+            self.set_up(BasicBlock, [2, 2, 2, 2], args.num_cls)
+        elif args.net == 'resnet34':
+            self.set_up(BasicBlock, [3, 4, 6, 3], args.num_cls)
+        elif args.net == 'resnet50':
+            self.set_up(BasicBlock, [3, 4, 14, 3], args.num_cls)
+        elif args.net == 'resnet101':
+            self.set_up(BasicBlock, [3, 4, 23, 3], args.num_cls)
+        elif args.net == 'resnet152':
+            self.set_up(BasicBlock, [3, 4, 36, 3], args.num_cls)
+        else:
+            raise NameError()
 
-        self.in_channels = 64
-
-        self.conv1 = nn.Sequential(
+    def set_up(self, block, num_block, num_classes):
+        setattr(self, 'in_channel', 64)
+        setattr(self, 'conv1', nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True))
-        # we use a different inputsize than the original paper
+            nn.ReLU(inplace=True)))
+
+        setattr(self, 'conv2_x', self._make_layer(block, 64, num_block[0], 1))
+        setattr(self, 'conv3_x', self._make_layer(block, 128, num_block[1], 2))
+        setattr(self, 'conv4_x', self._make_layer(block, 256, num_block[2], 2))
+        setattr(self, 'conv5_x', self._make_layer(block, 512, num_block[3], 2))
+        # we use a different input size than the original paper
         # so conv2_x's stride is 1
-        self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
-        self.conv3_x = self._make_layer(block, 128, num_block[1], 2)
-        self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 2)
-        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+
+        setattr(self, 'avg_pool', nn.AdaptiveAvgPool2d((1, 1)))
+        setattr(self, 'fc', nn.Linear(512 * block.expansion, num_classes))
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
-        """make resnet layers(by layer i didnt mean this 'layer' was the
+        """
+        make resnet layers(by layer i didn't mean this 'layer' was the
         same as a neuron netowork layer, ex. conv layer), one layer may
         contain more than one residual block
         Args:
@@ -124,26 +139,3 @@ class ResNet(nn.Module):
         return output
 
 
-class ResNet18(ResNet):
-    def __init__(self, block, num_classes=100):
-        super().__init__(block, [2, 2, 2, 2], num_classes)
-
-
-class ResNet34(ResNet):
-    def __init__(self, block, num_classes=100):
-        super().__init__(block, [3, 4, 6, 3], num_classes)
-
-
-class ResNet50(ResNet):
-    def __init__(self, block, num_classes=100):
-        super().__init__(block, [3, 4, 14, 3], num_classes)
-
-
-class ResNet101(ResNet):
-    def __init__(self, block, num_classes=100):
-        super().__init__(block, [3, 4, 23, 3], num_classes)
-
-
-class ResNet152(ResNet):
-    def __init__(self, block, num_classes=100):
-        super().__init__(block, [3, 4, 36, 3], num_classes)
