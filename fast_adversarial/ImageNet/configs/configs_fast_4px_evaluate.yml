@@ -46,7 +46,7 @@ ADV:
     clip_eps: 4.0
     fgsm_step: 5.0
 
-    # Number of repeats for free adversarial training
+    # Number of repeats for free attack training
     n_repeats: 1
 
     # PGD attack parameters used during validation

@@ -14,7 +14,7 @@ from .square import Square
 
 class AutoAttack(Attack):
     r"""
-    AutoAttack in the paper 'Reliable evaluation of adversarial robustness with an ensemble of diverse parameter-free attacks'
+    AutoAttack in the paper 'Reliable evaluation of attack robustness with an ensemble of diverse parameter-free attacks'
     [https://arxiv.org/abs/2003.01690]
     [https://github.com/fra31/auto-attack]
 
