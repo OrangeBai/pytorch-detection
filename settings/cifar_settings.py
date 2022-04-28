@@ -11,7 +11,7 @@ def get_args():
     parser.add_argument('--train_type', default='step', type=str, choices=['epoch', 'step'])
     parser.add_argument('--num_epoch', default=60, type=int)
     parser.add_argument('--total_step', default=60000, type=int)
-    parser.add_argument('--epoch_step', default=200, type=int)
+    parser.add_argument('--epoch_step', default=100, type=int)
     parser.add_argument('--batch_size', default=128, type=int)
 
     # scheduler settings
@@ -24,10 +24,10 @@ def get_args():
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
 
-    parser.add_argument('--num_workers', default=4)
+    parser.add_argument('--num_workers', default=1)
     parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
     parser.add_argument('--net', default='vgg16', type=str)
-    parser.add_argument('--print_every', default=100)
+    parser.add_argument('--print_every', default=50)
 
     parser.add_argument('--dataset', default='cifar10', type=str)
     parser.add_argument('--exp_id', default=0)
@@ -72,7 +72,7 @@ def num_cls(args):
 def check_cuda(args):
     device_num = torch.cuda.device_count()
     if device_num == 0:
-        return []
+        return [None]
     else:
         return [d for d in args.cuda if d < device_num]
 

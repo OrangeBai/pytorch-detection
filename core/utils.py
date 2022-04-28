@@ -17,6 +17,7 @@ def init_scheduler(args, optimizer):
     elif args.lr_scheduler == 'static':
         def lambda_rule(t):
             return 1.0
+
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif args.lr_scheduler == 'exp':
         gamma = math.pow(1 / 100, 1 / args.total_steps)
@@ -89,6 +90,7 @@ class SmoothedValue(object):
     Track a series of values and provide access to smoothed values over a
     window or the global series average.
     """
+
     def __init__(self, window_size=20, fmt=None):
         """
         @param window_size: Window size for computation of  median and average value
@@ -97,8 +99,8 @@ class SmoothedValue(object):
         if fmt is None:
             fmt = "{avg:.4f} ({global_avg:.4f})"
         self.deque = deque(maxlen=window_size)
-        self.total = 0.0        # sum of all instances
-        self.count = 0          # number of updates
+        self.total = 0.0  # sum of all instances
+        self.count = 0  # number of updates
         self.fmt = fmt
 
     def update(self, value, n=1):
@@ -133,8 +135,11 @@ class SmoothedValue(object):
     @property
     def avg(self):
         # average value of the queue
-        d = torch.tensor(list(self.deque), dtype=torch.float32)
-        return d.mean().item()
+        try:
+            d = torch.tensor(list(self.deque), dtype=torch.float32)
+            return d.mean().item()
+        except ValueError:
+            return -1
 
     @property
     def global_avg(self):
@@ -144,7 +149,10 @@ class SmoothedValue(object):
     @property
     def value(self):
         # latest value of the record variable
-        return self.deque[-1]
+        try:
+            return self.deque[-1]
+        except IndexError:
+            return -1
 
     def __str__(self):
         return self.fmt.format(
@@ -196,11 +204,13 @@ class MetricLogger:
             type(self).__name__, attr))
 
     def __str__(self):
+
         loss_str = []
+
         for name, meter in self.meters.items():
             loss_str.append(
-                "{}: {}".format(name, str(meter))
-            )
+                    "{}: {}".format(name, str(meter))
+                )
         return self.delimiter.join(loss_str)
 
     def synchronize_between_processes(self):
@@ -209,8 +219,7 @@ class MetricLogger:
 
 
 def to_device(device_id=None, *args):
-    if not device_id:
+    if device_id is None:
         return args
     else:
-        return [arg.to_device(device_id) for arg in args]
-
+        return [arg.cuda(device_id) for arg in args]

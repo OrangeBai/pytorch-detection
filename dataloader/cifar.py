@@ -27,7 +27,7 @@ def get_loaders(args):
         transforms.ToTensor(),
         transforms.Normalize(mean, std),
     ])
-    num_workers = 2
+    num_workers = 0
     if args.dataset == 'cifar10':
         train_dataset = datasets.CIFAR10(
             DATA_PATH, train=True, transform=train_transform, download=True)
@@ -43,15 +43,15 @@ def get_loaders(args):
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset,
         batch_size=args.batch_size,
-        shuffle=True,
-        pin_memory=True,
+        shuffle=False,
+        pin_memory=False,
         num_workers=num_workers,
     )
     test_loader = torch.utils.data.DataLoader(
         dataset=test_dataset,
         batch_size=args.batch_size,
         shuffle=False,
-        pin_memory=True,
+        pin_memory=False,
         num_workers=num_workers,
     )
     return train_loader, test_loader

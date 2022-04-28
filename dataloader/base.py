@@ -33,6 +33,8 @@ class InfiniteLoader:
             try:
                 obj = next(self.data_loader)
                 self.data_time.update(time.time() - self.last_time)
+                self.data_time.synchronize_between_processes()
+                self.iter_time.synchronize_between_processes()
                 return obj
             except StopIteration:
                 self.data_loader = iter(self.iterable)

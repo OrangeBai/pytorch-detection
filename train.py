@@ -37,7 +37,7 @@ if __name__ == '__main__':
                 logging.info(log_msg)
                 print(log_msg)
 
-        log_msg = model.epoch_logging(cur_epoch, args.num_epoch, inf_loader.pack_metric(reset=True))
+        log_msg = model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.pack_metric(reset=True))
         logging.info(log_msg)
 
         model.validate_model(cur_epoch, test_loader)

@@ -46,8 +46,7 @@ class BaseModel(nn.Module):
         np.save(res_path, self.result)
 
     def train_step(self, images, labels):
-        labels, images = to_device(None, labels, images)
-
+        images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
@@ -57,6 +56,7 @@ class BaseModel(nn.Module):
         top1, top5 = accuracy(outputs, labels)
         self.metrics.update(top1=(top1, len(images)), loss=(loss, len(images)),
                             lr=(self.optimizer.param_groups[0]['lr'], 1))
+        self.metrics.synchronize_between_processes()
         return
 
     def record_result(self, epoch, mode='train'):
@@ -72,7 +72,7 @@ class BaseModel(nn.Module):
         # TODO validation logging
         self.model.eval()
         for images, labels in test_loader:
-            images, labels = images.cuda(), labels.cuda()
+            images, labels = to_device(self.args.devices[0], images, labels)
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.metrics.update(top1=(top1, len(images)))
@@ -113,9 +113,8 @@ class BaseModel(nn.Module):
                              '{meters}',
                              ])
 
-        msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics),
-                             time=time_metrics['iter_time'].total)
-        if time_metrics:
+        msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics))
+        if time_metrics is not None:
             msg += '\ttime: {time:.4f}'.format(time=time_metrics['iter_time'].total)
 
         self.record_result(epoch)
@@ -136,4 +135,4 @@ def build_model(args):
             model_file_name, args.net))
         exit(0)
     else:
-        return to_device(None, model(args))[0]
+        return to_device(args.devices[0], model(args))[0]
