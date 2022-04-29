@@ -20,7 +20,7 @@ def init_scheduler(args, optimizer):
 
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif args.lr_scheduler == 'exp':
-        gamma = math.pow(1 / 100, 1 / args.total_steps)
+        gamma = math.pow(1 / 100, 1 / args.total_step)
         lr_scheduler = ExponentialLR(optimizer, gamma)
     elif args.lr_scheduler == 'cycle':
         up = args.lr_step / 3

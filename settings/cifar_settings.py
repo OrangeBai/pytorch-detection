@@ -10,7 +10,7 @@ def get_args():
     # step-wise or epoch-wise
     parser.add_argument('--train_type', default='step', type=str, choices=['epoch', 'step'])
     parser.add_argument('--num_epoch', default=60, type=int)
-    parser.add_argument('--total_step', default=60000, type=int)
+    parser.add_argument('--total_step', default=600, type=int)
     parser.add_argument('--epoch_step', default=100, type=int)
     parser.add_argument('--batch_size', default=128, type=int)
 
