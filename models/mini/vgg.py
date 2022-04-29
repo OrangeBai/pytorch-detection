@@ -13,26 +13,41 @@ class VGG(nn.Module):
 
     def __init__(self, args):
         super().__init__()
-        self.features = make_layers(cfgs[args.net], batch_norm=True)
+        self.num_cls = args.num_cls
+        self.layers = []
 
-        self.classifier = nn.Sequential(
+        if args.net.lower() == 'vgg11':
+            cfg = cfgs['vgg11']
+        elif args.net.lower() == 'vgg13':
+            cfg = cfgs['vgg13']
+        elif args.net.lower() == 'vgg16':
+            cfg = cfgs['vgg16']
+        elif args.net.lower() == 'vgg19':
+            cfg = cfgs['vgg19']
+        else:
+            raise NameError("No network named {}".format(args.net))
+        self.set_up(make_layers(cfg, batch_norm=True))
+
+    def set_up(self, features):
+        setattr(self, 'features', features)
+
+        setattr(self, 'classifier', nn.Sequential(
             nn.Linear(512, 4096),
             nn.ReLU(),
             # nn.Dropout(),
             nn.Linear(4096, 4096),
             nn.ReLU(),
             # nn.Dropout(),
-            nn.Linear(4096, args.num_cls)
-        )
-        self.blocks = [self.features, self.classifier]
+            nn.Linear(4096, self.num_cls)
+        ))
+        self.layers = [self.features, self.classifier]
 
-    def forward(self, x):
-        output = self.features(x)
-        output = output.view(output.size()[0], -1)
-        output = self.classifier(output)
+        def forward(self, x):
+            output = self.features(x)
+            output = output.view(output.size()[0], -1)
+            output = self.classifier(output)
 
-        return output
-
+            return output
 
 def make_layers(cfg, batch_norm=False):
     layers = []
@@ -53,22 +68,18 @@ def make_layers(cfg, batch_norm=False):
 
     return nn.Sequential(*layers)
 
+    class VGG11(VGG):
+        def __init__(self, args):
+            super().__init__(args)
 
-class VGG11(VGG):
-    def __init__(self, args):
-        super().__init__(args)
+    class VGG13(VGG):
+        def __init__(self, args):
+            super().__init__(args)
 
+    class VGG16(VGG):
+        def __init__(self, args):
+            super().__init__(args)
 
-class VGG13(VGG):
-    def __init__(self, args):
-        super().__init__(args)
-
-
-class VGG16(VGG):
-    def __init__(self, args):
-        super().__init__(args)
-
-
-class VGG19(VGG):
-    def __init__(self, args):
-        super().__init__(args)
+    class VGG19(VGG):
+        def __init__(self, args):
+            super().__init__(args)

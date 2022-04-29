@@ -72,6 +72,9 @@ class ResNet(nn.Module):
 
     def __init__(self, args):
         super().__init__()
+        self.in_channels = 64
+        self.layers = []
+
         if args.net == 'resnet18':
             self.set_up(BasicBlock, [2, 2, 2, 2], args.num_cls)
         elif args.net == 'resnet34':
@@ -86,9 +89,9 @@ class ResNet(nn.Module):
             raise NameError()
 
     def set_up(self, block, num_block, num_classes):
-        setattr(self, 'in_channel', 64)
+
         setattr(self, 'conv1', nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(3, self.in_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True)))
 
@@ -101,6 +104,8 @@ class ResNet(nn.Module):
 
         setattr(self, 'avg_pool', nn.AdaptiveAvgPool2d((1, 1)))
         setattr(self, 'fc', nn.Linear(512 * block.expansion, num_classes))
+
+        self.layers = [self.conv1, self.conv2_x, self.conv3_x, self.conv4_x, self.conv5_x]
 
     def _make_layer(self, block, out_channels, num_blocks, stride):
         """
@@ -137,5 +142,3 @@ class ResNet(nn.Module):
         output = self.fc(output)
 
         return output
-
-
