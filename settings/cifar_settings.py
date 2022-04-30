@@ -8,7 +8,7 @@ import shutil
 def get_args():
     parser = argparse.ArgumentParser()
     # step-wise or epoch-wise
-    parser.add_argument('--train_type', default='step', type=str, choices=['epoch', 'step'])
+    parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
     parser.add_argument('--num_epoch', default=60, type=int)
     parser.add_argument('--total_step', default=600, type=int)
     parser.add_argument('--epoch_step', default=100, type=int)

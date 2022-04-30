@@ -1,4 +1,4 @@
-from attacks.attack import *
+from attack.attack import *
 
 
 class VANILA(Attack):

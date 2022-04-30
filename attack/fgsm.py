@@ -1,4 +1,4 @@
-from attacks.attack import *
+from attack.attack import *
 from core.utils import *
 
 
@@ -26,4 +26,3 @@ class FGSM(Attack):
 
         adv_images = self._norm(adv_images)
         return adv_images
-

@@ -1,5 +1,5 @@
-from attacks.attack import *
-
+from attack.attack import *
+from torch.nn import functional as F
 
 class PGD(Attack):
     def __init__(self, model, mean, std, eps, alpha, steps=10, restarts=2):
@@ -30,8 +30,8 @@ class PGD(Attack):
                 grad = delta.grad.detach()
                 d = delta
                 g = grad
-                d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps)
-                d = clamp(d, 0 - images, 1 - images)
+                d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps) # bounds from epsilon
+                d = torch.clamp(d, 0 - images, 1 - images)  # bounds from immage
                 delta.data = d
                 delta.grad.zero_()
 
