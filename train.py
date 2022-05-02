@@ -29,17 +29,15 @@ if __name__ == '__main__':
     model = BaseModel(args, logger)
     inf_loader = InfiniteLoader(train_loader)
 
-    if args.attack is not None:
-        att = get_attack(model.model, 'PGD', dataloader.cifar.get_mean_std('cifar10')[0],
+    att = get_attack(model.model, args.attack, dataloader.cifar.get_mean_std('cifar10')[0],
                      dataloader.cifar.get_mean_std('cifar10')[1])
 
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
-            model.train_step(images, labels)
+            adv_images = att.attack(images, labels)
 
-            if args.attack is not None:
-                adv_images = att.attack(images, labels)
+            model.train_step(images, labels)
 
             if cur_step % args.print_every == 0:
                 time_metrics = inf_loader.pack_metric()
@@ -54,5 +52,3 @@ if __name__ == '__main__':
 
         model.validate_model(cur_epoch, test_loader)
         print(log_msg)
-
-

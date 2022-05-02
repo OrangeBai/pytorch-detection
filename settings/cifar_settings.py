@@ -24,6 +24,9 @@ def get_args():
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
 
+    # attacks
+    parser.add_argument('--attack', default='Valina', type=str)
+
     parser.add_argument('--num_workers', default=1)
     parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
     parser.add_argument('--net', default='resnet34', type=str)

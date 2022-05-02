@@ -16,13 +16,13 @@ from attack.vanila import *
 # from .vanila import VANILA
 
 
-def get_attack(model, name, mean, std):
-    if name == 'None':
-        attack = VANILA(model)
+def get_attack(model, name, mean=None, std=None, *args, **kwargs):
+    if name == 'Vanila':
+        attack = VANILA(model, *args, **kwargs)
     elif name == 'FGSM':
-        attack = FGSM(model, mean, std, eps=8 / 255)
+        attack = FGSM(model, *args, **kwargs)
     elif name == 'PGD':
-        attack = PGD(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
+        attack = PGD(model, *args, **kwargs)
 #     elif name == 'BIM':
 #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
 #     elif name == 'CW':

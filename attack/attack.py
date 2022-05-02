@@ -3,12 +3,16 @@ from core.utils import *
 
 
 class Attack(object):
-    def __init__(self, name, model, mean=None, std=None):
-        if std is None:
+    def __init__(self, model, *args, **kwargs):
+        if 'std' not in kwargs.keys() is None:
             std = [1, 1, 1]
-        if mean is None:
+        else:
+            std = kwargs['std']
+        if 'mean' not in kwargs:
             mean = [0, 0, 0]
-        self.name = name
+        else:
+            mean = kwargs['mean']
+
         self.norm_layer = Normalize(mean=mean, std=std)
         self.model = nn.Sequential(self.norm_layer, model).cuda()
         self.mean = torch.tensor(mean).view(len(mean), 1, 1).cuda()

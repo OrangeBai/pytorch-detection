@@ -1,13 +1,14 @@
 from attack.attack import *
 from torch.nn import functional as F
 
+
 class PGD(Attack):
-    def __init__(self, model, mean, std, eps, alpha, steps=10, restarts=2):
-        super(PGD, self).__init__("PGD", model, mean, std)
-        self.eps = eps
-        self.alpha = alpha
-        self.steps = steps
-        self.restarts = restarts
+    def __init__(self, model, eps, alpha, steps=10, restarts=2, *args, **kwargs):
+        super(PGD, self).__init__("PGD", model, *args, **kwargs)
+        self.eps = kwargs['eps'] if 'eps' in kwargs.items() else 8 / 255
+        self.alpha = kwargs['alpha'] if 'alpha' in kwargs.items() else 2 / 255
+        self.steps = kwargs['steps'] if 'steps' in kwargs.items() else 7
+        self.restarts = kwargs['restarts'] if 'restarts' in kwargs.items() else False
 
     def attack(self, images, labels, random_start=True):
         images = images.clone().detach().cuda()
@@ -30,7 +31,7 @@ class PGD(Attack):
                 grad = delta.grad.detach()
                 d = delta
                 g = grad
-                d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps) # bounds from epsilon
+                d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps)  # bounds from epsilon
                 d = torch.clamp(d, 0 - images, 1 - images)  # bounds from immage
                 delta.data = d
                 delta.grad.zero_()
