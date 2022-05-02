@@ -170,6 +170,9 @@ class SmoothedValue(object):
 
 
 class MetricLogger:
+    """
+    Metric logger: Record the meters (top 1, top 5, loss and time) during the training.
+    """
     def __init__(self, delimiter="\t"):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
@@ -205,17 +208,25 @@ class MetricLogger:
         loss_str = []
 
         for name, meter in self.meters.items():
-            loss_str.append(
-                    "{}: {}".format(name, str(meter))
-                )
+            if len(meter.deque) > 0:
+                loss_str.append(
+                        "{}: {}".format(name, str(meter))
+                    )
         return self.delimiter.join(loss_str)
 
     def synchronize_between_processes(self):
+        #  TODO check out how to use multi-process
         for meter in self.meters.values():
             meter.synchronize_between_processes()
 
 
 def to_device(device_id=None, *args):
+    """
+    Send the *args variables to designated device
+    @param device_id: a valid device id
+    @param args: a number of numbers/models
+    @return:
+    """
     if device_id is None:
         return args
     else:

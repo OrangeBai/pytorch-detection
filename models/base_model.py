@@ -77,10 +77,7 @@ class BaseModel(nn.Module):
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.metrics.update(top1=(top1, len(images)))
-        msg = self.epoch_logging(epoch, self.args.num_epoch)
-        self.record_result(epoch, 'test')
-
-        return msg
+        return
 
     def logging(self, step, batch_num, epoch, epoch_num, time_metrics):
         # TODO maybe a refactor???
@@ -93,13 +90,10 @@ class BaseModel(nn.Module):
                              '{memory}'
                              ])
 
-        eta_seconds = time_metrics['iter_time'].global_avg * (batch_num - step)
+        eta_seconds = time_metrics.meters['iter_time'].global_avg * (batch_num - step)
         eta_string = 'eta: {}'.format(str(datetime.timedelta(seconds=int(eta_seconds))))
 
-        time_str = '  '.join([eta_string,
-                              'iter_time:', str(time_metrics['iter_time']),
-                              'data_time:', str(time_metrics['data_time'])]
-                             )
+        time_str = '\t'.join([eta_string, str(time_metrics)])
 
         msg = log_msg.format(epoch=epoch, epoch_num=epoch_num,
                              step=step, batch_num=batch_num,
@@ -110,16 +104,27 @@ class BaseModel(nn.Module):
         return msg
 
     def epoch_logging(self, epoch, epoch_num, time_metrics=None):
-        log_msg = '  '.join(['Epoch: [{epoch}/{epoch_num}]\n',
-                             '{meters}',
-                             ])
+        """
+        Print loggings after training of each epoch
+        @param epoch:
+        @param epoch_num:
+        @param time_metrics:
+        @return:
+        """
+        log_msg = '  '.join(['Epoch: [{epoch}/{epoch_num}] training finished\n',
+                             'Training information:', '{meters}',])
 
         msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics))
         if time_metrics is not None:
-            msg += '\ttime: {time:.4f}'.format(time=time_metrics['iter_time'].total)
+             msg += '\ttime: {time:.4f}'.format(time=time_metrics['iter_time'].total)
 
         self.record_result(epoch)
         return msg
+
+    def val_logging(self, epoch):
+        log_msg = '\n'.join(['Validationn Informtion:','{meters}']).format(self.metrics)
+        self.record_result(epoch, 'test')
+        return log_msg
 
 
 def build_model(args):
