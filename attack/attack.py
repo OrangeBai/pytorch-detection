@@ -3,20 +3,20 @@ from core.utils import *
 
 
 class Attack(object):
-    def __init__(self, model, *args, **kwargs):
-        if 'std' not in kwargs.keys() is None:
-            std = [1, 1, 1]
-        else:
-            std = kwargs['std']
-        if 'mean' not in kwargs:
-            mean = [0, 0, 0]
-        else:
-            mean = kwargs['mean']
+    def __init__(self, model, device, *args, **kwargs):
+        # TODO Temporary solution for multi-device, need modification
+        mean = kwargs['mean'] if 'mean' in kwargs.keys() else [0, 0, 0]
+        std = kwargs['std'] if 'std' in kwargs.keys() else [1, 1, 1]
 
         self.norm_layer = Normalize(mean=mean, std=std)
-        self.model = nn.Sequential(self.norm_layer, model).cuda()
-        self.mean = torch.tensor(mean).view(len(mean), 1, 1).cuda()
-        self.std = torch.tensor(std).view(len(mean), 1, 1).cuda()
+
+        self.model, self.mean, self.std = to_device(device,
+                                                    nn.Sequential(self.norm_layer, model),
+                                                    torch.tensor(mean).view(len(mean), 1, 1),
+                                                    torch.tensor(std).view(len(std), 1, 1))
+        # self.model = nn.Sequential(self.norm_layer, model).cuda()
+        # self.mean = torch.tensor(mean).view(len(mean), 1, 1).cuda()
+        # self.std = torch.tensor(std).view(len(mean), 1, 1).cuda()
 
         self.upper_limit = ((1 - self.mean) / self.std)
         self.lower_limit = ((0 - self.mean) / self.std)

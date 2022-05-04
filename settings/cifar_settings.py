@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--momentum', default=0.9, type=float)
 
     # attacks
-    parser.add_argument('--attack', default='Valina', type=str)
+    parser.add_argument('--attack', default='FGSM', type=str)
 
     parser.add_argument('--num_workers', default=1)
     parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])

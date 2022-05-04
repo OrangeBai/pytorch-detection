@@ -29,13 +29,13 @@ if __name__ == '__main__':
     model = BaseModel(args, logger)
     inf_loader = InfiniteLoader(train_loader)
 
-    att = get_attack(model.model, args.attack, dataloader.cifar.get_mean_std('cifar10')[0],
-                     dataloader.cifar.get_mean_std('cifar10')[1])
+    att = get_attack(model.model, args.attack, args.devices[0], mean=dataloader.cifar.get_mean_std('cifar10')[0],
+                     std=dataloader.cifar.get_mean_std('cifar10')[1])
 
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
-            adv_images = att.attack(images, labels)
+            adv_images = att.attack(images, labels, device=args.devices[0])
 
             model.train_step(images, labels)
 
