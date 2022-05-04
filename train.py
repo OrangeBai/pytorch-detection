@@ -1,3 +1,4 @@
+from core.pattern import *
 from models import *
 from dataloader.base import *
 from settings.cifar_settings import *
@@ -31,6 +32,9 @@ if __name__ == '__main__':
 
     att = get_attack(model.model, args.attack, args.devices[0], mean=dataloader.cifar.get_mean_std('cifar10')[0],
                      std=dataloader.cifar.get_mean_std('cifar10')[1])
+
+    model_hook = ModelHook(model)
+    model_hook.add_hook('outputs', retrieve_output)
 
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):

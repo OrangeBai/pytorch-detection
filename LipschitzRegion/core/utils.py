@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from collections import defaultdict, deque
 import torch.distributed as dist
 import time
