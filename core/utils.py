@@ -21,15 +21,17 @@ def init_scheduler(args, optimizer):
 
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     elif args.lr_scheduler == 'exp':
-        gamma = math.pow(1 / 100, 1 / args.total_step)
+        gamma = math.pow(args.base_lr / args.lr, 1 / args.total_step)
         lr_scheduler = ExponentialLR(optimizer, gamma)
     elif args.lr_scheduler == 'cycle':
         up = args.lr_step / 3
         down = 2 * args.lr_step / 3
-        lr_scheduler = CyclicLR(optimizer, base_lr=0.01 * args.lr, max_lr=args.lr, step_size_up=up, step_size_down=down)
+        lr_scheduler = CyclicLR(optimizer, base_lr=args.base_lr, max_lr=args.lr, step_size_up=up, step_size_down=down)
     elif args.lr_scheduler == 'linear':
+        diff = args.lr - args.base_lr
+
         def lambda_rule(step):
-            return (args.total_step - (step + 1)) / (args.total_step - step)
+            return (args.lr - (step / args.total_step) * diff) / args.lr
 
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     else:

@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # att = get_attack(model.model, args.attack, args.devices[0], mean=dataloader.cifar.get_mean_std('cifar10')[0],
     #                  std=dataloader.cifar.get_mean_std('cifar10')[1])
 
-    pattern_hook = ModelHook(model, retrieve_pattern, Gamma=[0])
+    # pattern_hook = ModelHook(model, retrieve_pattern, Gamma=[0])
 
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
@@ -41,11 +41,12 @@ if __name__ == '__main__':
             # adv_images = att.attack(images, labels, device=args.devices[0])
 
             model.train_step(images, labels)
-            cal = pattern_hook.calculate(retrieve_float_neurons)
+            # cal = pattern_hook.calculate(retrieve_float_neurons)
 
             if cur_step % args.print_every == 0:
                 time_metrics = inf_loader.pack_metric()
                 log_msg = model.logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, time_metrics)
+                print(model.optimizer.param_groups[0]['lr'])
                 logging.info(log_msg)
                 print(log_msg)
 
