@@ -122,9 +122,9 @@ class BaseModel(nn.Module):
         return msg
 
     def val_logging(self, epoch):
-        log_msg = '\n'.join(['Validationn Informtion:', '{meters}']).format(self.metrics)
+        msg = '\n'.join(['Validationn Informtion:', '{meters}']).format(self.metrics)
         self.record_result(epoch, 'test')
-        return log_msg
+        return msg
 
 
 def build_model(args):

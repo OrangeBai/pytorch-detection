@@ -46,15 +46,13 @@ if __name__ == '__main__':
             if cur_step % args.print_every == 0:
                 time_metrics = inf_loader.pack_metric()
                 log_msg = model.logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, time_metrics)
-                print(model.optimizer.param_groups[0]['lr'])
                 logging.info(log_msg)
                 print(log_msg)
 
         # TODO refactor the validation part, add attack models
         log_msg = model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.pack_metric(reset=True))
         logging.info(log_msg)
-        print(log_msg)
 
         model.validate_model(cur_epoch, test_loader)
-        print(log_msg)
+        log_msg += '\n' + model.val_logging(cur_epoch)
     model.save_model(args.model_dir)
