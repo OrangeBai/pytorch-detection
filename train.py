@@ -57,3 +57,4 @@ if __name__ == '__main__':
 
         model.validate_model(cur_epoch, test_loader)
         print(log_msg)
+    model.save_model(args.model_dir)

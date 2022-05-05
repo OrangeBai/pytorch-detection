@@ -18,9 +18,9 @@ def get_args():
     parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
     parser.add_argument('--milestones', default=[0.5, 0.75])  # for milestone
 
+    parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
     parser.add_argument('--lr', default=0.05, type=float)
     parser.add_argument('--base_lr', default=0.001, type=float)
-    parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
     # SGD parameters
     parser.add_argument('--weight_decay', default=5e-4, type=float)
     parser.add_argument('--momentum', default=0.9, type=float)
