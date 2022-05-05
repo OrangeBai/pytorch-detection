@@ -42,12 +42,12 @@ class VGG(nn.Module):
         ))
         self.layers = [self.features, self.classifier]
 
-        def forward(self, x):
-            output = self.features(x)
-            output = output.view(output.size()[0], -1)
-            output = self.classifier(output)
+    def forward(self, x):
+        output = self.features(x)
+        output = output.view(output.size()[0], -1)
+        output = self.classifier(output)
 
-            return output
+        return output
 
 def make_layers(cfg, batch_norm=False):
     layers = []

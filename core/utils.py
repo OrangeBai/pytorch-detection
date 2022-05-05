@@ -9,6 +9,7 @@ import numpy as np
 import os
 import torch.nn as nn
 
+
 def init_scheduler(args, optimizer):
     # Todo test
     if args.lr_scheduler == 'milestones':
@@ -29,6 +30,7 @@ def init_scheduler(args, optimizer):
     elif args.lr_scheduler == 'linear':
         def lambda_rule(step):
             return (args.total_step - (step + 1)) / (args.total_step - step)
+
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     else:
         raise NameError('Scheduler {0} not found'.format(args.lr_scheduler))
@@ -173,6 +175,7 @@ class MetricLogger:
     """
     Metric logger: Record the meters (top 1, top 5, loss and time) during the training.
     """
+
     def __init__(self, delimiter="\t"):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
@@ -210,8 +213,8 @@ class MetricLogger:
         for name, meter in self.meters.items():
             if len(meter.deque) > 0:
                 loss_str.append(
-                        "{}: {}".format(name, str(meter))
-                    )
+                    "{}: {}".format(name, str(meter))
+                )
         return self.delimiter.join(loss_str)
 
     def synchronize_between_processes(self):
@@ -231,6 +234,7 @@ def to_device(device_id=None, *args):
         return args
     else:
         return [arg.cuda(device_id) for arg in args]
+
 
 def check_activation(layer):
     acts = [nn.ReLU, nn.ELU, nn.Sigmoid, nn.GELU, nn.Tanh]
