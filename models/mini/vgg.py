@@ -49,6 +49,7 @@ class VGG(nn.Module):
 
         return output
 
+
 def make_layers(cfg, batch_norm=False):
     layers = []
 

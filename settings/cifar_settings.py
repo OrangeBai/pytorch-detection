@@ -29,11 +29,15 @@ def get_args():
     parser.add_argument('--attack', default='FGSM', type=str)
 
     parser.add_argument('--num_workers', default=1)
-    parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
+    parser.add_argument('--model_type', default='dnn', choices=['dnn', 'mini', 'nets'])
+    parser.add_argument('--input_size', default=784, type=int)
+    parser.add_argument('--width', default=100, type=int)
+    parser.add_argument('--depth', default=9, type=int)
+
     parser.add_argument('--net', default='vgg16', type=str)
     parser.add_argument('--print_every', default=50)
 
-    parser.add_argument('--dataset', default='cifar10', type=str)
+    parser.add_argument('--dataset', default='mnist', type=str)
     parser.add_argument('--exp_id', default=0)
 
     parser.add_argument('--cuda', default=[0], type=list)

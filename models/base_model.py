@@ -77,7 +77,7 @@ class BaseModel(nn.Module):
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.metrics.update(top1=(top1, len(images)))
-        return
+        return self.val_logging(epoch)
 
     def logging(self, step, batch_num, epoch, epoch_num, time_metrics):
         # TODO maybe a refactor???
@@ -87,7 +87,7 @@ class BaseModel(nn.Module):
                              '[{step' + space_fmt + '}/{batch_num}]',
                              '{time_str}',
                              '{meters}',
-                             '{memory}'
+                             '{memory}\n'
                              ])
 
         eta_seconds = time_metrics.meters['iter_time'].global_avg * (batch_num - step)
@@ -111,7 +111,7 @@ class BaseModel(nn.Module):
         @param time_metrics:
         @return:
         """
-        log_msg = '  '.join(['Epoch: [{epoch}/{epoch_num}] training finished\n',
+        log_msg = '\n\t'.join(['Epoch: [{epoch}/{epoch_num}] training finished\n',
                              'Training information:', '{meters}', ])
 
         msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics))
@@ -122,16 +122,19 @@ class BaseModel(nn.Module):
         return msg
 
     def val_logging(self, epoch):
-        msg = '\n'.join(['Validationn Informtion:', '{meters}']).format(self.metrics)
+        msg = '\t'.join(['Validationn Informtion:', '{meters}']).format(meters=self.metrics)
         self.record_result(epoch, 'test')
         return msg
 
 
 def build_model(args):
     """Import the module "model/[model_name]_model.py"."""
+    model = None
     model_file_name = "models." + args.model_type
     modules = importlib.import_module(model_file_name)
-    model = None
+    if args.model_type == 'dnn':
+        model = modules.__dict__['DNN']
+
     for name, cls in modules.__dict__.items():
         if name.lower() in args.net.lower():
             model = cls
