@@ -231,10 +231,3 @@ def to_device(device_id=None, *args):
         return args
     else:
         return [arg.cuda(device_id) for arg in args]
-
-def check_activation(layer):
-    acts = [nn.ReLU, nn.ELU, nn.Sigmoid, nn.GELU, nn.Tanh]
-    for l in acts:
-        if isinstance(layer, l):
-            return True
-    return False

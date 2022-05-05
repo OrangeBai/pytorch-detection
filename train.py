@@ -1,4 +1,3 @@
-from core.pattern import *
 from models import *
 from dataloader.base import *
 from settings.cifar_settings import *
