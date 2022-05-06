@@ -5,6 +5,7 @@ from settings.cifar_settings import *
 from attack import *
 from core.utils import *
 import logging
+import json
 
 if __name__ == '__main__':
     args = set_up_training()

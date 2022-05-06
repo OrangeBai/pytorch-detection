@@ -71,13 +71,15 @@ class BaseModel(nn.Module):
 
     def validate_model(self, epoch, test_loader):
         # TODO validation logging
+        start = time.time()
         self.model.eval()
         for images, labels in test_loader:
             images, labels = to_device(self.args.devices[0], images, labels)
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.metrics.update(top1=(top1, len(images)))
-        return self.val_logging(epoch)
+
+        return self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
 
     def logging(self, step, batch_num, epoch, epoch_num, time_metrics):
         # TODO maybe a refactor???
@@ -87,7 +89,7 @@ class BaseModel(nn.Module):
                              '[{step' + space_fmt + '}/{batch_num}]',
                              '{time_str}',
                              '{meters}',
-                             '{memory}\n'
+                             '{memory}'
                              ])
 
         eta_seconds = time_metrics.meters['iter_time'].global_avg * (batch_num - step)
@@ -111,12 +113,12 @@ class BaseModel(nn.Module):
         @param time_metrics:
         @return:
         """
-        log_msg = '\n\t'.join(['Epoch: [{epoch}/{epoch_num}] training finished\n',
-                             'Training information:', '{meters}', ])
+        log_msg = ''.join(['\nEpoch: [{epoch}/{epoch_num}] training finished\n',
+                           'Training information:\t', '{meters}\t', ])
 
         msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics))
         if time_metrics is not None:
-            msg += '\ttime: {time:.4f}'.format(time=time_metrics.meters['iter_time'].total)
+            msg += 'time: {time:.4f}\n'.format(time=time_metrics.meters['iter_time'].total)
 
         self.record_result(epoch)
         return msg
