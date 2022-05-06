@@ -1,28 +1,39 @@
-from settings.cifar_settings import *
-from models.mini.model import Model
-from dataloaders.cifar import *
-from patterns.tools import *
 from scipy.linalg import svd
-from atk.fgsm import *
-from atk.pgd import *
-import math
-import time
-from core.utils import save_result
+from settings.test_setting import set_up_testing
+from models.base_model import *
+from core.pattern import *
+from dataloader.base import *
+from core.utils import *
 
 if __name__ == '__main__':
+    args = set_up_testing()
+    model = BaseModel(args)
 
-    args = set_up_training(False)
-    test_transform = transforms.Compose([transforms.ToTensor()])
-    train_loader, test_loader = get_loaders(args.data_dir, 1, args.dataset)
-    model = Model(args, None)
     model.load_model(args.model_dir)
+    pattern_hook = ModelHook(model.model, hook=retrieve_pattern, Gamma=[0])
+    args.batch_size = 1
+    train_loader, test_loader = set_loader(args)
 
-    mean, std = get_mean_std(args.dataset)
-    safe = 0
-    total = 0
-    R_local = []
-    singular_local = []
-    margin_local = []
+    layers = []
+    activations = []
+    cur_layers = []
+
+    for name, module in model.model.named_modules():
+        if type(module) in [torch.nn.Conv2d, torch.nn.Linear]:
+            cur_layers.append([name, module])
+        elif check_activation(module):
+            layers.append(cur_layers)
+            activations.append([name, module])
+            cur_layers = []
+
+    for idx, (img, label) in enumerate(test_loader):
+        img = add_noise(img, 101, epsilon=3/255)
+        img = to_device(args.devices[0], img)[0]
+        model.model(img)
+        print(1)
+
+        patterns = pattern_hook.calculate(retrieve_float_neurons)
+        print(1)
     for param in model.model.parameters():
         param.requires_grad = True
     t = time.time()

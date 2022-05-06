@@ -115,11 +115,8 @@ class ModelHook:
             handle.remove()
         self.stored_values = {}
 
-    def retrieve_res(self, name):
-        try:
-            return self.stored_values[name]
-        except KeyError as e:
-            print(e)
+    def retrieve_res(self):
+        return self.stored_values
 
     def remove_handle(self, name):
         for handle in self.handles[name]:
@@ -167,3 +164,21 @@ def retrieve_float_neurons(pattern):
         stacked_patterns = np.row_stack(pattern[name])
         float_neurons[name] = np.all(stacked_patterns, axis=0)
     return float_neurons
+
+
+def add_noise(x, batch_size, epsilon=0.5):
+    """
+
+    @param x:
+    @param batch_size:
+    @param epsilon:
+    @return:
+    """
+    rand_var = torch.randn((batch_size,) + x.shape)
+    flatten_var = torch.nn.Flatten()(rand_var)
+    norm = torch.linalg.norm(flatten_var, dim=1, keepdim=True)
+    standardized_noise = flatten_var.div(norm.expand_as(flatten_var))
+    data_noise = torch.reshape(standardized_noise, (batch_size,) + x.shape)
+    data_noise[0] = 0
+    x = x + data_noise * epsilon
+    return x

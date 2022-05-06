@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--print_every', default=50)
     # dataset and experiments
     parser.add_argument('--dataset', default='mnist', type=str)
-    parser.add_argument('--exp_id', default=1)
+    parser.add_argument('--exp_id', default=0)
     # gpu settings
     parser.add_argument('--cuda', default=[0], type=list)
 
@@ -69,7 +69,7 @@ def train_type(parser):
     """
     args = parser.parse_args()
     if args.train_type == 'epoch':
-        train_loader = set_loader(args)
+        train_loader, _ = set_loader(args)
         parser.add_argument('--num_epoch', default=60, type=int)
         parser.add_argument('--epoch_step', default=len(train_loader), type=int)
         args = parser.parse_args()
@@ -132,7 +132,7 @@ def devices(parser):
     args = parser.parse_args()
     device_num = torch.cuda.device_count()
     if device_num == 0:
-        parser.add_argument('--device', default=[None])
+        parser.add_argument('--devices', default=[None])
     else:
-        parser.add_argument('--device', default=[d for d in args.cuda if d < device_num])
+        parser.add_argument('--devices', default=[d for d in args.cuda if d < device_num])
     return parser

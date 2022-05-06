@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     train_loader, test_loader = set_loader(args)
 
-    model = BaseModel(args, logger)
+    model = BaseModel(args)
     inf_loader = InfiniteLoader(train_loader)
 
     # att = get_attack(model.model, args.attack, args.devices[0], mean=dataloader.cifar.get_mean_std('cifar10')[0],

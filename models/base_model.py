@@ -5,7 +5,7 @@ import importlib
 
 class BaseModel(nn.Module):
     # TODO Record epoch info
-    def __init__(self, args, logger):
+    def __init__(self, args):
         super(BaseModel, self).__init__()
         self.args = args
         self.model = build_model(args)
@@ -13,7 +13,6 @@ class BaseModel(nn.Module):
         self.lr_scheduler = init_scheduler(args, self.optimizer)
         self.loss_function = self.set_loss()
 
-        self.logger = logger
         self.result = {'train': dict(), 'test': dict()}
         self.metrics = MetricLogger()
 
