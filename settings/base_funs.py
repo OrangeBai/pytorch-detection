@@ -132,7 +132,7 @@ def devices(parser):
     args = parser.parse_args()
     device_num = torch.cuda.device_count()
     if device_num == 0:
-        parser.add_argument('--device_num', default=[None])
+        parser.add_argument('--device', default=[None])
     else:
         parser.add_argument('--device', default=[d for d in args.cuda if d < device_num])
     return parser

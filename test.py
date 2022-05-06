@@ -28,9 +28,8 @@ class test_model(nn.Module):
         xx = self.a(xx)
         return xx
 
+
 if __name__ == '__main__':
-
-
 
     model = test_model().cuda()
     # x.backward()
