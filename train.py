@@ -20,14 +20,6 @@ if __name__ == '__main__':
 
     train_loader, test_loader = set_loader(args)
 
-    if args.train_type == 'epoch':
-        # set total step, epoch step for epoch-wise training
-        # set num of epoch for  step-wise training
-        args.epoch_step = len(train_loader)
-        args.total_step = args.epoch_step * args.num_epoch
-    else:
-        args.num_epoch = args.total_step // args.epoch_step
-
     model = BaseModel(args, logger)
     inf_loader = InfiniteLoader(train_loader)
 

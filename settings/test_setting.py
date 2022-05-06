@@ -1,12 +1,20 @@
 import yaml
+
 from settings.base_funs import *
+import argparse
 
 
 def set_up_testing():
-    parser = get_args()
-    args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', default='mnist')
+    parser.add_argument('--net', default='dnn')
+    parser.add_argument('--exp_id', default='1')
+    parser.add_argument('-cuda', default=[0])
 
-    parser.add_argument('--model_dir', default=name(args, False))
+    parser = model_dir(parser, False)
+    parser = devices(parser)
+
+    # Load configuration from yaml file
     with open(os.path.join(parser.parse_args().model_dir, 'args.yaml'), 'r') as file:
         args_dict = yaml.load(file, Loader=yaml.FullLoader)
 
