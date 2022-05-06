@@ -11,22 +11,29 @@ import torch.nn as nn
 
 
 def init_scheduler(args, optimizer):
-    # Todo test
+    """
+    Initialize learning rate scheduler.
+    Milestone:
+            args.milestone: milestones to decrease the learning rate
+                        [milestone_1, milestone_2, ..., milestone_n]
+            args.gamma: scale factor
+            the learning rate is scaled by gamma when iteration reaches each milestone
+    Linear:
+            args.base_lr: desired learning rate at the end of training
+            the learning rate decreases linearly from lr to base_lr
+    Exp:
+            args.base_lr: desired learning rate at the end of training
+            the learning rate decreases exponentially from lr to base_lr
+    Cyclic:
+            args.up_ratio: ratio of training steps in the increasing half of a cycle
+            args.down_ratio: ratio of training steps in the decreasing half of a cycle
+            args.base_lr: Initial learning rate which is the lower boundary in the cycle for each parameter group.
+    Static:
+            the learning rate remains unchanged during the training
+    """
     if args.lr_scheduler == 'milestones':
         milestones = [milestone * args.total_step for milestone in args.milestones]
         lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
-    elif args.lr_scheduler == 'static':
-        def lambda_rule(t):
-            return 1.0
-
-        lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
-    elif args.lr_scheduler == 'exp':
-        gamma = math.pow(args.base_lr / args.lr, 1 / args.total_step)
-        lr_scheduler = ExponentialLR(optimizer, gamma)
-    elif args.lr_scheduler == 'cycle':
-        up = args.lr_step / 3
-        down = 2 * args.lr_step / 3
-        lr_scheduler = CyclicLR(optimizer, base_lr=args.base_lr, max_lr=args.lr, step_size_up=up, step_size_down=down)
     elif args.lr_scheduler == 'linear':
         diff = args.lr - args.base_lr
 
@@ -34,22 +41,50 @@ def init_scheduler(args, optimizer):
             return (args.lr - (step / args.total_step) * diff) / args.lr
 
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
+    elif args.lr_scheduler == 'exp':
+        gamma = math.pow(args.base_lr / args.lr, 1 / args.total_step)
+        lr_scheduler = ExponentialLR(optimizer, gamma)
+    elif args.lr_scheduler == 'cyclic':
+        up = args.lr_step * args.up_ratio
+        down = args.lr_step * args.down_ratio
+        lr_scheduler = CyclicLR(optimizer, base_lr=args.base_lr, max_lr=args.lr,
+                                step_size_up=up, step_size_down=down, mode='triangular2')
+    elif args.lr_scheduler == 'static':
+        def lambda_rule(t):
+            return 1.0
+
+        lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
+    # TODO ImageNet scheduler
     else:
         raise NameError('Scheduler {0} not found'.format(args.lr_scheduler))
     return lr_scheduler
 
 
 def init_optimizer(args, model):
-    # TODO introduce other optimizers
+    """
+    Initialize optimizer:
+        SGD: Implements stochastic gradient descent (optionally with momentum).
+             args.momentum: momentum factor (default: 0.9)
+             args.weight_decay: weight decay (L2 penalty) (default: 5e-4)
+        Adam: Implements Adam algorithm.
+            args.beta_1, beta_2:
+                coefficients used for computing running averages of gradient and its square, default (0.9, 0.99)
+            args.eps: term added to the denominator to improve numerical stability (default: 1e-8)
+            args.weight_decay: weight decay (L2 penalty) (default: 5e-4)
+    """
     if args.optimizer == 'SGD':
         optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum,
                                     weight_decay=args.weight_decay)
+    elif args.optimizer == 'Adam':
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(args.beta_1, args.beta_2),
+                                     eps=1e-8, weight_decay=args.weight_decay)
     else:
         raise NameError('Optimizer {0} not found'.format(args.lr_scheduler))
     return optimizer
 
 
 def init_loss(args):
+    # TODO other loss functions
     return torch.nn.CrossEntropyLoss()
 
 

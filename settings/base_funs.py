@@ -86,8 +86,14 @@ def lr_scheduler(parser):
     args = parser.parse_args()
     if args.lr_scheduler == 'milestones':
         parser.add_argument('--milestones', default=[0.5, 0.75])  # for milestone
-    elif args.lr_scheduler == 'exp' or 'liner' or 'cyclic':
-        parser.add_argument('--base_lr', default=0.01, )  # for milestone
+    elif args.lr_scheduler == 'exp' or 'liner':
+        parser.add_argument('--base_lr', default=0.001)  # for milestone
+    elif args.lr_scheduler == 'cyclic':
+        parser.add_argument('--base_lr', default=0.001)
+        parser.add_argument('--up_ratio', default=1 / 3)
+        parser.add_argument('--down_ratio', default=2 / 3)
+    else:
+        raise NameError('Scheduler {} not found'.format(args.lr_scheduler))
     return parser
 
 
@@ -97,6 +103,11 @@ def optimizer(parser):
         # SGD parameters
         parser.add_argument('--weight_decay', default=5e-4, type=float)
         parser.add_argument('--momentum', default=0.9, type=float)
+    elif args.optimizer == 'Adam':
+        parser.add_argument('--beta_1', default=0.9, type=float)
+        parser.add_argument('--beta_2', default=0.99, type=float)
+        parser.add_argument('--eps', default=1e-8, type=float)
+        parser.add_argument('--weight_decay', default=5e-4, type=float)
     else:
         pass
     return parser
