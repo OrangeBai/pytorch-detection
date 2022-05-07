@@ -4,7 +4,7 @@ import yaml
 
 
 def set_up_training():
-    parser = get_args()
+    parser = ArgParser().get_args()
 
     parser = model_dir(parser, True)
     parser = devices(parser)

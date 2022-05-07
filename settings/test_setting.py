@@ -8,7 +8,7 @@ def set_up_testing():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default='mnist')
     parser.add_argument('--net', default='dnn')
-    parser.add_argument('--exp_id', default='0')
+    parser.add_argument('--exp_id', default='1')
     parser.add_argument('-cuda', default=[0])
 
     parser = model_dir(parser, False)

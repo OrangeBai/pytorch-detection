@@ -4,19 +4,12 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from config import *
 import os
 
-
-def get_mean_std(dataset):
-    if dataset == 'cifar10':
-        mean = (0.4914, 0.4822, 0.4465)
-        std = (0.2471, 0.2435, 0.2616)
-    else:
-        mean = (0.5071, 0.4867, 0.4408)
-        std = (0.2675, 0.2565, 0.2761)
-    return mean, std
+CIAFR10_MEAN_STD = [(0.4914, 0.4822, 0.4465), (0.2471, 0.2435, 0.2616)]
+CIAFR100_MEAN_STD = [(0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761)]
 
 
 def get_loaders(args):
-    mean, std = get_mean_std(args.dataset)
+    mean, std = CIAFR10_MEAN_STD if args.dataset == 'cifar10' else CIAFR100_MEAN_STD
     train_transform = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -55,4 +48,3 @@ def get_loaders(args):
         num_workers=num_workers,
     )
     return train_loader, test_loader
-

@@ -1,6 +1,7 @@
 from attack.fgsm import FGSM
 from attack.pgd import PGD
 from attack.vanila import *
+from attack.noise import *
 
 
 # from .pgddlr import PGDDLR

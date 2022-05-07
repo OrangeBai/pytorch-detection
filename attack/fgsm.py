@@ -10,12 +10,12 @@ class FGSM(Attack):
     def attack(self, images, labels, random_start=True, device=None):
         images = to_device(device, images.clone().detach())[0]
         labels = to_device(device, labels.clone().detach())[0]
-        images = self._reverse_norm(images)
+        images = self._reverse_norm(images)  # from normalized to (0,1)
 
         loss = nn.CrossEntropyLoss()
 
         images.requires_grad = True
-        outputs = self.model(images)
+        outputs = self.model(images)  # from (0, 1) to normalized, and forward the emodel
         cost = loss(outputs, labels)
 
         grad = torch.autograd.grad(cost, images,
@@ -24,5 +24,5 @@ class FGSM(Attack):
         adv_images = images + self.eps * grad.sign()
         adv_images = torch.clamp(adv_images, min=0, max=1).detach()
 
-        adv_images = self._norm(adv_images)
+        adv_images = self._norm(adv_images)  # from (0,1) to normalized
         return adv_images

@@ -52,16 +52,21 @@ def retrieve_pattern(stored_values, Gamma):
 
     def hook(layer, input_var, output_var):
         input_var = input_var[0].cpu().detach()
-        pattern = np.zeros(input_var.shape)
-        num_of_pattern = len(Gamma)
-        pattern[input_var < Gamma[0]] = 0
-        pattern[input_var > Gamma[-1]] = num_of_pattern
-        for i in range(1, num_of_pattern):
-            valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
-            pattern[valid] = i
+        pattern = get_pattern(input_var, Gamma)
         stored_values.append(pattern)
 
     return hook
+
+
+def get_pattern(input_var, Gamma):
+    pattern = np.zeros(input_var.shape)
+    num_of_pattern = len(Gamma)
+    pattern[input_var < Gamma[0]] = 0
+    pattern[input_var > Gamma[-1]] = num_of_pattern
+    for i in range(1, num_of_pattern):
+        valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
+        pattern[valid] = i
+    return pattern
 
 
 def retrieve_fc_max(module_name, stored_value):
@@ -153,32 +158,56 @@ def reformat_pattern(pattern):
     return reformatted_pattern
 
 
-def retrieve_float_neurons(pattern):
+def retrieve_float_neurons(pattern, Gamma):
     """
     calculate the float neurons of given pattern
     @param pattern:
     @return:
     """
-    float_neurons = {}
-    for name, layer in pattern.items():
-        stacked_patterns = np.row_stack(pattern[name])
-        float_neurons[name] = np.all(stacked_patterns, axis=0)
-    return float_neurons
+    # TODO optimization
+    all_p = []
+    for idx, layer in pattern.items():
+        stacked_patterns = np.array(layer)
+        layer_pattern = []
+        for i in range(stacked_patterns.shape[1]):
+            instance_pattern = -1 * np.ones((stacked_patterns.shape[-1]))
+            p = get_pattern(stacked_patterns[:, i, :], Gamma)
+            for j in range(len(Gamma) + 1):
+                instance_pattern[np.where(np.all((p == j), axis=0))] = j
+            layer_pattern.append(instance_pattern)
+        all_p.append(layer_pattern)
+
+        # float_neurons[name] = np.all(stacked_patterns, axis=0)
+    return np.array(all_p)
 
 
-def add_noise(x, batch_size, epsilon=0.5):
-    """
+# def add_noise(x, batch_size, mean, std, epsilon=0.5):
+#     """
+#
+#     @param x:
+#     @param batch_size:
+#     @param epsilon:
+#     @return:
+#     """
+#     mean, std = mean_std
+#     data_noise = torch.sign(torch.randn((batch_size,) + x.shape))
+#     # rand_var = torch.randn((batch_size,) + x.shape)
+#     # flatten_var = torch.nn.Flatten()(rand_var)
+#     # norm = torch.linalg.norm(flatten_var, dim=1, keepdim=True)
+#     # standardized_noise = flatten_var.div(norm.expand_as(flatten_var))
+#     # data_noise = torch.reshape(standardized_noise, (batch_size,) + x.shape)
+#     data_noise[0] = 0
+#     x = x + data_noise * epsilon
+#     return x
 
-    @param x:
-    @param batch_size:
-    @param epsilon:
-    @return:
-    """
-    rand_var = torch.randn((batch_size,) + x.shape)
-    flatten_var = torch.nn.Flatten()(rand_var)
-    norm = torch.linalg.norm(flatten_var, dim=1, keepdim=True)
-    standardized_noise = flatten_var.div(norm.expand_as(flatten_var))
-    data_noise = torch.reshape(standardized_noise, (batch_size,) + x.shape)
-    data_noise[0] = 0
-    x = x + data_noise * epsilon
-    return x
+def aggregate(stored_values):
+    pass
+
+
+def unpack(stored_values, storage):
+    for key, value in stored_values.items():
+        if key not in list(storage.keys()):
+            storage[key] = [value[0].cpu().detach().numpy()]
+        else:
+            storage[key].append(value[0].cpu().detach().numpy())
+    return
