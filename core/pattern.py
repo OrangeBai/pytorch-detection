@@ -58,6 +58,17 @@ def retrieve_pattern(stored_values, Gamma):
     return hook
 
 
+def retrieve_float_hook(stored_values, Gamma):
+    # TODO revise this part for batch input
+    def hook(layer, input_var, output_var):
+        input_var = input_var[0].cpu().detach()
+        pattern = get_pattern(input_var, Gamma)
+        float_neurons = get_float_neuron(pattern, Gamma)
+        stored_values.append(float_neurons)
+
+    return hook
+
+
 def get_pattern(input_var, Gamma):
     pattern = np.zeros(input_var.shape)
     num_of_pattern = len(Gamma)
@@ -67,6 +78,13 @@ def get_pattern(input_var, Gamma):
         valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
         pattern[valid] = i
     return pattern
+
+
+def get_float_neuron(pattern, Gamma):
+    instance_pattern = -1 * np.ones((pattern.shape[1:]))
+    for j in range(len(Gamma) + 1):
+        instance_pattern[np.where(np.all((pattern == j), axis=0))] = j
+    return instance_pattern
 
 
 def retrieve_fc_max(module_name, stored_value):

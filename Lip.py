@@ -11,7 +11,7 @@ if __name__ == '__main__':
     model = BaseModel(args)
 
     model.load_model(args.model_dir)
-    pattern_hook = ModelHook(model.model, hook=retrieve_pattern, Gamma=[0])
+    float_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0])
     input_hook = ModelHook(model.model, hook=retrieve_input_hook)
     args.batch_size = 1
     train_loader, test_loader = set_loader(args)
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     activations = []
     cur_layers = []
 
-    noise_attack = Noise(model.model, args.devices[0], 4 / 255, mean=(0.1307,), std=(0.3081,))
+    noise_attack = Noise(model.model, args.devices[0], 16 / 255, mean=(0.1307,), std=(0.3081,))
     for name, module in model.model.named_modules():
         if type(module) in [torch.nn.Conv2d, torch.nn.Linear]:
             cur_layers.append([name, module])
@@ -35,7 +35,22 @@ if __name__ == '__main__':
         noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
         a = model.model(noise_img)
         print(1)
-        b= input_hook.retrieve_res()
+        b = float_hook.retrieve_res()
+        R = 1
+
+        """
+        use norm to bound Lipschitz chonstant
+        
+        """
+        output = torch.autograd.functional.jacobian(model.model, noise_img[0])
+        w_st = layers[0][0][1].weight.detach().cpu().numpy()
+        multiplier = np.ones(w_st.shape[0])
+        for s, p in zip((1,0,1), (-1, 0, 1)):
+            multiplier[b['layers.3'][0] == p] = s
+        flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
+        print(1)
+
+
         # storage = {}
         # noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
         # noise_img = to_device(args.devices[0], noise_img)[0]
@@ -50,7 +65,6 @@ if __name__ == '__main__':
             w_i = []
             for max_l, p in zip([1, 0, 1], (-1, 0, 1)):
                 w_i.append(max_l * svd(wm[mt_idx][ins_p == p].cpu().detach().numpy())[1].max())
-
 
             print(1)
 
