@@ -1,3 +1,5 @@
+import numpy as np
+import torch.autograd.functional
 from scipy.linalg import svd
 from settings.test_setting import set_up_testing
 from models.base_model import *
@@ -12,7 +14,7 @@ if __name__ == '__main__':
 
     model.load_model(args.model_dir)
     float_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0])
-    input_hook = ModelHook(model.model, hook=retrieve_input_hook)
+    pattern_hook = ModelHook(model.model, hook=retrieve_pattern, Gamma=[0])
     args.batch_size = 1
     train_loader, test_loader = set_loader(args)
 
@@ -21,22 +23,49 @@ if __name__ == '__main__':
     cur_layers = []
 
     noise_attack = Noise(model.model, args.devices[0], 16 / 255, mean=(0.1307,), std=(0.3081,))
+    r = 1
+    w = []
     for name, module in model.model.named_modules():
-        if type(module) in [torch.nn.Conv2d, torch.nn.Linear]:
-            cur_layers.append([name, module])
-        elif check_activation(module):
-            layers.append(cur_layers)
-            activations.append([name, module])
-            cur_layers = []
-    layers.append(cur_layers)
+        if type(module) == torch.nn.Linear:
+            wm = module.weight.cpu().detach().numpy()
+        elif type(module) == torch.nn.BatchNorm1d:
+            wm = np.matmul(np.diag(module.weight.cpu().detach().numpy()),
+                           np.matmul(np.diag(1 / torch.sqrt(module.running_var).cpu().detach().numpy()), wm))
+            w.append(wm)
+    w.append(wm)
 
     for idx, (img, label) in enumerate(test_loader):
         model.model.eval()
         noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
+        noise_img.require_grad = True
+
         a = model.model(noise_img)
         print(1)
-        b = float_hook.retrieve_res()
+        b = pattern_hook.retrieve_res()
+
+        I = np.eye(args.input_size)
+        for weight, pattern in zip(w[:len(b)], b.values()):
+            I = np.matmul(np.matmul(np.diag(pattern[0][0]), weight), I)
+        I = np.matmul(w[-1], I)
+
+        r_1 = 1
+        for layer in layers:
+            for s, p in zip((1, 0, 1), (-1, 0, 1)):
+                multiplier[b['layers.3'][0] == p] = s
+            flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
+            r_1 *= np.linalg.norm(layer[0][1].weight.cpu().detach().numpy(), 2)
+
+        torch.autograd.functional.jacobian(model.model, noise_img[0])
         R = 1
+
+        # for name, module in model.model.named_modules():
+        #     if type(module) in [torch.nn.Conv2d, torch.nn.Linear]:
+        #         cur_layers.append([name, module])
+        #     elif check_activation(module):
+        #         layers.append(cur_layers)
+        #         activations.append([name, module])
+        #         cur_layers = []
+        # layers.append(cur_layers)
 
         """
         use norm to bound Lipschitz chonstant
@@ -45,11 +74,10 @@ if __name__ == '__main__':
         output = torch.autograd.functional.jacobian(model.model, noise_img[0])
         w_st = layers[0][0][1].weight.detach().cpu().numpy()
         multiplier = np.ones(w_st.shape[0])
-        for s, p in zip((1,0,1), (-1, 0, 1)):
+        for s, p in zip((1, 0, 1), (-1, 0, 1)):
             multiplier[b['layers.3'][0] == p] = s
         flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
         print(1)
-
 
         # storage = {}
         # noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])

@@ -11,6 +11,7 @@ class Noise(Attack):
 
     def attack(self, images, batch_size=128, device=None):
         noise = torch.sign(torch.randn((batch_size,) + images.shape))
+        noise[0] = 0
         images, noise = to_device(device, images, noise)
         images = self._reverse_norm(images)
 
