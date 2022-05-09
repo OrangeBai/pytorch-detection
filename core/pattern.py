@@ -3,6 +3,7 @@ from core.utils import *
 import torch
 import os
 from copy import deepcopy
+from itertools import groupby
 
 
 def retrieve_input_hook(stored_values):
@@ -58,13 +59,40 @@ def retrieve_pattern(stored_values, Gamma):
     return hook
 
 
-def retrieve_float_hook(stored_values, Gamma):
-    # TODO revise this part for batch input
+def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
+    r"""
+    Compute the upper and lower derivative bound for the pattern
+    @param stored_values: recorder
+    @param Gamma: A set of breakpoints, with len #\Gamma. For instance,
+                        if Gamma is [0],
+                            the pattern of neuron is recorded as
+                                0 for x_in < 0
+                                1 for x_in > 0
+                        if Gamma is [-1, 1]
+                            the pattern of neuron is recorded as
+                                0 for x_in \in (-\inf, -1)
+                                1 for x_in \in (-1, 1)
+                                2 for x_in \in (1, \inf)
+    @param grad_bound: A set of gradient bounds for each activation region with length #\Gamma + 1. For instance,
+                        if activation is ReLU with Gamma=[0]
+                            the grad bound should be [(0,0), (1,1)]
+    @param batch_size: number of samples with noise
+    @return: the bound for each neuron
+    """
+
     def hook(layer, input_var, output_var):
         input_var = input_var[0].cpu().detach()
         pattern = get_pattern(input_var, Gamma)
-        float_neurons = get_float_neuron(pattern, Gamma)
-        stored_values.append(float_neurons)
+        batch_grad = []
+        for i in range(0, len(input_var), batch_size):
+            min_pattern, max_pattern = get_float_neuron(pattern[i * batch_size: (i+1) * batch_size])
+            min_grad, max_grad = np.zeros(min_pattern.shape), np.zeros(max_pattern.shape)
+            for i in range(len(Gamma) + 1):
+                min_grad[min_pattern == i] = grad_bound[i][0]
+                max_grad[min_pattern == i] = grad_bound[i][1]
+            batch_grad.append((min_grad, max_grad))
+
+        stored_values.append(batch_grad)
 
     return hook
 
@@ -80,11 +108,10 @@ def get_pattern(input_var, Gamma):
     return pattern
 
 
-def get_float_neuron(pattern, Gamma):
-    instance_pattern = -1 * np.ones((pattern.shape[1:]))
-    for j in range(len(Gamma) + 1):
-        instance_pattern[np.where(np.all((pattern == j), axis=0))] = j
-    return instance_pattern
+def get_float_neuron(pattern):
+    max_pattern = pattern.max(axis=0).astype(int)
+    min_pattern = pattern.min(axis=0).astype(int)
+    return min_pattern, max_pattern
 
 
 def retrieve_fc_max(module_name, stored_value):
@@ -138,15 +165,15 @@ class ModelHook:
             handle.remove()
         self.stored_values = {}
 
-    def retrieve_res(self):
-        return self.stored_values
-
     def remove_handle(self, name):
         for handle in self.handles[name]:
             handle.remove()
 
-    def calculate(self, fun, reset=True, *args, **kwargs):
-        res = fun(self.stored_values, *args, **kwargs)
+    def retrieve_res(self, fun=None, reset=True, *args, **kwargs):
+        if fun is not None:
+            res = fun(self.stored_values, *args, **kwargs)
+        else:
+            res = self.stored_values
         if reset:
             self.set_up()
         return res
@@ -222,10 +249,8 @@ def aggregate(stored_values):
     pass
 
 
-def unpack(stored_values, storage):
-    for key, value in stored_values.items():
-        if key not in list(storage.keys()):
-            storage[key] = [value[0].cpu().detach().numpy()]
-        else:
-            storage[key].append(value[0].cpu().detach().numpy())
-    return
+def unpack(stored_values):
+    storage = []
+    for key, val in stored_values.items():
+        storage.append(val[0])
+    return storage

@@ -13,26 +13,31 @@ if __name__ == '__main__':
     model = BaseModel(args)
 
     model.load_model(args.model_dir)
-    float_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0])
-    pattern_hook = ModelHook(model.model, hook=retrieve_pattern, Gamma=[0])
+    single_flt_hk = ModelHook(model.model, hook=retrieve_float_hook,
+                              Gamma=[0], grad_bound=((0, 0), (1, 1)), batch_size=1)
+    batch_flt_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0],
+                               grad_bound=((0, 0), (1, 1)), batch_size=64)
     args.batch_size = 1
     train_loader, test_loader = set_loader(args)
 
+    noise_attack = Noise(model.model, args.devices[0], 16 / 255, mean=(0.1307,), std=(0.3081,))
+
+    # Record all the weight matrix
+    r = 1
+    all_w = []
     layers = []
     activations = []
     cur_layers = []
-
-    noise_attack = Noise(model.model, args.devices[0], 16 / 255, mean=(0.1307,), std=(0.3081,))
-    r = 1
-    w = []
     for name, module in model.model.named_modules():
         if type(module) == torch.nn.Linear:
-            wm = module.weight.cpu().detach().numpy()
+            cur_weight = to_numpy(module.weight)
+            all_w.append(cur_weight)
         elif type(module) == torch.nn.BatchNorm1d:
-            wm = np.matmul(np.diag(module.weight.cpu().detach().numpy()),
-                           np.matmul(np.diag(1 / torch.sqrt(module.running_var).cpu().detach().numpy()), wm))
-            w.append(wm)
-    w.append(wm)
+            cur_weight = np.matmul(np.diag(to_numpy(module.weight)),
+                                   np.diag(1 / to_numpy(torch.sqrt(module.running_var))))
+            all_w.append(cur_weight)
+        elif check_activation(module):
+            all_w.append('A')
 
     for idx, (img, label) in enumerate(test_loader):
         model.model.eval()
@@ -40,13 +45,18 @@ if __name__ == '__main__':
         noise_img.require_grad = True
 
         a = model.model(noise_img)
+        cur_batch_min = batch_flt_hook.retrieve_res(unpack)
+        cur_local_min = single_flt_hk.retrieve_res(unpack)
         print(1)
-        b = pattern_hook.retrieve_res()
 
         I = np.eye(args.input_size)
-        for weight, pattern in zip(w[:len(b)], b.values()):
-            I = np.matmul(np.matmul(np.diag(pattern[0][0]), weight), I)
-        I = np.matmul(w[-1], I)
+        act_counter = 0
+        for w in all_w:
+            if w != 'A':
+                I = np.matmul(w, I)
+            else:
+                I = np.matmul(np.diag(cur_local_min[act_counter][0][1]), I)
+                act_counter += 1
 
         r_1 = 1
         for layer in layers:
@@ -69,7 +79,7 @@ if __name__ == '__main__':
 
         """
         use norm to bound Lipschitz chonstant
-        
+
         """
         output = torch.autograd.functional.jacobian(model.model, noise_img[0])
         w_st = layers[0][0][1].weight.detach().cpu().numpy()

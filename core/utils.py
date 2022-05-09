@@ -279,3 +279,6 @@ def check_activation(layer):
         if isinstance(layer, l):
             return True
     return False
+
+def to_numpy(tensor):
+    return tensor.cpu().detach().numpy()
