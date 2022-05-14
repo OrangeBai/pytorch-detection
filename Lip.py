@@ -58,15 +58,15 @@ if __name__ == '__main__':
                 I = np.matmul(np.diag(cur_local_min[act_counter][0][1]), I)
                 act_counter += 1
 
-        r_1 = 1
-        for layer in layers:
-            for s, p in zip((1, 0, 1), (-1, 0, 1)):
-                multiplier[b['layers.3'][0] == p] = s
-            flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
-            r_1 *= np.linalg.norm(layer[0][1].weight.cpu().detach().numpy(), 2)
-
-        torch.autograd.functional.jacobian(model.model, noise_img[0])
-        R = 1
+        # r_1 = 1
+        # for layer in layers:
+        #     for s, p in zip((1, 0, 1), (-1, 0, 1)):
+        #         multiplier[b['layers.3'][0] == p] = s
+        #     flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
+        #     r_1 *= np.linalg.norm(layer[0][1].weight.cpu().detach().numpy(), 2)
+        #
+        # torch.autograd.functional.jacobian(model.model, noise_img[0])
+        # R = 1
 
         # for name, module in model.model.named_modules():
         #     if type(module) in [torch.nn.Conv2d, torch.nn.Linear]:
@@ -76,46 +76,46 @@ if __name__ == '__main__':
         #         activations.append([name, module])
         #         cur_layers = []
         # layers.append(cur_layers)
-
-        """
-        use norm to bound Lipschitz chonstant
-
-        """
-        output = torch.autograd.functional.jacobian(model.model, noise_img[0])
-        w_st = layers[0][0][1].weight.detach().cpu().numpy()
-        multiplier = np.ones(w_st.shape[0])
-        for s, p in zip((1, 0, 1), (-1, 0, 1)):
-            multiplier[b['layers.3'][0] == p] = s
-        flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
-        print(1)
-
-        # storage = {}
-        # noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
-        # noise_img = to_device(args.devices[0], noise_img)[0]
-        # for i in range(len(noise_img)):
-        #     model.model(noise_img[i])
-        #     input_hook.calculate(unpack, storage=storage)
-        # pattern = {}
-        # batch_p = retrieve_float_neurons(storage, [0])
-
-        wm = [layers[i][0][1].weight for i in range(len(layers))]
-        for mt_idx, ins_p in enumerate(batch_p[:, 0, :]):
-            w_i = []
-            for max_l, p in zip([1, 0, 1], (-1, 0, 1)):
-                w_i.append(max_l * svd(wm[mt_idx][ins_p == p].cpu().detach().numpy())[1].max())
-
-            print(1)
-
-        img = img.cuda()
-        img.requires_grad = True
-        output = model.model(img)
-        cost = model.loss_function(output, label.cuda())
-        grad = torch.autograd.grad(cost, img, create_graph=True)
-
-        for i in range(10):
-            grad = torch.autograd.grad([output[:, i], output[:, 1]], img, create_graph=True)[0].cpu().detach().numpy()
-
-        print(1)
+        #
+        # """
+        # use norm to bound Lipschitz chonstant
+        #
+        # """
+        # output = torch.autograd.functional.jacobian(model.model, noise_img[0])
+        # w_st = layers[0][0][1].weight.detach().cpu().numpy()
+        # multiplier = np.ones(w_st.shape[0])
+        # for s, p in zip((1, 0, 1), (-1, 0, 1)):
+        #     multiplier[b['layers.3'][0] == p] = s
+        # flt = np.linalg.svd(np.matmul(np.diag(multiplier), w_st))
+        # print(1)
+        #
+        # # storage = {}
+        # # noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
+        # # noise_img = to_device(args.devices[0], noise_img)[0]
+        # # for i in range(len(noise_img)):
+        # #     model.model(noise_img[i])
+        # #     input_hook.calculate(unpack, storage=storage)
+        # # pattern = {}
+        # # batch_p = retrieve_float_neurons(storage, [0])
+        #
+        # wm = [layers[i][0][1].weight for i in range(len(layers))]
+        # for mt_idx, ins_p in enumerate(batch_p[:, 0, :]):
+        #     w_i = []
+        #     for max_l, p in zip([1, 0, 1], (-1, 0, 1)):
+        #         w_i.append(max_l * svd(wm[mt_idx][ins_p == p].cpu().detach().numpy())[1].max())
+        #
+        #     print(1)
+        #
+        # img = img.cuda()
+        # img.requires_grad = True
+        # output = model.model(img)
+        # cost = model.loss_function(output, label.cuda())
+        # grad = torch.autograd.grad(cost, img, create_graph=True)
+        #
+        # for i in range(10):
+        #     grad = torch.autograd.grad([output[:, i], output[:, 1]], img, create_graph=True)[0].cpu().detach().numpy()
+        #
+        # print(1)
     # for param in model.model.parameters():
     #     param.requires_grad = True
     # t = time.time()
