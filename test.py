@@ -10,9 +10,9 @@ class test_model(nn.Module):
         super().__init__()
         self.a = nn.Linear(100, 100)
         self.b = nn.ReLU()
-        self.c = nn.Conv2d(3, 32, (3, 3), padding=1)
+        self.c = nn.Conv2d(256, 512, (3, 3), padding=1)
         self.d = nn.Flatten()
-        self.e = nn.Linear(in_features=32 * 8 * 8, out_features=10)
+        self.e = nn.Linear(in_features=512 * 32 * 32, out_features=10)
         # self.c = nn.Sequential(
         #     nn.Linear(100, 200),
         #     nn.ReLU(),
@@ -41,7 +41,7 @@ class test_model(nn.Module):
 if __name__ == '__main__':
     model = test_model().cuda()
 
-    x = torch.randn((1, 3, 8, 8), requires_grad=True).cuda()
+    x = torch.randn((1, 256, 32, 32), requires_grad=True).cuda()
     y = model(x)
 
     xx = x.cpu().detach().numpy()

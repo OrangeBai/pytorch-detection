@@ -13,14 +13,12 @@ if __name__ == '__main__':
     model = BaseModel(args)
 
     model.load_model(args.model_dir)
-    single_flt_hk = ModelHook(model.model, hook=retrieve_float_hook,
-                              Gamma=[0], grad_bound=((0, 0), (1, 1)), batch_size=1)
-    batch_flt_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0],
-                               grad_bound=((0, 0), (1, 1)), batch_size=64)
+    batch_flt_hook = ModelHook(model.model, hook=retrieve_float_neuron_hook,
+                               Gamma=[0], batch_size=1024)
     args.batch_size = 1
     train_loader, test_loader = set_loader(args)
 
-    noise_attack = Noise(model.model, args.devices[0], 16 / 255, mean=(0.1307,), std=(0.3081,))
+    noise_attack = Noise(model.model, args.devices[0], 8 / 255, mean=(0.1307,), std=(0.3081,))
 
     # Record all the weight matrix
     r = 1
@@ -41,24 +39,27 @@ if __name__ == '__main__':
 
     for idx, (img, label) in enumerate(test_loader):
         model.model.eval()
-        noise_img = noise_attack.attack(img, batch_size=64, device=args.devices[0])
+        noise_img = noise_attack.attack(img, batch_size=1024, device=args.devices[0])
         noise_img.require_grad = True
 
         a = model.model(noise_img)
         cur_batch_min = batch_flt_hook.retrieve_res(unpack)
-        cur_local_min = single_flt_hk.retrieve_res(unpack)
+        # cur_local_min = single_flt_hk.retrieve_res(unpack)
         print(1)
 
-        I = np.eye(args.input_size)
-        act_counter = 0
-        for w in all_w:
-            if w != 'A':
-                I = np.matmul(w, I)
-            else:
-                I = np.matmul(np.diag(cur_local_min[act_counter][0][1]), I)
-                act_counter += 1
-
+        # I = np.eye(args.input_size)
+        # act_counter = 0
+        # for w in all_w:
+        #     if w != 'A':
+        #         I = np.matmul(w, I)
+        #         # pass
+        #     else:
+        #         I = np.matmul(np.diag(cur_local_min[act_counter][0][1]), I)
+        #         act_counter += 1
+        #         pass
         # r_1 = 1
+        # from cp import solve_SDP
+        # solve_SDP(all_w[0][:200], cur_local_min[0][0][0][:200], cur_local_min[0][0][1][:200])
         # for layer in layers:
         #     for s, p in zip((1, 0, 1), (-1, 0, 1)):
         #         multiplier[b['layers.3'][0] == p] = s

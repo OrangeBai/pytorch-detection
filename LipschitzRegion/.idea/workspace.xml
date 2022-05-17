@@ -5,15 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="30f56fd1-e418-4aca-bdaa-b60d74eeb5b5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../attack/noise.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Lip.py" beforeDir="false" afterPath="$PROJECT_DIR$/../Lip.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../attack/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/../attack/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../attack/fgsm.py" beforeDir="false" afterPath="$PROJECT_DIR$/../attack/fgsm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../core/pattern.py" beforeDir="false" afterPath="$PROJECT_DIR$/../core/pattern.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../dataloader/cifar.py" beforeDir="false" afterPath="$PROJECT_DIR$/../dataloader/cifar.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../settings/base_funs.py" beforeDir="false" afterPath="$PROJECT_DIR$/../settings/base_funs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../settings/cifar_settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/../settings/cifar_settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../settings/test_setting.py" beforeDir="false" afterPath="$PROJECT_DIR$/../settings/test_setting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -241,6 +234,7 @@
       <workItem from="1650357983457" duration="8577000" />
       <workItem from="1651624176714" duration="645000" />
       <workItem from="1651932992739" duration="171000" />
+      <workItem from="1652745113668" duration="10000" />
     </task>
     <servers />
   </component>

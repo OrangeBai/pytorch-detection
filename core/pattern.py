@@ -59,6 +59,18 @@ def retrieve_pattern(stored_values, Gamma):
     return hook
 
 
+def retrieve_float_neuron_hook(stored_values, Gamma, batch_size=1):
+    def hook(layer, input_var, output_var):
+        input_var = input_var[0].cpu().detach()
+        pattern = get_pattern(input_var, Gamma)
+        batch_grad = []
+        for i in range(0, len(input_var), batch_size):
+            min_pattern, max_pattern = get_float_neuron(pattern[i : i +  batch_size])
+        stored_values.append(min_pattern == max_pattern)
+
+    return hook
+
+
 def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
     r"""
     Compute the upper and lower derivative bound for the pattern
@@ -85,7 +97,7 @@ def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
         pattern = get_pattern(input_var, Gamma)
         batch_grad = []
         for i in range(0, len(input_var), batch_size):
-            min_pattern, max_pattern = get_float_neuron(pattern[i * batch_size: (i+1) * batch_size])
+            min_pattern, max_pattern = get_float_neuron(pattern[i * batch_size: (i + 1) * batch_size])
             min_grad, max_grad = np.zeros(min_pattern.shape), np.zeros(max_pattern.shape)
             for i in range(len(Gamma) + 1):
                 min_grad[min_pattern == i] = grad_bound[i][0]
