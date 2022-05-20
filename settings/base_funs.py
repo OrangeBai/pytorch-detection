@@ -1,6 +1,4 @@
-import os
 import shutil
-import torch
 from config import *
 import argparse
 from dataloader.base import *

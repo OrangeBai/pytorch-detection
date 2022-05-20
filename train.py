@@ -1,11 +1,7 @@
-from core.pattern import *
 from models import *
-from dataloader.base import *
-from settings.cifar_settings import *
-from attack import *
+from settings.train_settings import *
 from core.utils import *
 import logging
-import json
 
 if __name__ == '__main__':
     args = set_up_training()

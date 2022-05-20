@@ -1,11 +1,8 @@
-import numpy as np
-import torch.autograd.functional
 from scipy.linalg import svd
 from settings.test_setting import set_up_testing
 from models.base_model import *
 from core.pattern import *
 from dataloader.base import *
-from core.utils import *
 from attack import *
 
 if __name__ == '__main__':
@@ -16,7 +13,7 @@ if __name__ == '__main__':
     args.batch_size = 1
     train_loader, test_loader = set_loader(args)
 
-    noise = 4 / 255
+    noise = 16 / 255
     noise_attack = Noise(model.model, args.devices[0], noise, mean=(0.5,), std=(1,))
 
     # Record all the weight matrix

@@ -4,12 +4,16 @@ from settings.base_funs import *
 import argparse
 
 
-def set_up_testing():
+def set_up_testing(input_args):
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default='mnist')
     parser.add_argument('--net', default='dnn')
     parser.add_argument('--exp_id', default='0')
     parser.add_argument('-cuda', default=[0])
+
+    parser.add_argument('--epsilon', nargs='+', default=[2 / 255, 4 / 255, 8 / 255, 16 / 255], type=float)
+    parser.add_argument('--sample_size', default=256, type=int)
+    parser.add_argument('--num_test', default=100)
 
     parser = model_dir(parser, False)
     parser = devices(parser)
@@ -22,4 +26,8 @@ def set_up_testing():
         if key not in list(vars(parser.parse_args()).keys()):
             parser.add_argument('--' + key, default=val)
 
-    return parser.parse_args()
+    return parser.parse_args(input_args)
+
+
+if __name__ == '__main__':
+    set_up_testing('--epsilon 0.12 333'.split())

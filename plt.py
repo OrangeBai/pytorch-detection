@@ -1,5 +1,5 @@
 from core.utils import *
-from settings.cifar_settings import *
+from settings.train_settings import *
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.colors as colors
