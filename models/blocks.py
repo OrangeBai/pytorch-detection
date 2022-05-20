@@ -2,6 +2,13 @@ import torch
 import torch.nn as nn
 
 
+def set_activation(name):
+    if name is None:
+        return nn.Identity()
+    elif name == 'relu':
+        return nn.ReLU(inplace=True)
+
+
 class LinearBlock(nn.Module):
     def __init__(self, in_channels, out_channels, *args, **kwargs):
         super().__init__()
@@ -10,7 +17,7 @@ class LinearBlock(nn.Module):
         if 'noBatchNorm' not in kwargs.keys():
             self.layers += nn.BatchNorm1d(out_channels)
         if 'activation' in kwargs.keys():
-            self.layers += kwargs['activation']
+            self.layers += set_activation(kwargs['activation'])
         else:
             self.layers += nn.ReLU(inplace=True)
         self.layers = nn.Sequential(*self.layers)
