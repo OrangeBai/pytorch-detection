@@ -65,7 +65,7 @@ def retrieve_float_neuron_hook(stored_values, Gamma, batch_size=1):
         pattern = get_pattern(input_var, Gamma)
         batch_grad = []
         for i in range(0, len(input_var), batch_size):
-            min_pattern, max_pattern = get_float_neuron(pattern[i : i +  batch_size])
+            min_pattern, max_pattern = get_float_neuron(pattern[i: i + batch_size])
         stored_values.append(min_pattern == max_pattern)
 
     return hook
@@ -101,7 +101,7 @@ def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
             min_grad, max_grad = np.zeros(min_pattern.shape), np.zeros(max_pattern.shape)
             for i in range(len(Gamma) + 1):
                 min_grad[min_pattern == i] = grad_bound[i][0]
-                max_grad[min_pattern == i] = grad_bound[i][1]
+                max_grad[max_pattern == i] = grad_bound[i][1]
             batch_grad.append((min_grad, max_grad))
 
         stored_values.append(batch_grad)

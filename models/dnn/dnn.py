@@ -14,12 +14,14 @@ class DNN(nn.Module):
         layers = []
         layers += [nn.Flatten()]
         layers += [nn.Linear(self.args.input_size, self.args.width)]
-        layers += [nn.BatchNorm1d(self.args.width)]
+        if self.args.batchnorm:
+            layers += [nn.BatchNorm1d(self.args.width)]
         layers += [nn.ReLU()]
 
         for i in range(self.args.depth):
             layers += [nn.Linear(self.args.width, self.args.width)]
-            layers += [nn.BatchNorm1d(self.args.width)]
+            if self.args.batchnorm:
+                layers += [nn.BatchNorm1d(self.args.width)]
             layers += [nn.ReLU()]
 
         layers += [nn.Linear(self.args.width, self.args.num_cls)]

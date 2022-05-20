@@ -37,7 +37,7 @@ if __name__ == '__main__':
                 if idx == 0:
                     total = np.array(cur_batch_min).size
                 rate.append(np.array(cur_batch_min).sum() / total)
-                if idx > 500:
+                if idx > 100:
                     break
                 # avg = [cur_batch_min]
                 # total.append(cu)
@@ -45,5 +45,5 @@ if __name__ == '__main__':
             batch_flt_hook.reset()
             name = 'est_{0}_noise_{1}'.format(num_of_est, noise * 255)
             res[name] = rate
-    np.save(os.path.join(args.model_dir, 'rate'), np.array(res))
+    torch.save(res, os.path.join(args.model_dir, 'rate'))
 print(1)

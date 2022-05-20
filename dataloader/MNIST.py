@@ -5,7 +5,7 @@ import numpy as np
 
 
 def get_loaders(args):
-    mean, std = (0.1307,), (0.3081,)
+    mean, std = (0.5,), (1,)
     data_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean, std)

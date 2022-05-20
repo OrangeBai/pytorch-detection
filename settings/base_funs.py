@@ -18,6 +18,7 @@ class ArgParser:
         # step-wise or epoch-wise
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
+        self.parser.add_argument('--batchnorm', default=True, type=int)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
@@ -32,7 +33,7 @@ class ArgParser:
         self.parser.add_argument('--print_every', default=50)
         # dataset and experiments
         self.parser.add_argument('--dataset', default='mnist', type=str)
-        self.parser.add_argument('--exp_id', default=0)
+        self.parser.add_argument('--exp_id', default=0, type=str)
         # gpu settings
         self.parser.add_argument('--cuda', default=[0], type=list)
 
