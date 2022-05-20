@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from models.blocks import *
 
 
 class DNN(nn.Module):
@@ -8,23 +9,23 @@ class DNN(nn.Module):
         self.args = args
         self.layers = self.set_up()
 
-        self.set_up()
+        kwargs = {}
+        if args.batch_norm == 0:
+            kwargs['noBatchNorm '] = 1
+        self.set_up(**kwargs)
 
-    def set_up(self):
+    def parse_layer_args(self):
+        pass
+
+    def set_up(self, *args, **kwargs):
         layers = []
         layers += [nn.Flatten()]
-        layers += [nn.Linear(self.args.input_size, self.args.width)]
-        if self.args.batchnorm:
-            layers += [nn.BatchNorm1d(self.args.width)]
-        layers += [nn.ReLU()]
+        layers += [LinearBlock(self.args.input_size, self.args.width, *args, **kwargs)]
 
-        for i in range(self.args.depth):
-            layers += [nn.Linear(self.args.width, self.args.width)]
-            if self.args.batchnorm:
-                layers += [nn.BatchNorm1d(self.args.width)]
-            layers += [nn.ReLU()]
+        for i in range(self.args.depth - 1):
+            layers += [LinearBlock(self.args.input_size, self.args.width)]
 
-        layers += [nn.Linear(self.args.width, self.args.num_cls)]
+        layers += [LinearBlock(self.args.width, self.args.num_cls, 'noBatchNorm', **{'activation': None})]
 
         return nn.Sequential(*layers)
 

@@ -16,7 +16,7 @@ class ArgParser:
         # step-wise or epoch-wise
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
-        self.parser.add_argument('--batchnorm', default=True, type=int)
+        self.parser.add_argument('--batch_norm', default=True, type=int)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
@@ -123,7 +123,7 @@ def devices(parser):
     @param parser:
     @return:
     """
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     device_num = torch.cuda.device_count()
     if device_num == 0:
         parser.add_argument('--devices', default=[None])
@@ -139,7 +139,7 @@ def model_dir(parser, train):
     @param train:
     @return:
     """
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     exp_name = '_'.join([args.dataset, str(args.net), str(args.exp_id)])
     path = os.path.join(MODEL_PATH, args.dataset, exp_name)
     if train:

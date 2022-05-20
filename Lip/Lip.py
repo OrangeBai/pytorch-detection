@@ -8,12 +8,8 @@ from attack import *
 if __name__ == '__main__':
     args = set_up_testing()
     model = BaseModel(args)
-    batch_size = 512
     model.load_model(args.model_dir)
-    args.batch_size = 1
     train_loader, test_loader = set_loader(args)
-
-    noise = 16 / 255
     noise_attack = Noise(model.model, args.devices[0], noise, mean=(0.5,), std=(1,))
 
     # Record all the weight matrix
@@ -22,16 +18,6 @@ if __name__ == '__main__':
     layers = []
     activations = []
     cur_layers = []
-    for name, module in model.model.named_modules():
-        if type(module) == torch.nn.Linear:
-            cur_weight = to_numpy(module.weight)
-            all_w.append(cur_weight)
-        elif type(module) == torch.nn.BatchNorm1d:
-            cur_weight = np.matmul(np.diag(to_numpy(module.weight)),
-                                   np.diag(1 / to_numpy(torch.sqrt(module.running_var))))
-            all_w.append(cur_weight)
-        elif check_activation(module):
-            all_w.append('A')
     avg = []
     correct = []
     t = time.time()

@@ -4,7 +4,7 @@ from settings.base_funs import *
 import argparse
 
 
-def set_up_testing(input_args):
+def set_up_testing():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', default='mnist')
     parser.add_argument('--net', default='dnn')
@@ -26,8 +26,8 @@ def set_up_testing(input_args):
         if key not in list(vars(parser.parse_args()).keys()):
             parser.add_argument('--' + key, default=val)
 
-    return parser.parse_args(input_args)
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    set_up_testing('--epsilon 0.12 333'.split())
+    set_up_testing()
