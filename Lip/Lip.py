@@ -1,5 +1,5 @@
 from scipy.linalg import svd
-from settings.test_setting import set_up_testing
+from settings.APLip_settings import set_up_testing
 from models.base_model import *
 from core.pattern import *
 from dataloader.base import *
@@ -10,32 +10,27 @@ if __name__ == '__main__':
     model = BaseModel(args)
     model.load_model(args.model_dir)
     train_loader, test_loader = set_loader(args)
-    noise_attack = Noise(model.model, args.devices[0], noise, mean=(0.5,), std=(1,))
+    # TODO refactor noise module
+    noise_attack = Noise(model.model, args.devices[0], args.epsilon[0], mean=(0.5,), std=(1,))
 
+    float_hook = ModelHook(model.model, hook=float_neuron_hook, Gamma=[0], sample_size=args.sample_size)
+    ub_lb_hook = ModelHook(model.model, hook=lb_ub_hook, Gamma=[0],
+                           grad_bound=[(0, 0), (1, 1)], sample_size=args.sample_size)
     # Record all the weight matrix
     r = 1
-    all_w = []
-    layers = []
-    activations = []
-    cur_layers = []
     avg = []
-    correct = []
     t = time.time()
     for idx, (img, label) in enumerate(test_loader):
-
-        float_hook = ModelHook(model.model, hook=retrieve_float_neuron_hook,
-                               Gamma=[0], batch_size=batch_size)
-        ub_lb_hook = ModelHook(model.model, hook=retrieve_float_hook, Gamma=[0], grad_bound=[(0, 0), (1, 1)],
-                               batch_size=batch_size)
-
         model.model.eval()
-        noise_img = noise_attack.attack(img, batch_size=batch_size, device=args.devices[0])
+        noise_img = noise_attack.attack(img, batch_size=args.sample_size, device=args.devices[0])
         noise_img.require_grad = True
 
         a = model.model(noise_img)
-
-
         temp_mt = ub_lb_hook.retrieve_res(unpack)
+
+
+
+
         eye_matrix = np.eye(args.input_size)
         act_counter = 0
         for w in all_w:

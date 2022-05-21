@@ -10,12 +10,16 @@ class Noise(Attack):
         self.eps = eps
 
     def attack(self, images, batch_size=128, device=None):
-        noise = torch.sign(torch.randn((batch_size,) + images.shape))
+        shape = images.shape
+        noise = self.eps * torch.sign(torch.randn((shape[0] * batch_size,) + shape[1:]))
         noise[0] = 0
         images, noise = to_device(device, images, noise)
         images = self._reverse_norm(images)
 
-        noisy_image = torch.clamp(images + self.eps * noise, min=0, max=1)
+        for i in range(shape[0]):
+            noise[i * batch_size: (i + 1) * batch_size] += images[i]
+
+        noisy_image = torch.clamp(noise, min=0, max=1)
         # s = noisy_image.shape
         # noisy_image = torch.reshape(noisy_image, (s[0] * s[1],) + s[2:])
         return self._norm(noisy_image)

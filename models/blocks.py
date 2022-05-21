@@ -15,11 +15,11 @@ class LinearBlock(nn.Module):
 
         self.layers = [nn.Linear(in_channels, out_channels)]
         if 'noBatchNorm' not in kwargs.keys():
-            self.layers += nn.BatchNorm1d(out_channels)
+            self.layers += [nn.BatchNorm1d(out_channels)]
         if 'activation' in kwargs.keys():
-            self.layers += set_activation(kwargs['activation'])
+            self.layers += [set_activation(kwargs['activation'])]
         else:
-            self.layers += nn.ReLU(inplace=True)
+            self.layers += [nn.ReLU(inplace=True)]
         self.layers = nn.Sequential(*self.layers)
 
     def forward(self, x):

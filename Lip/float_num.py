@@ -15,7 +15,7 @@ if __name__ == '__main__':
     args.num_of_est = [64, 128, 256, 512, 1024, 1536, 2048]
     args.noise = [4 / 255, 8 / 255, 12/255, 16 / 255, 24/255, 32 / 255, 64/255]
     model.load_model(args.model_dir)
-    args.batch_size = 1
+    args.batch_size = 2
     train_loader, test_loader = set_loader(args)
 
     res = {}
@@ -24,14 +24,13 @@ if __name__ == '__main__':
             rate = []
             total = 1
             noise_attack = Noise(model.model, args.devices[0], noise, mean=(0.1307,), std=(0.3081,))
-            batch_flt_hook = ModelHook(model.model, hook=retrieve_float_neuron_hook,
-                                       Gamma=[0], batch_size=num_of_est)
+            batch_flt_hook = ModelHook(model.model, hook=float_neuron_hook, Gamma=[0], batch_size=num_of_est)
             for idx, (img, label) in enumerate(test_loader):
                 model.model.eval()
                 noise_img = noise_attack.attack(img, batch_size=num_of_est, device=args.devices[0])
                 noise_img.require_grad = True
 
-                a = model.model(noise_img)
+                pre_ = model.model(noise_img)
                 cur_batch_min = batch_flt_hook.retrieve_res(unpack)
 
                 if idx == 0:

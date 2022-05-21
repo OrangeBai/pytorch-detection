@@ -59,19 +59,30 @@ def retrieve_pattern(stored_values, Gamma):
     return hook
 
 
-def retrieve_float_neuron_hook(stored_values, Gamma, batch_size=1):
+def float_neuron_hook(stored_values, Gamma, sample_size=1):
+    """
+    Compute the float neuron for a batch of data
+    @param stored_values: stored value recorded in the ModelHook Class
+    @param Gamma: Separation
+    @param batch_size: Number of Noisy Samples for an instant
+    @return:    [
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 1)
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 2)
+                    ...,
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance n)
+                ]
+    """
     def hook(layer, input_var, output_var):
         input_var = input_var[0].cpu().detach()
         pattern = get_pattern(input_var, Gamma)
-        batch_grad = []
-        for i in range(0, len(input_var), batch_size):
-            min_pattern, max_pattern = get_float_neuron(pattern[i: i + batch_size])
-        stored_values.append(min_pattern == max_pattern)
+        for i in range(0, len(input_var), sample_size):
+            min_pattern, max_pattern = min_max_pattern(pattern[i: i + sample_size])
+            stored_values.append(min_pattern == max_pattern)
 
     return hook
 
 
-def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
+def lb_ub_hook(stored_values, Gamma, grad_bound, sample_size=1):
     r"""
     Compute the upper and lower derivative bound for the pattern
     @param stored_values: recorder
@@ -88,24 +99,27 @@ def retrieve_float_hook(stored_values, Gamma, grad_bound, batch_size=1):
     @param grad_bound: A set of gradient bounds for each activation region with length #\Gamma + 1. For instance,
                         if activation is ReLU with Gamma=[0]
                             the grad bound should be [(0,0), (1,1)]
-    @param batch_size: number of samples with noise
-    @return: the bound for each neuron
+    @param sample_size: number of samples with noise
+    @return: the bound for each neuron, shape as:
+                [
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_1),
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_2),
+                    ...,
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_n)
+                ]
     """
 
     def hook(layer, input_var, output_var):
         input_var = input_var[0].cpu().detach()
         pattern = get_pattern(input_var, Gamma)
         batch_grad = []
-        for i in range(0, len(input_var), batch_size):
-            min_pattern, max_pattern = get_float_neuron(pattern[i * batch_size: (i + 1) * batch_size])
+        for i in range(0, len(input_var), sample_size):
+            min_pattern, max_pattern = min_max_pattern(pattern[i: i + sample_size])
             min_grad, max_grad = np.zeros(min_pattern.shape), np.zeros(max_pattern.shape)
-            for i in range(len(Gamma) + 1):
-                min_grad[min_pattern == i] = grad_bound[i][0]
-                max_grad[max_pattern == i] = grad_bound[i][1]
-            batch_grad.append((min_grad, max_grad))
-
-        stored_values.append(batch_grad)
-
+            for j in range(len(Gamma) + 1):
+                min_grad[min_pattern == j] = grad_bound[j][0]
+                max_grad[max_pattern == j] = grad_bound[j][1]
+            stored_values.append((min_grad, max_grad))
     return hook
 
 
@@ -120,7 +134,7 @@ def get_pattern(input_var, Gamma):
     return pattern
 
 
-def get_float_neuron(pattern):
+def min_max_pattern(pattern):
     max_pattern = pattern.max(axis=0).astype(int)
     min_pattern = pattern.min(axis=0).astype(int)
     return min_pattern, max_pattern
@@ -176,10 +190,6 @@ class ModelHook:
         for handle in self.handles:
             handle.remove()
         self.stored_values = {}
-
-    def remove_handle(self, name):
-        for handle in self.handles[name]:
-            handle.remove()
 
     def retrieve_res(self, fun=None, reset=True, *args, **kwargs):
         if fun is not None:
@@ -262,7 +272,18 @@ def aggregate(stored_values):
 
 
 def unpack(stored_values):
+    """
+    Remove Layer Name
+    @param stored_values: Stored value from Model hook,
+    @return: list shape of :
+            [
+                (layer_1) [[instance_1], [instance_2],... ,[instance_n]],
+                (layer_2) [[instance_1], [instance_2],... ,[instance_n]],
+                ...,
+                (layer_n) [[instance_1], [instance_2],... ,[instance_n]],
+            ]
+    """
     storage = []
     for key, val in stored_values.items():
-        storage.append(val[0])
+        storage.append(val)
     return storage

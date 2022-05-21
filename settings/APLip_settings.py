@@ -6,6 +6,7 @@ import argparse
 
 def set_up_testing():
     parser = argparse.ArgumentParser()
+    args = sys.argv[1:]
     parser.add_argument('--dataset', default='mnist')
     parser.add_argument('--net', default='dnn')
     parser.add_argument('--exp_id', default='0')
@@ -18,15 +19,16 @@ def set_up_testing():
     parser = model_dir(parser, False)
     parser = devices(parser)
 
+    cur_args, _ = parser.parse_known_args()
     # Load configuration from yaml file
-    with open(os.path.join(parser.parse_args().model_dir, 'args.yaml'), 'r') as file:
+    with open(os.path.join(cur_args.model_dir, 'args.yaml'), 'r') as file:
         args_dict = yaml.load(file, Loader=yaml.FullLoader)
 
     for key, val in args_dict.items():
-        if key not in list(vars(parser.parse_args()).keys()):
-            parser.add_argument('--' + key, default=val)
+        if key not in vars(cur_args).keys():
+            parser.add_argument('--' + key, default=val, type=type(val))
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 if __name__ == '__main__':
