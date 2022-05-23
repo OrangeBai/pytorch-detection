@@ -1,9 +1,6 @@
 import numpy as np
 from core.utils import *
-import torch
-import os
-from copy import deepcopy
-from itertools import groupby
+from models.blocks import *
 
 
 def retrieve_input_hook(stored_values):
@@ -18,7 +15,6 @@ def retrieve_input_hook(stored_values):
         stored_values.append(input_var)
 
     return hook
-
 
 def retrieve_output(stored_values):
     """
@@ -64,7 +60,7 @@ def float_neuron_hook(stored_values, Gamma, sample_size=1):
     Compute the float neuron for a batch of data
     @param stored_values: stored value recorded in the ModelHook Class
     @param Gamma: Separation
-    @param batch_size: Number of Noisy Samples for an instant
+    @param sample_size: Number of Noisy Samples for an instant
     @return:    [
                     [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 1)
                     [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 2)
@@ -72,6 +68,7 @@ def float_neuron_hook(stored_values, Gamma, sample_size=1):
                     [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance n)
                 ]
     """
+
     def hook(layer, input_var, output_var):
         input_var = input_var[0].cpu().detach()
         pattern = get_pattern(input_var, Gamma)
@@ -120,6 +117,7 @@ def lb_ub_hook(stored_values, Gamma, grad_bound, sample_size=1):
                 min_grad[min_pattern == j] = grad_bound[j][0]
                 max_grad[max_pattern == j] = grad_bound[j][1]
             stored_values.append((min_grad, max_grad))
+
     return hook
 
 
@@ -178,13 +176,19 @@ class ModelHook:
 
     def set_up(self):
         self.reset()
-        for module_name, module in self.model.named_modules():
-            if check_activation(module):
-                self.stored_values[module_name] = []
-                self.handles.append(module.register_forward_hook(
-                    self.hook(self.stored_values[module_name], *self.args, **self.kwargs))
-                )
+        for module_name, block in self.model.named_modules():
+            if type(block) is LinearBlock:
+                self.stored_values[module_name] = {}
+                self.add_linear_block_hook(block, self.stored_values[module_name])
         return
+
+    def add_linear_block_hook(self, block, storage):
+        for module_name, module in block.named_modules():
+            if check_activation(module):
+                storage[module_name] = []
+                self.handles.append(module.register_forward_hook(
+                    self.hook(storage[module_name], *self.args, **self.kwargs))
+                )
 
     def reset(self):
         for handle in self.handles:

@@ -14,7 +14,7 @@ class LinearBlock(nn.Module):
         super().__init__()
 
         self.layers = [nn.Linear(in_channels, out_channels)]
-        if 'noBatchNorm' not in kwargs.keys():
+        if 'noBatchNorm' in args:
             self.layers += [nn.BatchNorm1d(out_channels)]
         if 'activation' in kwargs.keys():
             self.layers += [set_activation(kwargs['activation'])]

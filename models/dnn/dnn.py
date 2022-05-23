@@ -7,12 +7,11 @@ class DNN(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-        self.layers = self.set_up()
-
-        kwargs = {}
+        set_up_args = []
+        set_up_kwargs = {}
         if args.batch_norm == 0:
-            kwargs['noBatchNorm '] = 1
-        self.set_up(**kwargs)
+            set_up_args.append('noBatchNorm ')
+        self.layers = self.set_up(*set_up_args, **set_up_kwargs)
 
     def parse_layer_args(self):
         pass
@@ -23,9 +22,9 @@ class DNN(nn.Module):
         layers += [LinearBlock(self.args.input_size, self.args.width, *args, **kwargs)]
 
         for i in range(self.args.depth - 1):
-            layers += [LinearBlock(self.args.width, self.args.width)]
+            layers += [LinearBlock(self.args.width, self.args.width, *args, **kwargs)]
 
-        layers += [LinearBlock(self.args.width, self.args.num_cls, 'noBatchNorm', **{'activation': None})]
+        layers += [LinearBlock(self.args.width, self.args.num_cls, *args, **{'activation': None})]
 
         return nn.Sequential(*layers)
 
