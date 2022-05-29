@@ -15,13 +15,13 @@ class ArgParser:
     def _init_parser(self):
         # step-wise or epoch-wise
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
-        self.parser.add_argument('--batch_size', default=64, type=int)
+        self.parser.add_argument('--batch_size', default=128, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
         self.parser.add_argument('--reg', default=False, type=int)
         # scheduler and optimizer
-        self.parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
-        self.parser.add_argument('--optimizer', default='Adam', choices=['SGD', 'Adam'])
-        self.parser.add_argument('--lr', default=0.01, type=float)
+        self.parser.add_argument('--lr_scheduler', default='milestones', choices=['static', 'milestones', 'exp', 'linear'])
+        self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
+        self.parser.add_argument('--lr', default=0.1, type=float)
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
@@ -73,10 +73,10 @@ class ArgParser:
         args, _ = self.parser.parse_known_args(self.args)
         if args.lr_scheduler == 'milestones':
             self.parser.add_argument('--milestones', default=[0.5, 0.75])  # for milestone
-        elif args.lr_scheduler == 'exp' or 'liner':
-            self.parser.add_argument('--base_lr', default=0.001)  # for milestone
+        elif args.lr_scheduler == 'exp' or 'linear':
+            self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':
-            self.parser.add_argument('--base_lr', default=0.001)
+            self.parser.add_argument('--base_lr', default=0.001 * args.lr)
             self.parser.add_argument('--up_ratio', default=1 / 3)
             self.parser.add_argument('--down_ratio', default=2 / 3)
         else:

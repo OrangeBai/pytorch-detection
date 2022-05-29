@@ -212,7 +212,7 @@ class ModelHook:
                     self.hook(storage[module_name], *self.args, **self.kwargs))
                 )
 
-    def reset(self):
+    def  reset(self):
         for handle in self.handles:
             handle.remove()
         self.stored_values = {}
