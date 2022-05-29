@@ -15,16 +15,17 @@ class ArgParser:
     def _init_parser(self):
         # step-wise or epoch-wise
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
-        self.parser.add_argument('--batch_size', default=128, type=int)
+        self.parser.add_argument('--batch_size', default=64, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
+        self.parser.add_argument('--reg', default=False, type=int)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
-        self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
-        self.parser.add_argument('--lr', default=0.05, type=float)
+        self.parser.add_argument('--optimizer', default='Adam', choices=['SGD', 'Adam'])
+        self.parser.add_argument('--lr', default=0.001, type=float)
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
-        self.parser.add_argument('--model_type', default='dnn', choices=['dnn', 'mini', 'nets'])
+        self.parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
         self.parser.add_argument('--net', default='dnn', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1)
@@ -99,7 +100,8 @@ class ArgParser:
 
     def model_type(self):
         args, _ = self.parser.parse_known_args(self.args)
-        if args.model_type == 'dnn':
+        if args.net == 'dnn':
+            self.parser.set_defaults(model_type='dnn')
             self.parser.add_argument('--input_size', default=784, type=int)
             self.parser.add_argument('--width', default=1000, type=int)
             self.parser.add_argument('--depth', default=9, type=int)

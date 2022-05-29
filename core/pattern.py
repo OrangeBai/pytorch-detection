@@ -16,6 +16,7 @@ def retrieve_input_hook(stored_values):
 
     return hook
 
+
 def retrieve_output(stored_values):
     """
     record input values of the module
@@ -142,6 +143,24 @@ def retrieve_fc_max(module_name, stored_value):
     pass
 
 
+def min_pre_hook(stored_values):
+    """
+    Compute the float neuron for a batch of data
+    @param stored_values: stored value recorded in the ModelHook Class
+    @return:    [
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 1)
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 2)
+                    ...,
+                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance n)
+                ]
+    """
+
+    def hook(layer, input_var, output_var):
+        stored_values.append(input_var)
+
+    return hook
+
+
 # def pre_activation_hook(module, )
 
 # def add_hook(model, module_type, hook_type='pre'):
@@ -178,6 +197,9 @@ class ModelHook:
         self.reset()
         for module_name, block in self.model.named_modules():
             if type(block) is LinearBlock:
+                self.stored_values[module_name] = {}
+                self.add_linear_block_hook(block, self.stored_values[module_name])
+            elif type(block) is ConvBlock:
                 self.stored_values[module_name] = {}
                 self.add_linear_block_hook(block, self.stored_values[module_name])
         return
@@ -291,3 +313,15 @@ def unpack(stored_values):
     for key, val in stored_values.items():
         storage.append(val)
     return storage
+
+
+def list_all(data, storage=None):
+    if type(data) == list or type(data) == tuple:
+        for d in data:
+            list_all(d, storage)
+    elif type(data) == dict:
+        for k, v in data.items():
+            list_all(v, storage)
+    else:
+        storage.append(data)
+

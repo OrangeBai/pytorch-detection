@@ -1,6 +1,7 @@
 import torch.nn as nn
 from core.utils import *
 import importlib
+from core.pattern import *
 
 
 class BaseModel(nn.Module):
@@ -49,6 +50,28 @@ class BaseModel(nn.Module):
         self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
+        loss.backward()
+        self.optimizer.step()
+        self.lr_scheduler.step()
+
+        top1, top5 = accuracy(outputs, labels)
+        self.metrics.update(top1=(top1, len(images)), loss=(loss, len(images)),
+                            lr=(self.optimizer.param_groups[0]['lr'], 1))
+        self.metrics.synchronize_between_processes()
+        return
+
+    def train_step_min_reg(self, images, labels, hook):
+        images, labels = to_device(self.args.devices[0], images, labels)
+        self.optimizer.zero_grad()
+        outputs = self.model(images)
+        min_pre_res = hook.retrieve_res(unpack)
+        res = []
+        list_all(min_pre_res, res)
+
+        a = torch.Tensor([0.0]).cuda()
+        for i in res:
+            a += i.abs().mean()
+        loss = self.loss_function(outputs, labels) + 1 / a
         loss.backward()
         self.optimizer.step()
         self.lr_scheduler.step()

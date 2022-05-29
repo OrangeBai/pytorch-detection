@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from models.blocks import *
 
 cfgs = {
     'vgg11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -32,13 +33,12 @@ class VGG(nn.Module):
         setattr(self, 'features', features)
 
         setattr(self, 'classifier', nn.Sequential(
-            nn.Linear(512, 4096),
+            LinearBlock(512, 4096),
+            # nn.Dropout(),
+            LinearBlock(4096, 4096),
             nn.ReLU(),
             # nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(),
-            # nn.Dropout(),
-            nn.Linear(4096, self.num_cls)
+            LinearBlock(4096, self.num_cls, *{'activation': None})
         ))
         self.layers = [self.features, self.classifier]
 
@@ -59,28 +59,27 @@ def make_layers(cfg, batch_norm=False):
             layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             continue
 
-        layers += [nn.Conv2d(input_channel, layer, kernel_size=(3, 3), padding=1)]
-
-        if batch_norm:
-            layers += [nn.BatchNorm2d(layer)]
-
-        layers += [nn.ReLU()]
+        layers += [ConvBlock(input_channel, layer, kernel_size=(3, 3), padding=1)]
         input_channel = layer
 
     return nn.Sequential(*layers)
 
-    class VGG11(VGG):
-        def __init__(self, args):
-            super().__init__(args)
 
-    class VGG13(VGG):
-        def __init__(self, args):
-            super().__init__(args)
+class VGG11(VGG):
+    def __init__(self, args):
+        super().__init__(args)
 
-    class VGG16(VGG):
-        def __init__(self, args):
-            super().__init__(args)
 
-    class VGG19(VGG):
-        def __init__(self, args):
-            super().__init__(args)
+class VGG13(VGG):
+    def __init__(self, args):
+        super().__init__(args)
+
+
+class VGG16(VGG):
+    def __init__(self, args):
+        super().__init__(args)
+
+
+class VGG19(VGG):
+    def __init__(self, args):
+        super().__init__(args)

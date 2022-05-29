@@ -1,7 +1,7 @@
 from models import *
 from settings.train_settings import *
-from core.utils import *
 import logging
+from core.pattern import *
 
 if __name__ == '__main__':
     args = set_up_training()
@@ -23,13 +23,18 @@ if __name__ == '__main__':
     #                  std=dataloader.cifar.get_mean_std('cifar10')[1])
 
     # pattern_hook = ModelHook(model, retrieve_pattern, Gamma=[0])
-
+    if args.reg:
+        min_pre = ModelHook(model.model, hook=min_pre_hook)
+    else:
+        min_pre = None
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
             # adv_images = att.attack(images, labels, device=args.devices[0])
-
-            model.train_step(images, labels)
+            if args.reg:
+                model.train_step_min_reg(images, labels, min_pre)
+            else:
+                model.train_step(images, labels)
             # cal = pattern_hook.calculate(retrieve_float_neurons)
 
             if cur_step % args.print_every == 0:

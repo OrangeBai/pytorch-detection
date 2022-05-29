@@ -31,13 +31,13 @@ class ConvBlock(nn.Module):
         super().__init__()
         self.layers = [nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)]
         if 'noBatchNorm' not in kwargs.keys():
-            self.layers += nn.BatchNorm2d(out_channels)
+            self.layers += [nn.BatchNorm2d(out_channels)]
         if 'activation' in kwargs.keys():
-            self.layers += kwargs['activation']
+            self.layers += [set_activation(kwargs['activation'])]
         else:
-            self.layers += nn.ReLU(inplace=True)
+            self.layers += [nn.ReLU(inplace=True)]
 
         self.layers = nn.Sequential(*self.layers)
 
     def forward(self, x):
-        self.layers(x)
+        return self.layers(x)
