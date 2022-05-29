@@ -73,14 +73,15 @@ class BaseModel(nn.Module):
         list_all(min_pre_res, res)
         a = torch.Tensor([0.0]).cuda()
         for i in res:
-            a += i.abs().mean()
-        loss = self.loss_function(outputs, labels) + 0.05 * 1 / a
+            ind = torch.all(torch.stack([i.abs() > 1e-5, i.abs() < 0.01]), dim=0)
+            a += ind.sum()
+        loss = self.loss_function(outputs, labels) + \
+               0.01 * (1 - self.lr_scheduler.last_epoch / self.args.total_step) * torch.log(a)
 
-        min_pre.reset()
         loss.backward()
         self.optimizer.step()
         self.lr_scheduler.step()
-
+        min_pre.reset()
         top1, top5 = accuracy(outputs, labels)
         self.metrics.update(top1=(top1, len(images)), loss=(loss, len(images)),
                             lr=(self.optimizer.param_groups[0]['lr'], 1))
