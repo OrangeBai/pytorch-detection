@@ -111,7 +111,7 @@ class ArgParser:
 
     def num_cls(self):
         args, _ = self.parser.parse_known_args(self.args)
-        if args.dataset.lower() == 'cifar10' or 'mnist':
+        if args.dataset.lower() in ['cifar10', 'mnist']:
             self.parser.add_argument('--num_cls', default=10)
         else:
             self.parser.add_argument('--num_cls', default=100)
