@@ -76,7 +76,7 @@ class BaseModel(nn.Module):
             ind = torch.all(torch.stack([i.abs() > 1e-5, i.abs() < 0.01]), dim=0)
             a += ind.sum()
         loss = self.loss_function(outputs, labels) + \
-               0.01 * (1 - self.lr_scheduler.last_epoch / self.args.total_step) * torch.log(a)
+               0.001 * (1 - self.lr_scheduler.last_epoch / self.args.total_step) * torch.log(a)
 
         loss.backward()
         self.optimizer.step()
@@ -107,6 +107,7 @@ class BaseModel(nn.Module):
             top1, top5 = accuracy(pred, labels)
             self.metrics.update(top1=(top1, len(images)))
 
+        self.model.train()
         return self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
 
     def logging(self, step, batch_num, epoch, epoch_num, time_metrics):
