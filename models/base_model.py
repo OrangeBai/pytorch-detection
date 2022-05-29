@@ -60,18 +60,23 @@ class BaseModel(nn.Module):
         self.metrics.synchronize_between_processes()
         return
 
-    def train_step_min_reg(self, images, labels, hook):
+    def train_step_min_reg(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
+
+        min_pre = ModelHook(self.model, hook=min_pre_hook)
+
         self.optimizer.zero_grad()
         outputs = self.model(images)
-        min_pre_res = hook.retrieve_res(unpack)
+
+        min_pre_res = min_pre.retrieve_res(unpack)
         res = []
         list_all(min_pre_res, res)
-
         a = torch.Tensor([0.0]).cuda()
         for i in res:
             a += i.abs().mean()
-        loss = self.loss_function(outputs, labels) + 1 / a
+        loss = self.loss_function(outputs, labels) + 0.05 * 1 / a
+
+        min_pre.reset()
         loss.backward()
         self.optimizer.step()
         self.lr_scheduler.step()

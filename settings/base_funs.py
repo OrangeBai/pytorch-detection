@@ -21,7 +21,7 @@ class ArgParser:
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='linear', choices=['static', 'milestones', 'exp', 'linear'])
         self.parser.add_argument('--optimizer', default='Adam', choices=['SGD', 'Adam'])
-        self.parser.add_argument('--lr', default=0.001, type=float)
+        self.parser.add_argument('--lr', default=0.01, type=float)
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
