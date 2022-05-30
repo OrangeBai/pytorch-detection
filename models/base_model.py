@@ -76,7 +76,7 @@ class BaseModel(nn.Module):
             ind = torch.all(torch.stack([i.abs() > 1e-5, i.abs() < 0.01]), dim=0)
             a += ind.sum()
         loss = self.loss_function(outputs, labels) + \
-               0.001 * (1 - self.lr_scheduler.last_epoch / self.args.total_step) * torch.log(a)
+               0.0005 * (1 - self.lr_scheduler.last_epoch / self.args.total_step) ^ 2 * torch.log(a)
 
         loss.backward()
         self.optimizer.step()
