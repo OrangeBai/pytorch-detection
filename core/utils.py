@@ -33,7 +33,7 @@ def init_scheduler(args, optimizer):
     """
     if args.lr_scheduler == 'milestones':
         milestones = [milestone * args.total_step for milestone in args.milestones]
-        lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+        lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=args.gamma)
     elif args.lr_scheduler == 'linear':
         diff = args.lr - args.base_lr
 
