@@ -22,6 +22,6 @@ def set_up_testing():
 
     for key, val in args_dict.items():
         if key not in vars(cur_args).keys():
-            parser.add_argument('--' + key, default=val)
+            parser.add_argument('--' + key, default=val, type=type(val))
 
     return parser.parse_args(args)
