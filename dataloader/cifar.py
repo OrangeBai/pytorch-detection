@@ -57,18 +57,18 @@ def get_single_sets(args, *labels):
     ])
     num_workers = 0
     if args.dataset == 'cifar10':
-        test_dataset = datasets.CIFAR10(DATA_PATH, train=False, transform=test_transform, download=True)
+        test_dataset = datasets.CIFAR10(DATA_PATH, train=True, transform=test_transform, download=True)
     elif args.dataset == 'cifar100':
-        test_dataset = datasets.CIFAR100(DATA_PATH, train=False, transform=test_transform, download=True)
+        test_dataset = datasets.CIFAR100(DATA_PATH, train=True, transform=test_transform, download=True)
     else:
         raise NameError('No module called {0}'.format(args.dataset))
 
     sub_sets = []
     for label in labels:
         if args.dataset == 'cifar10':
-            sub_set = datasets.CIFAR10(DATA_PATH, train=False, transform=test_transform, download=True)
+            sub_set = datasets.CIFAR10(DATA_PATH, train=True, transform=test_transform, download=True)
         elif args.dataset == 'cifar100':
-            sub_set = datasets.CIFAR100(DATA_PATH, train=False, transform=test_transform, download=True)
+            sub_set = datasets.CIFAR100(DATA_PATH, train=True, transform=test_transform, download=True)
         else:
             raise NameError('No module called {0}'.format(args.dataset))
         indicator = np.array(test_dataset.targets)==label
