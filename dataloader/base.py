@@ -20,6 +20,14 @@ def set_loader(args):
     return train_loader, test_loader
 
 
+def set_single_loaders(args):
+    if 'mnist' in args.dataset.lower():
+        return mnist.get_single_sets(args)
+    elif 'cifar' in args.dataset:
+        pass
+
+
+
 class InfiniteLoader:
     def __init__(self, iterable):
         """

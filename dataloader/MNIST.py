@@ -28,37 +28,37 @@ def get_loaders(args):
     )
     return train_loader, test_loader
 
-# def get_test_set(*args):
-#     """
-#     Load test dataset according to labels:
-#     'all': all data
-#     1 : data with label 1
-#     2 : data with label 2 ......
-#     :param args: labels:
-#                     'all': all data
-#                     1 : data with label 1
-#                     2 : data with label 2 ......
-#     :return: a collection of data loaders
-#     """
-#     test_transform = transforms.Compose([transforms.ToTensor()])
-#     test_loaders = []
-#     test_sets = []
-#     for arg in args:
-#         if arg == 'all':
-#             test_dataset = datasets.MNIST(DATA_PATH, train=False, transform=test_transform, download=True)
-#         elif arg in range(9):
-#             test_dataset = datasets.MNIST(DATA_PATH, train=False, transform=test_transform, download=True)
-#             test_dataset.data = test_dataset.data[np.where(test_dataset.targets.numpy() == arg)][:1000]
-#             test_dataset.targets = test_dataset.targets[np.where(test_dataset.targets.numpy() == arg)][:1000]
-#         else:
-#             raise ValueError("Cannot find dataset %s" % str(args))
-#
-#         test_sets += [test_dataset]
-#         test_loaders += [torch.utils.data.DataLoader(
-#             dataset=test_dataset,
-#             batch_size=128,
-#             shuffle=False,
-#             pin_memory=True,
-#             num_workers=2,
-#         )]
-#     return test_loaders, test_sets
+
+def get_single_sets(args, *labels):
+    """
+    Load test dataset according to labels:
+    'all': all data
+    1 : data with label 1
+    2 : data with label 2 ......
+    :param args: labels:
+                    'all': all data
+                    1 : data with label 1
+                    2 : data with label 2 ......
+    :return: a collection of data loaders
+    """
+    mean, std = (0.5,), (1,)
+    data_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+    test_dataset = datasets.MNIST(DATA_PATH, train=False, transform=data_transform, download=True)
+
+    sub_sets = []
+    for label in labels:
+        sub_set = datasets.MNIST(DATA_PATH, train=False, transform=data_transform, download=True)
+        indicator = test_dataset.targets[test_dataset.targets == label]
+        sub_set.data = test_dataset.data[indicator]
+        sub_set.targets = test_dataset.targets[indicator]
+        sub_sets.append(sub_set)
+
+    return [data.DataLoader(
+        dataset=sub_set,
+        batch_size=args.batch_size,
+        shuffle=False,
+        pin_memory=True,
+    ) for sub_set in sub_sets]
