@@ -3,6 +3,7 @@ from config import *
 import argparse
 from dataloader.base import *
 import sys
+import os
 
 
 class ArgParser:
@@ -19,9 +20,11 @@ class ArgParser:
         self.parser.add_argument('--batch_norm', default=True, type=int)
         self.parser.add_argument('--reg', default=False, type=int)
         # scheduler and optimizer
-        self.parser.add_argument('--lr_scheduler', default='milestones', choices=['static', 'milestones', 'exp', 'linear'])
+        self.parser.add_argument('--lr_scheduler', default='milestones',
+                                 choices=['static', 'milestones', 'exp', 'linear'])
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
         self.parser.add_argument('--lr', default=0.1, type=float)
+        self.parser.add_argument('--warmup', default=1, type=float)
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
@@ -60,6 +63,7 @@ class ArgParser:
             train_loader, _ = set_loader(args)
             self.parser.add_argument('--num_epoch', default=60, type=int)
             self.parser.add_argument('--epoch_step', default=len(train_loader), type=int)
+            self.parser.add_argument('--warmup_steps', default=int(len(train_loader) * args.warmup), type=int)
             args, _ = self.parser.parse_known_args(self.args)
             self.parser.add_argument('--total_step', default=args.num_epoch * args.epoch_step, type=int)
         else:
@@ -67,13 +71,14 @@ class ArgParser:
             self.parser.add_argument('--epoch_step', default=100, type=int)
             args, _ = self.parser.parse_known_args(self.args)
             self.parser.add_argument('--num_epoch', default=args.total_step // args.epoch_step, type=int)
+            self.parser.add_argument('--warmup_steps', default=int(args.epoch_step * args.warmup), type=int)
         return
 
     def lr_scheduler(self):
         args, _ = self.parser.parse_known_args(self.args)
         if args.lr_scheduler == 'milestones':
-            self.parser.add_argument('--gamma', default=0.2, type=float)
-            self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
+            self.parser.add_argument('--gamma', default=0.1, type=float)
+            self.parser.add_argument('--milestones', default=[0.5, 0.75], nargs='+', type=float)  # for milestone
         elif args.lr_scheduler == 'exp' or 'linear':
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':

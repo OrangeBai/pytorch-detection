@@ -2,6 +2,9 @@ import torch.nn as nn
 from core.utils import *
 import importlib
 from core.pattern import *
+import os
+import time
+import datetime
 
 
 class BaseModel(nn.Module):
@@ -12,6 +15,7 @@ class BaseModel(nn.Module):
         self.model = build_model(args)
         self.optimizer = init_optimizer(args, self.model)
         self.lr_scheduler = init_scheduler(args, self.optimizer)
+        self.warmup_scheduler = warmup_scheduler(args, self.optimizer)
         self.loss_function = self.set_loss()
 
         self.result = {'train': dict(), 'test': dict()}
@@ -110,7 +114,25 @@ class BaseModel(nn.Module):
         self.model.train()
         return self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
 
-    def logging(self, step, batch_num, epoch, epoch_num, time_metrics):
+    def warmup(self, train_loader):
+        counter = 0
+        log_msg = ''
+        if self.args.warmup_steps > 0:
+            print('Warming up')
+        for _ in range(10):
+            for images, labels in train_loader:
+                if counter >= self.args.warmup_steps:
+                    return
+                images, labels = to_device(self.args.devices[0], images, labels)
+                self.train_step(images, labels)
+                counter += 1
+                if counter % self.args.print_every == 0:
+                    cur_log = self.train_logging(counter, self.args.warmup_steps, -1, -1, None)
+                    print(cur_log)
+                    log_msg += cur_log
+        return log_msg
+
+    def train_logging(self, step, batch_num, epoch, epoch_num, time_metrics=None):
         # TODO maybe a refactor???
         space_fmt = ':' + str(len(str(batch_num))) + 'd'
 
@@ -121,10 +143,13 @@ class BaseModel(nn.Module):
                              '{memory}'
                              ])
 
-        eta_seconds = time_metrics.meters['iter_time'].global_avg * (batch_num - step)
-        eta_string = 'eta: {}'.format(str(datetime.timedelta(seconds=int(eta_seconds))))
+        if time_metrics is not None:
+            eta_seconds = time_metrics.meters['iter_time'].global_avg * (batch_num - step)
+            eta_string = 'eta: {}'.format(str(datetime.timedelta(seconds=int(eta_seconds))))
 
-        time_str = '\t'.join([eta_string, str(time_metrics)])
+            time_str = '\t'.join([eta_string, str(time_metrics)])
+        else:
+            time_str = ''
 
         msg = log_msg.format(epoch=epoch, epoch_num=epoch_num,
                              step=step, batch_num=batch_num,

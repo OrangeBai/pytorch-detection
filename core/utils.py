@@ -1,13 +1,17 @@
 import torch
-from torch.optim.lr_scheduler import MultiStepLR, LambdaLR, ExponentialLR, CyclicLR
+from torch.optim.lr_scheduler import *
 from collections import defaultdict, deque
 import torch.distributed as dist
-import time
-import datetime as datetime
 import math
-import numpy as np
-import os
 import torch.nn as nn
+
+
+def warmup_scheduler(args, optimizer):
+    def lambda_rule(step):
+        return args.lr * step / (args.warmup_steps + 1e-8)
+
+    lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
+    return lr_scheduler
 
 
 def init_scheduler(args, optimizer):
@@ -41,6 +45,7 @@ def init_scheduler(args, optimizer):
             return (args.lr - (step / args.total_step) * diff) / args.lr
 
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
+
     elif args.lr_scheduler == 'exp':
         gamma = math.pow(args.base_lr / args.lr, 1 / args.total_step)
         lr_scheduler = ExponentialLR(optimizer, gamma)
@@ -279,6 +284,7 @@ def check_activation(layer):
         if isinstance(layer, l):
             return True
     return False
+
 
 def to_numpy(tensor):
     return tensor.cpu().detach().numpy()
