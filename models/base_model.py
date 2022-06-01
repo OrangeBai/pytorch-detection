@@ -5,6 +5,7 @@ from core.pattern import *
 import os
 import time
 import datetime
+import logging
 
 
 class BaseModel(nn.Module):
@@ -15,11 +16,18 @@ class BaseModel(nn.Module):
         self.model = build_model(args)
         self.optimizer = init_optimizer(args, self.model)
         self.lr_scheduler = init_scheduler(args, self.optimizer)
-        self.warmup_scheduler = warmup_scheduler(args, self.optimizer)
         self.loss_function = self.set_loss()
 
         self.result = {'train': dict(), 'test': dict()}
         self.metrics = MetricLogger()
+
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(
+            format='[%(asctime)s] - %(message)s',
+            datefmt='%Y/%m/%d %H:%M:%S',
+            level=logging.INFO,
+            filename=os.path.join(args.model_dir, 'logger'))
+        self.logger.info(args)
 
     @staticmethod
     def set_loss():
@@ -112,25 +120,25 @@ class BaseModel(nn.Module):
             self.metrics.update(top1=(top1, len(images)))
 
         self.model.train()
-        return self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+        msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+        self.logger.info(msg)
+        print(msg)
+        return
 
-    def warmup(self, train_loader):
-        counter = 0
-        log_msg = ''
-        if self.args.warmup_steps > 0:
-            print('Warming up')
-        for _ in range(10):
-            for images, labels in train_loader:
-                if counter >= self.args.warmup_steps:
-                    return
-                images, labels = to_device(self.args.devices[0], images, labels)
-                self.train_step(images, labels)
-                counter += 1
-                if counter % self.args.print_every == 0:
-                    cur_log = self.train_logging(counter, self.args.warmup_steps, -1, -1, None)
-                    print(cur_log)
-                    log_msg += cur_log
-        return log_msg
+    def warmup(self, inf_loader):
+        self.lr_scheduler = warmup_scheduler(self.args, self.optimizer)
+        for cur_step in range(self.args.warmup_steps):
+            images, labels = next(inf_loader)
+            images, labels = to_device(self.args.devices[0], images, labels)
+            self.train_step(images, labels)
+            if cur_step % self.args.print_every == 0:
+                logging.info(self.train_logging(cur_step, self.args.warmup_steps, -1, -1, inf_loader.metric))
+
+            if cur_step >= self.args.warmup_steps:
+                break
+        self.optimizer = init_optimizer(self.args, self.model)
+        self.lr_scheduler = init_scheduler(self.args, self.optimizer)
+        return
 
     def train_logging(self, step, batch_num, epoch, epoch_num, time_metrics=None):
         # TODO maybe a refactor???
@@ -156,8 +164,9 @@ class BaseModel(nn.Module):
                              time_str=time_str, meters=str(self.metrics),
                              memory='max mem: {0:.2f}'.format(torch.cuda.max_memory_allocated() / (1024.0 * 1024.0))
                              )
-
-        return msg
+        self.logger.info(msg)
+        print(msg)
+        return
 
     def epoch_logging(self, epoch, epoch_num, time_metrics=None):
         """
@@ -175,7 +184,8 @@ class BaseModel(nn.Module):
             msg += 'time: {time:.4f}\n'.format(time=time_metrics.meters['iter_time'].total)
 
         self.record_result(epoch)
-        return msg
+        self.logger.info(msg)
+        return
 
     def val_logging(self, epoch):
         msg = '\t'.join(['Validationn Informtion:', '{meters}']).format(meters=self.metrics)

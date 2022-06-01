@@ -8,7 +8,7 @@ import torch.nn as nn
 
 def warmup_scheduler(args, optimizer):
     def lambda_rule(step):
-        return args.lr * step / (args.warmup_steps + 1e-8)
+        return step / (args.warmup_steps + 1e-8)
 
     lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda_rule)
     return lr_scheduler
