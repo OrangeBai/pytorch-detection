@@ -85,10 +85,10 @@ class BaseModel(nn.Module):
         list_all(min_pre_res, res)
         a = torch.Tensor([0.0]).cuda()
         for i in res:
-            ind = torch.all(torch.stack([i.abs() > 1e-5, i.abs() < 0.01]), dim=0)
+            ind = torch.all(torch.stack([i.abs() >= 0, i.abs() < 0.01]), dim=0)
             a += ind.sum()
         rate = (1 - self.lr_scheduler.last_epoch / self.args.total_step)
-        loss = self.loss_function(outputs, labels) + 0.0005 * rate * rate * torch.log(a)
+        loss = self.loss_function(outputs, labels) + 0.001 * rate * rate * torch.log(a)
 
         loss.backward()
         self.optimizer.step()
@@ -132,7 +132,7 @@ class BaseModel(nn.Module):
             images, labels = to_device(self.args.devices[0], images, labels)
             self.train_step(images, labels)
             if cur_step % self.args.print_every == 0:
-                logging.info(self.train_logging(cur_step, self.args.warmup_steps, -1, -1, inf_loader.metric))
+                self.train_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, inf_loader.metric)
 
             if cur_step >= self.args.warmup_steps:
                 break
@@ -176,19 +176,18 @@ class BaseModel(nn.Module):
         @param time_metrics:
         @return:
         """
-        log_msg = ''.join(['\nEpoch: [{epoch}/{epoch_num}] training finished\n',
-                           'Training information:\t', '{meters}\t', ])
-
-        msg = log_msg.format(epoch=epoch, epoch_num=epoch_num, meters=str(self.metrics))
+        self.logger.info('Epoch: [{epoch}/{epoch_num}] training finished'.format(epoch=epoch, epoch_num=epoch_num))
+        log_msg = '\t'.join(['Training information:', '{meters}\t'])
+        msg = log_msg.format(meters=str(self.metrics))
         if time_metrics is not None:
-            msg += 'time: {time:.4f}\n'.format(time=time_metrics.meters['iter_time'].total)
+            msg += 'time: {time:.4f}'.format(time=time_metrics.meters['iter_time'].total)
 
         self.record_result(epoch)
         self.logger.info(msg)
         return
 
     def val_logging(self, epoch):
-        msg = '\t'.join(['Validationn Informtion:', '{meters}']).format(meters=self.metrics)
+        msg = '\t'.join(['Validation Information:', '{meters}']).format(meters=self.metrics)
         self.record_result(epoch, 'test')
         return msg
 
