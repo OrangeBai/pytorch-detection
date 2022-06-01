@@ -27,7 +27,7 @@ if __name__ == '__main__':
         model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
         inf_loader.reset()
 
-        model.validate_model(cur_epoch, test_loader) + '\n'
+        model.validate_model(cur_epoch, test_loader)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
