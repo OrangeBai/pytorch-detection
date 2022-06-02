@@ -48,6 +48,7 @@ class ArgParser:
         self.optimizer()
         self.model_type()
         self.num_cls()
+        self.reg()
         return self.parser
 
     def get_args(self):
@@ -72,6 +73,12 @@ class ArgParser:
             args, _ = self.parser.parse_known_args(self.args)
             self.parser.add_argument('--num_epoch', default=args.total_step // args.epoch_step, type=int)
             self.parser.add_argument('--warmup_steps', default=int(args.epoch_step * args.warmup), type=int)
+        return
+
+    def reg(self):
+        args, _ = self.parser.parse_known_args(self.args)
+        self.parser.add_argument('--lmd', default=0.01, type=float)
+        self.parser.add_argument('--bound', default=0.01, type=float)
         return
 
     def lr_scheduler(self):

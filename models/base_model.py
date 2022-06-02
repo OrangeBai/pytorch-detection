@@ -83,12 +83,14 @@ class BaseModel(nn.Module):
         min_pre_res = min_pre.retrieve_res(unpack)
         res = []
         list_all(min_pre_res, res)
-        a = torch.Tensor([0.0]).cuda()
+        a = torch.tensor(0.0).cuda()
         for i in res:
-            ind = torch.all(torch.stack([i.abs() >= 0, i.abs() < 0.01]), dim=0)
-            a += ind.sum()
-        rate = (1 - self.lr_scheduler.last_epoch / self.args.total_step)
-        loss = self.loss_function(outputs, labels) + 0.001 * torch.log(a)
+            ind = torch.all(torch.stack([i.abs() >= 0, i.abs() < self.args.bound]), dim=0)
+            a += torch.square(i[ind]).sum()
+        reg = 1 / torch.log(a)
+        loss = self.loss_function(outputs, labels)
+        rate = self.args.lmd * to_numpy(loss) / to_numpy(reg)
+        loss = self.loss_function(outputs, labels) + rate * torch.log(a)
 
         loss.backward()
         self.optimizer.step()
@@ -198,14 +200,16 @@ class BaseModel(nn.Module):
 def build_model(args):
     """Import the module "model/[model_name]_model.py"."""
     model = None
-    model_file_name = "models." + args.model_type
-    modules = importlib.import_module(model_file_name)
     if args.model_type == 'dnn':
+        model_file_name = "models." + args.model_type
+        modules = importlib.import_module(model_file_name)
         model = modules.__dict__['DNN']
-
-    for name, cls in modules.__dict__.items():
-        if name.lower() in args.net.lower():
-            model = cls
+    else:
+        model_file_name = "models." + "net"
+        modules = importlib.import_module(model_file_name)
+        for name, cls in modules.__dict__.items():
+            if name.lower() in args.net.lower():
+                model = cls
 
     if model is None:
         print("In %s.py, there should be a subclass of BaseModel with class name that matches %s in lowercase." % (
