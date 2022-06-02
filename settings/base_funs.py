@@ -28,7 +28,7 @@ class ArgParser:
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
-        self.parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
+        self.parser.add_argument('--model_type', default='net', choices=['dnn', 'mini', 'net'])
         self.parser.add_argument('--net', default='dnn', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
@@ -111,16 +111,22 @@ class ArgParser:
             self.parser.add_argument('--input_size', default=784, type=int)
             self.parser.add_argument('--width', default=1000, type=int)
             self.parser.add_argument('--depth', default=9, type=int)
+        elif args.dataset.lower() in ['cifar10', 'cifar100']:
+            self.parser.set_defaults(model_type='mini')
         else:
-            pass
+            self.parser.set_defaults(model_type='net')
         return
 
     def num_cls(self):
         args, _ = self.parser.parse_known_args(self.args)
-        if args.dataset.lower() in ['cifar10', 'mnist']:
+        if args.dataset.lower() == 'mnist':
             self.parser.add_argument('--num_cls', default=10)
-        else:
+        elif args.dataset.lower() == 'cifar10':
+            self.parser.add_argument('--num_cls', default=10)
+        elif args.dataset.lower() == 'cifar100':
             self.parser.add_argument('--num_cls', default=100)
+        elif args.dataset.lower() == 'imagenet':
+            self.parser.add_argument('--num_cls', default=1000)
         return
 
 

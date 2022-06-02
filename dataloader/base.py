@@ -1,5 +1,6 @@
-import dataloader.cifar as cifar
-import dataloader.MNIST as mnist
+import dataloader.cifar
+import dataloader.MNIST
+import dataloader.imagenet
 from core.utils import *
 import time
 from copy import deepcopy
@@ -11,11 +12,11 @@ def set_loader(args):
     :param args:
     """
     if 'mnist' in args.dataset.lower():
-        train_loader, test_loader = mnist.get_loaders(args)
-    elif 'cifar' in args.dataset:
-        train_loader, test_loader = cifar.get_loaders(args)
-    elif 'imagenet' in args.dataset:
-        train_loader, test_loader = None, None
+        train_loader, test_loader = dataloader.MNIST.get_loaders(args)
+    elif 'cifar' in args.dataset.lower():
+        train_loader, test_loader = dataloader.cifar.get_loaders(args)
+    elif 'imagenet' in args.dataset.lower():
+        train_loader, test_loader = dataloader.imagenet.get_loaders(args)
     else:
         raise NameError()
     return train_loader, test_loader

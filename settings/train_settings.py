@@ -2,6 +2,7 @@ from settings.base_funs import *
 import yaml
 import os
 
+
 def set_up_training():
     parser = ArgParser().get_args()
 
@@ -15,4 +16,3 @@ def set_up_training():
     with open(json_file, 'w') as f:
         yaml.dump(args_dict, f)
     return parser.parse_args()
-

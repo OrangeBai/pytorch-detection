@@ -1,7 +1,6 @@
 from models import *
 from settings.train_settings import *
 import logging
-from core.pattern import *
 
 if __name__ == '__main__':
     args = set_up_training()

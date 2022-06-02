@@ -27,11 +27,14 @@ class VGG(nn.Module):
             cfg = cfgs['vgg19']
         else:
             raise NameError("No network named {}".format(args.net))
-        self.set_up(make_layers(cfg, batch_norm=True))
+        self.set_up(make_layers(cfg, batch_norm=True), args.model_type)
 
-    def set_up(self, features):
+    def set_up(self, features, model_type):
         setattr(self, 'features', features)
-
+        if model_type == 'mini':
+            setattr(self, 'avg_pool', nn.AdaptiveAvgPool2d((1, 1)))
+        else:
+            setattr(self, 'avg_pool', nn.AdaptiveAvgPool2d((1, 1)))
         setattr(self, 'classifier', nn.Sequential(
             LinearBlock(512, 4096),
             # nn.Dropout(),
