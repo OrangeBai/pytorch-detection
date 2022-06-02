@@ -130,7 +130,10 @@ class BaseModel(nn.Module):
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(inf_loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            self.train_step(images, labels)
+            if not self.args.reg:
+                self.train_step(images, labels)
+            else:
+                self.train_step_min_reg(images, labels)
             if cur_step % self.args.print_every == 0:
                 self.train_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, inf_loader.metric)
 
