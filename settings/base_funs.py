@@ -78,7 +78,7 @@ class ArgParser:
         args, _ = self.parser.parse_known_args(self.args)
         if args.lr_scheduler == 'milestones':
             self.parser.add_argument('--gamma', default=0.1, type=float)
-            self.parser.add_argument('--milestones', default=[0.5, 0.75], nargs='+', type=float)  # for milestone
+            self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
         elif args.lr_scheduler == 'exp' or 'linear':
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':

@@ -4,9 +4,9 @@ source activate pytorch
 
 
 VAR=""
-for ARG in "$@";do
-	VAR+="${ARG} "
+for i in 1 2 3 4 5; do
+	echo "$1_$i"
 done
-echo $VAR
 
-python train.py $VAR
+
+#python train.py $VAR
