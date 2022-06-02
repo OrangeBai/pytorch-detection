@@ -77,8 +77,9 @@ class ArgParser:
 
     def reg(self):
         args, _ = self.parser.parse_known_args(self.args)
-        self.parser.add_argument('--lmd', default=0.01, type=float)
-        self.parser.add_argument('--bound', default=0.01, type=float)
+        if args.reg == 1:
+            self.parser.add_argument('--lmd', default=0.01, type=float)
+            self.parser.add_argument('--bound', default=0.01, type=float)
         return
 
     def lr_scheduler(self):
