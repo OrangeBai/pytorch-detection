@@ -32,7 +32,7 @@ class ArgParser:
         self.parser.add_argument('--net', default='dnn', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1)
-        self.parser.add_argument('--print_every', default=50)
+        self.parser.add_argument('--print_every', default=400)
         # dataset and experiments
         self.parser.add_argument('--dataset', default='mnist', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
