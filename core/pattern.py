@@ -196,15 +196,12 @@ class ModelHook:
     def set_up(self):
         self.reset()
         for module_name, block in self.model.named_modules():
-            if type(block) is LinearBlock:
+            if type(block) in [LinearBlock, ConvBlock, BottleNeck, BasicBlock]:
                 self.stored_values[module_name] = {}
-                self.add_linear_block_hook(block, self.stored_values[module_name])
-            elif type(block) is ConvBlock:
-                self.stored_values[module_name] = {}
-                self.add_linear_block_hook(block, self.stored_values[module_name])
+                self.add_block_hook(block, self.stored_values[module_name])
         return
 
-    def add_linear_block_hook(self, block, storage):
+    def add_block_hook(self, block, storage):
         for module_name, module in block.named_modules():
             if check_activation(module):
                 storage[module_name] = []

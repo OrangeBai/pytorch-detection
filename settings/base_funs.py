@@ -31,8 +31,8 @@ class ArgParser:
         self.parser.add_argument('--model_type', default='mini', choices=['dnn', 'mini', 'nets'])
         self.parser.add_argument('--net', default='dnn', type=str)
         # training settings
-        self.parser.add_argument('--num_workers', default=1)
-        self.parser.add_argument('--print_every', default=400)
+        self.parser.add_argument('--num_workers', default=1, type=int)
+        self.parser.add_argument('--print_every', default=400, type=int)
         # dataset and experiments
         self.parser.add_argument('--dataset', default='mnist', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
@@ -77,7 +77,7 @@ class ArgParser:
     def lr_scheduler(self):
         args, _ = self.parser.parse_known_args(self.args)
         if args.lr_scheduler == 'milestones':
-            self.parser.add_argument('--gamma', default=0.1, type=float)
+            self.parser.add_argument('--gamma', default=0.2, type=float)
             self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
         elif args.lr_scheduler == 'exp' or 'linear':
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
