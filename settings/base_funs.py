@@ -18,13 +18,16 @@ class ArgParser:
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
-        self.parser.add_argument('--reg', default=False, type=int)
+
+
+        self.parser.add_argument('--lmd', default=0.01, type=float)
+        self.parser.add_argument('--bound', default=0.01, type=float)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear'])
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
         self.parser.add_argument('--lr', default=0.1, type=float)
-        self.parser.add_argument('--warmup', default=1, type=float)
+        self.parser.add_argument('--warmup', default=2, type=float)
         # attacks
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
@@ -32,7 +35,7 @@ class ArgParser:
         self.parser.add_argument('--net', default='dnn', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
-        self.parser.add_argument('--print_every', default=400, type=int)
+        self.parser.add_argument('--print_every', default=100, type=int)
         # dataset and experiments
         self.parser.add_argument('--dataset', default='mnist', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
@@ -48,7 +51,6 @@ class ArgParser:
         self.optimizer()
         self.model_type()
         self.num_cls()
-        self.reg()
         return self.parser
 
     def get_args(self):
@@ -62,7 +64,7 @@ class ArgParser:
         args, _ = self.parser.parse_known_args(self.args)
         if args.train_type == 'epoch':
             train_loader, _ = set_loader(args)
-            self.parser.add_argument('--num_epoch', default=60, type=int)
+            self.parser.add_argument('--num_epoch', default=200, type=int)
             self.parser.add_argument('--epoch_step', default=len(train_loader), type=int)
             self.parser.add_argument('--warmup_steps', default=int(len(train_loader) * args.warmup), type=int)
             args, _ = self.parser.parse_known_args(self.args)
@@ -73,13 +75,6 @@ class ArgParser:
             args, _ = self.parser.parse_known_args(self.args)
             self.parser.add_argument('--num_epoch', default=args.total_step // args.epoch_step, type=int)
             self.parser.add_argument('--warmup_steps', default=int(args.epoch_step * args.warmup), type=int)
-        return
-
-    def reg(self):
-        args, _ = self.parser.parse_known_args(self.args)
-        if args.reg == 1:
-            self.parser.add_argument('--lmd', default=0.01, type=float)
-            self.parser.add_argument('--bound', default=0.01, type=float)
         return
 
     def lr_scheduler(self):

@@ -15,7 +15,7 @@ if __name__ == '__main__':
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
 
-            if args.reg:
+            if args.lmd != 0:
                 model.train_step_min_reg(images, labels)
             else:
                 model.train_step(images, labels)
