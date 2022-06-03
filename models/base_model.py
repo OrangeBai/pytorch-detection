@@ -132,7 +132,7 @@ class BaseModel(nn.Module):
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(inf_loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            if not self.args.lmb != 0:
+            if self.args.lmd == 0:
                 self.train_step(images, labels)
             else:
                 self.train_step_min_reg(images, labels)

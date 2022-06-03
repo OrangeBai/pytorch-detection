@@ -19,7 +19,6 @@ class ArgParser:
         self.parser.add_argument('--batch_size', default=128, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
 
-
         self.parser.add_argument('--lmd', default=0.01, type=float)
         self.parser.add_argument('--bound', default=0.01, type=float)
         # scheduler and optimizer
@@ -32,12 +31,12 @@ class ArgParser:
         self.parser.add_argument('--attack', default='FGSM', type=str)
         # model type
         self.parser.add_argument('--model_type', default='net', choices=['dnn', 'mini', 'net'])
-        self.parser.add_argument('--net', default='dnn', type=str)
+        self.parser.add_argument('--net', default='vgg16', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
         self.parser.add_argument('--print_every', default=100, type=int)
         # dataset and experiments
-        self.parser.add_argument('--dataset', default='mnist', type=str)
+        self.parser.add_argument('--dataset', default='cifar100', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
         # gpu settings
         self.parser.add_argument('--cuda', default=[0], type=list)
