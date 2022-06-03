@@ -87,10 +87,10 @@ class BaseModel(nn.Module):
         for i in res:
             ind = torch.all(torch.stack([i.abs() >= 0, i.abs() < self.args.bound]), dim=0)
             a += torch.square(i[ind]).sum()
-        reg = 1 / torch.log(a)
+        reg = torch.log(1 + a)
         loss = self.loss_function(outputs, labels)
         rate = self.args.lmd * to_numpy(loss) / to_numpy(reg)
-        loss = self.loss_function(outputs, labels) + rate * torch.log(a)
+        loss = self.loss_function(outputs, labels) - rate * reg
 
         loss.backward()
         self.optimizer.step()
