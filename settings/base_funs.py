@@ -20,6 +20,7 @@ class ArgParser:
         self.parser.add_argument('--batch_norm', default=True, type=int)
 
         self.parser.add_argument('--lmd', default=0.01, type=float)
+        self.parser.add_argument('--eta', default=0.8, type=float)
         self.parser.add_argument('--bound', default=0.01, type=float)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',

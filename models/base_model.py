@@ -89,8 +89,9 @@ class BaseModel(nn.Module):
             a += torch.sqrt(i[ind].abs()).sum()
         reg = torch.log(1 + a)
         loss = self.loss_function(outputs, labels)
-        rate = self.args.lmd * to_numpy(loss) / to_numpy(reg)
-        loss = self.loss_function(outputs, labels) - rate * reg
+        rate_1 = self.args.lmd * to_numpy(loss) / to_numpy(reg)
+        rate_2 = self.args.eta * (1 - self.lr_scheduler.last_epoch) / self.args.total_step
+        loss = self.loss_function(outputs, labels) - rate_1 * rate_2 * reg
 
         loss.backward()
         self.optimizer.step()
@@ -119,7 +120,7 @@ class BaseModel(nn.Module):
             images, labels = to_device(self.args.devices[0], images, labels)
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
-            self.metrics.update(top1=(top1, len(images)))
+            self.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)))
 
         self.model.train()
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
@@ -182,7 +183,7 @@ class BaseModel(nn.Module):
         @return:
         """
         self.logger.info('Epoch: [{epoch}/{epoch_num}] training finished'.format(epoch=epoch, epoch_num=epoch_num))
-        log_msg = '\t'.join(['Training information:', '{meters}\t'])
+        log_msg = '\t'.join(['Training information:\t', '{meters}\t'])
         msg = log_msg.format(meters=str(self.metrics))
         if time_metrics is not None:
             msg += 'time: {time:.4f}'.format(time=time_metrics.meters['iter_time'].total)
