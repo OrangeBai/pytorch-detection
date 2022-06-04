@@ -24,7 +24,7 @@ class DNN(nn.Module):
         for i in range(self.args.depth - 1):
             layers += [LinearBlock(self.args.width, self.args.width, *args, **kwargs)]
 
-        layers += [LinearBlock(self.args.width, self.args.num_cls, *args, **{'activation': None})]
+        layers += [LinearBlock(self.args.width, self.args.dataset, *args, **{'activation': None})]
 
         return nn.Sequential(*layers)
 

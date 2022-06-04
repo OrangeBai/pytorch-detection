@@ -28,36 +28,3 @@ def set_single_loaders(args, *labels):
     elif 'cifar' in args.dataset:
         return cifar.get_single_sets(args, *labels)
 
-
-class InfiniteLoader:
-    def __init__(self, iterable):
-        """
-        Initializer
-        @param iterable: An Dataset object
-        """
-        self.iterable = iterable
-        self.data_loader = iter(self.iterable)
-        self.counter = 0
-
-        self.last_time = time.time()
-        self.metric = MetricLogger()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        self.metric.update(iter_time=(time.time() - self.last_time, 1))
-        self.last_time = time.time()
-
-        while True:
-            try:
-                obj = next(self.data_loader)
-                self.metric.update(data_time=(time.time() - self.last_time, 1))
-
-                self.metric.synchronize_between_processes()
-                return obj
-            except StopIteration:
-                self.data_loader = iter(self.iterable)
-
-    def reset(self):
-        self.metric = MetricLogger()

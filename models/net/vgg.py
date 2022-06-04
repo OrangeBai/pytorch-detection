@@ -41,7 +41,7 @@ class VGG(nn.Module):
             LinearBlock(4096, 4096),
             nn.ReLU(),
             # nn.Dropout(),
-            LinearBlock(4096, self.num_cls, *{'activation': None})
+            LinearBlock(4096, self.num_cls, **{'activation': None})
         ))
         self.layers = [self.features, self.classifier]
 

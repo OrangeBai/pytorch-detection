@@ -9,15 +9,15 @@ class ResNet(nn.Module):
         self.layers = []
 
         if args.net == 'resnet18':
-            self.set_up(BasicBlock, [2, 2, 2, 2], args.num_cls)
+            self.set_up(BasicBlock, [2, 2, 2, 2], args.dataset)
         elif args.net == 'resnet34':
-            self.set_up(BasicBlock, [3, 4, 6, 3], args.num_cls)
+            self.set_up(BasicBlock, [3, 4, 6, 3], args.dataset)
         elif args.net == 'resnet50':
-            self.set_up(BasicBlock, [3, 4, 14, 3], args.num_cls)
+            self.set_up(BasicBlock, [3, 4, 14, 3], args.dataset)
         elif args.net == 'resnet101':
-            self.set_up(BasicBlock, [3, 4, 23, 3], args.num_cls)
+            self.set_up(BasicBlock, [3, 4, 23, 3], args.dataset)
         elif args.net == 'resnet152':
-            self.set_up(BasicBlock, [3, 4, 36, 3], args.num_cls)
+            self.set_up(BasicBlock, [3, 4, 36, 3], args.dataset)
         else:
             raise NameError()
 

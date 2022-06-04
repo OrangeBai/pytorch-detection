@@ -29,6 +29,9 @@ class BaseModel(nn.Module):
             filename=os.path.join(args.model_dir, 'logger'))
         self.logger.info(args)
 
+        if args.resume:
+            self.load_model(args.model_dir, args.resume_name)
+
     @staticmethod
     def set_loss():
         # TODO add more losses
@@ -48,6 +51,7 @@ class BaseModel(nn.Module):
         else:
             model_path = os.path.join(path, 'weights_{}.pth'.format(name))
         self.model.load_state_dict(torch.load(model_path), strict=False)
+        print('Loading model from {}'.format(model_path))
         return
 
     def save_result(self, path, name=None):
@@ -98,7 +102,7 @@ class BaseModel(nn.Module):
         self.lr_scheduler.step()
         min_pre.reset()
         top1, top5 = accuracy(outputs, labels)
-        self.metrics.update(top1=(top1, len(images)), loss=(loss, len(images)),
+        self.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
                             lr=(self.optimizer.param_groups[0]['lr'], 1))
         self.metrics.synchronize_between_processes()
         return
