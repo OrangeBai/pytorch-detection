@@ -94,8 +94,8 @@ class BaseModel(nn.Module):
         reg = torch.log(1 + a)
         loss = self.loss_function(outputs, labels)
         rate_1 = self.args.lmd * to_numpy(loss) / to_numpy(reg)
-        rate_2 = self.args.eta * (1 - self.lr_scheduler.last_epoch / self.args.total_step)
-        loss -= rate_1 * rate_2 * reg
+        rate_2 = self.lr_scheduler.last_epoch / self.args.total_step
+        loss = self.loss_function(outputs, labels) + rate_1 * rate_2 * reg
 
         loss.backward()
         self.optimizer.step()

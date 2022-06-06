@@ -8,10 +8,13 @@ import yaml
 
 
 class ArgParser:
-    def __init__(self, train=False):
+    def __init__(self, train=False, argv=None):
         self.parser = argparse.ArgumentParser()
         self.unknown_args = []
-        self.args = sys.argv[1:]
+        if argv is None:
+            self.args = sys.argv[1:]
+        else:
+            self.args = sys.argv[1:] + argv
         self._init_parser()
         self.model_dir(train)
         self.devices()
@@ -154,7 +157,7 @@ class ArgParser:
             to avoid conflicts caused by different device difference
         @return:
         """
-        args, _ = self.parser.parse_known_args()
+        args, _ = self.parser.parse_known_args(self.args)
         device_num = torch.cuda.device_count()
         if device_num == 0:
             self.parser.add_argument('--devices', default=[None])
@@ -168,7 +171,7 @@ class ArgParser:
         @param train:
         @return:
         """
-        args, _ = self.parser.parse_known_args()
+        args, _ = self.parser.parse_known_args(self.args)
         exp_name = '_'.join([args.dataset, str(args.net), str(args.exp_id)])
         path = os.path.join(MODEL_PATH, args.dataset, exp_name)
         if train:
@@ -179,7 +182,7 @@ class ArgParser:
         return self.parser
 
     def modify_parser(self, file_path):
-        cur_args, _ = self.parser.parse_known_args()
+        cur_args, _ = self.parser.parse_known_args(self.args)
         # Load configuration from yaml file
         with open(file_path, 'r') as file:
             args_dict = yaml.load(file, Loader=yaml.FullLoader)
@@ -190,7 +193,7 @@ class ArgParser:
         return
 
     def save(self):
-        args = self.parser.parse_args()
+        args = self.parser.parse_args(self.args)
         json_file = os.path.join(args.model_dir, 'args.yaml')
         args_dict = vars(args)
         with open(json_file, 'w') as f:
@@ -202,8 +205,7 @@ class ArgParser:
         if args.dataset.lower() == 'imagenet':
             self.parser.add_argument('--yaml_files', default='default', type=str)
 
-            return os.listdir(os.path.join(os. getcwd(), self.get_args().yaml_files))
+            return os.listdir(os.path.join(os.getcwd(), self.get_args().yaml_files))
         else:
             args = self.parser.parse_args()
             return [os.path.join(args.model_dir, 'args.yaml')]
-

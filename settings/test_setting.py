@@ -2,9 +2,10 @@ from settings.train_settings import *
 import argparse
 
 
-def set_up_testing(test_name='normal'):
-    parser = ArgParser(False).get_args()
-
+def set_up_testing(test_name='normal', argv=None):
+    arg_parser = ArgParser(False, argv)
+    parser = arg_parser.parser
+    args = arg_parser.args
     if test_name == 'normal':
         pass
     elif test_name.lower() == 'aplip':
@@ -14,7 +15,7 @@ def set_up_testing(test_name='normal'):
     else:
         raise NameError('test name {0} not found'.format(test_name))
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def ap_lip(parser):
@@ -25,4 +26,7 @@ def ap_lip(parser):
 
 
 def td(parser):
+    parser.add_argument('--line_breaks', default=2048, type=int)
+    parser.add_argument('--num_test', default=100, type=int)
+    parser.add_argument('--pre_batch', default=512)
     return parser

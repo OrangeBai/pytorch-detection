@@ -24,7 +24,7 @@ def set_loader(args):
 
 def set_single_loaders(args, *labels):
     if 'mnist' in args.dataset.lower():
-        return mnist.get_single_sets(args, *labels)
+        return dataloader.MNIST.get_single_sets(args, *labels)
     elif 'cifar' in args.dataset:
-        return cifar.get_single_sets(args, *labels)
+        return dataloader.cifar.get_single_sets(args, *labels)
 
