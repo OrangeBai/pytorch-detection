@@ -89,13 +89,12 @@ class BaseModel(nn.Module):
         list_all(min_pre_res, res)
         a = torch.tensor(0.0).cuda()
         for i in res:
-            ind = torch.all(torch.stack([i.abs() >= 0, i.abs() <= self.args.bound]), dim=0)
+            ind = torch.all(torch.stack([i.abs() > 0, i.abs() <= self.args.bound]), dim=0)
             a += torch.sqrt(i[ind].abs()).sum()
-        reg = torch.log(1 + a)
+        reg = 1 / torch.log(1 + a)
         loss = self.loss_function(outputs, labels)
         rate_1 = self.args.lmd * to_numpy(loss) / to_numpy(reg)
-        rate_2 = self.lr_scheduler.last_epoch / self.args.total_step
-        loss = self.loss_function(outputs, labels) + rate_1 * rate_2 * reg
+        loss = self.loss_function(outputs, labels) + rate_1 * reg
 
         loss.backward()
         self.optimizer.step()
