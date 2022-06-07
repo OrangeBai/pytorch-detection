@@ -10,25 +10,34 @@ def avd_test(args):
     model.model.eval()
     _, test_loader = set_loader(args)
     mean, std = get_mean_std(args)
-    atk_fgsm = FGSM(model.model, args.device[0], mean=mean, std=std)
+    atk_fgsm = FGSM(model.model, args.devices[0], eps=2/255, mean=mean, std=std)
 
-    for images, label in test_loader:
-        images = atk_fgsm.attack(images, label)
-        pre = model.model(images)
+    metric = MetricLogger()
+    for images, labels in test_loader:
+        images, labels = to_device(args.devices[0], images, labels)
+        adv_images = atk_fgsm.attack(images, labels)
+        pre_ori = model.model(images)
+        pre_adv = model.model(adv_images)
 
-        top1, top5 = accuracy(pre, label)
+        top1, top5 = accuracy(pre_ori, labels)
+        metric.update(top1=(top1, args.batch_size), top5=(top5, args.batch_size))
 
-    return
+        top1, top5 = accuracy(pre_adv, labels)
+        metric.update(top1_avd=(top1, args.batch_size), top5_adv=(top5, args.batch_size))
+
+    return metric
 
 
 if __name__ == '__main__':
     argvs = [
-        ['--exp_id', 'l_0.05_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100'],
-        ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100'],
-        ['--exp_id', 'l_-0.05_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
+        ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100'],
+        ['--exp_id', 'l_0.05_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100'],
+        ['--exp_id', 'l_-0.05_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100']
     ]
     res = []
-
+    for argv in argvs:
+        args = set_up_testing('normal', argv)
+        res.append(avd_test(args))
     # torch.save(td, os.path.join(args.model_dir), 'td')
     import matplotlib.pyplot as plt
 

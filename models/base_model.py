@@ -88,9 +88,8 @@ class BaseModel(nn.Module):
         res = []
         list_all(min_pre_res, res)
         a = torch.tensor(0.0).cuda()
-        for i in res:
-            ind = torch.all(torch.stack([i.abs() > 0, i.abs() <= self.args.bound]), dim=0)
-            a += torch.sqrt(i[ind].abs()).sum()
+        for i in res[-4:]:
+            a += torch.sqrt(i.abs()).sum()
         reg = 1 / torch.log(1 + a)
         loss = self.loss_function(outputs, labels)
         rate_1 = self.args.lmd * to_numpy(loss) / to_numpy(reg)
