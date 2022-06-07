@@ -187,7 +187,7 @@ class BaseModel(nn.Module):
         @return:
         """
         self.logger.info('Epoch: [{epoch}/{epoch_num}] training finished'.format(epoch=epoch, epoch_num=epoch_num))
-        log_msg = '\t'.join(['Training information:\t', '{meters}\t'])
+        log_msg = '\t'.join(['TRN INF:', '{meters}\t'])
         msg = log_msg.format(meters=str(self.metrics))
         if time_metrics is not None:
             msg += 'time: {time:.4f}'.format(time=time_metrics.meters['iter_time'].total)
@@ -197,7 +197,7 @@ class BaseModel(nn.Module):
         return
 
     def val_logging(self, epoch):
-        msg = '\t'.join(['Validation Information:', '{meters}']).format(meters=self.metrics)
+        msg = '\t'.join(['VAL INF:', '{meters}']).format(meters=self.metrics)
         self.record_result(epoch, 'test')
         return msg
 

@@ -28,3 +28,14 @@ def set_single_loaders(args, *labels):
     elif 'cifar' in args.dataset:
         return dataloader.cifar.get_single_sets(args, *labels)
 
+
+def get_mean_std(args):
+    if args.dataset == 'cifar10':
+        mean, std = dataloader.cifar.CIAFR10_MEAN_STD
+    elif args.dataset == 'cifar100':
+        mean, std = dataloader.cifar.CIAFR100_MEAN_STD
+    elif args.dataset == 'mnist':
+        mean, std = dataloader.MNIST.MNIST_MEAN_STD
+    else:
+        raise NameError()
+    return mean, std
