@@ -32,10 +32,6 @@ class ArgParser:
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
-
-        self.parser.add_argument('--lmd', default=0.01, type=float)
-        self.parser.add_argument('--eta', default=0.8, type=float)
-        self.parser.add_argument('--bound', default=0.01, type=float)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear'])
@@ -43,13 +39,17 @@ class ArgParser:
         self.parser.add_argument('--lr', default=0.1, type=float)
         self.parser.add_argument('--warmup', default=2, type=float)
         # attacks
-        self.parser.add_argument('--attack', default='FGSM', type=str)
+        self.parser.add_argument('--attack', default='vanila', type=str, choices=['vanila', 'fgsm', 'pgd', 'ffgsm'])
         # model type
         self.parser.add_argument('--model_type', default='net', choices=['dnn', 'mini', 'net'])
         self.parser.add_argument('--net', default='vgg16', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
         self.parser.add_argument('--print_every', default=100, type=int)
+
+        #
+        self.parser.add_argument('--config', default=None)
+
         # dataset and experiments
         self.parser.add_argument('--dataset', default='cifar100', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)

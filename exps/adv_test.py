@@ -32,7 +32,7 @@ if __name__ == '__main__':
     argvs = [
         ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100'],
         ['--exp_id', 'l_0.05_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100'],
-        ['--exp_id', 'l_-0.05_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100']
+        # ['--exp_id', 'l_-0.05_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100']
     ]
     res = []
     for argv in argvs:

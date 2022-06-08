@@ -9,7 +9,7 @@ def cal_td(args):
     model = BaseModel(args)
     model.load_model(args.model_dir)
     model.model.eval()
-    pattern_hook = ModelHook(model.model, retrieve_pattern, Gamma=[0])
+    pattern_hook = ModelHook(model.model, retrieve_pattern_hook, Gamma=[0])
     loaders = set_single_loaders(args, *[1, 2, 3])
     for data_idx, (x, y, z) in enumerate(zip(*loaders)):
         if data_idx == args.num_test:

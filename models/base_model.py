@@ -6,6 +6,8 @@ import os
 import time
 import datetime
 import logging
+from attack import *
+from collections import OrderedDict
 
 
 class BaseModel(nn.Module):
@@ -20,6 +22,7 @@ class BaseModel(nn.Module):
 
         self.result = {'train': dict(), 'test': dict()}
         self.metrics = MetricLogger()
+        # self.attack = set_attack(self.model, args.attack, )
 
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(
@@ -50,9 +53,19 @@ class BaseModel(nn.Module):
             model_path = os.path.join(path, 'weights.pth')
         else:
             model_path = os.path.join(path, 'weights_{}.pth'.format(name))
-        self.model.load_state_dict(torch.load(model_path), strict=False)
+        self.load_weights(torch.load(model_path))
+
         print('Loading model from {}'.format(model_path))
         return
+
+    def load_weights(self, state_dict):
+        new_dict = OrderedDict()
+        for (k1, v1), (k2, v2) in zip(self.model.state_dict().items(), state_dict.items()):
+            if v1.shape == v2.shape:
+                new_dict[k1] = v2
+            else:
+                raise KeyError
+        self.model.load_state_dict(new_dict)
 
     def save_result(self, path, name=None):
         if not name:
@@ -76,35 +89,6 @@ class BaseModel(nn.Module):
         self.metrics.synchronize_between_processes()
         return
 
-    def train_step_min_reg(self, images, labels):
-        images, labels = to_device(self.args.devices[0], images, labels)
-
-        min_pre = ModelHook(self.model, hook=min_pre_hook)
-
-        self.optimizer.zero_grad()
-        outputs = self.model(images)
-
-        min_pre_res = min_pre.retrieve_res(unpack)
-        res = []
-        list_all(min_pre_res, res)
-        a = torch.tensor(0.0).cuda()
-        for i in res[-4:]:
-            a += torch.sqrt(i.abs()).sum()
-        reg = 1 / torch.log(1 + a)
-        loss = self.loss_function(outputs, labels)
-        rate_1 = self.args.lmd * to_numpy(loss) / to_numpy(reg)
-        loss = self.loss_function(outputs, labels) + rate_1 * reg
-
-        loss.backward()
-        self.optimizer.step()
-        self.lr_scheduler.step()
-        min_pre.reset()
-        top1, top5 = accuracy(outputs, labels)
-        self.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
-                            lr=(self.optimizer.param_groups[0]['lr'], 1))
-        self.metrics.synchronize_between_processes()
-        return
-
     def record_result(self, epoch, mode='train'):
 
         epoch_result = {}
@@ -115,7 +99,6 @@ class BaseModel(nn.Module):
         return
 
     def validate_model(self, epoch, test_loader):
-        # TODO validation logging
         start = time.time()
         self.model.eval()
         for images, labels in test_loader:
@@ -130,15 +113,18 @@ class BaseModel(nn.Module):
         print(msg)
         return
 
+    def pruning_val(self, epoch, test_loader):
+        ap_hook = ModelHook(self.model, float_neuron_hook, Gamma=[0], sample_size=self.args.batch_size)
+        self.validate_model(epoch, test_loader)
+        tt = ap_hook.retrieve_res(unpack)
+        return
+
     def warmup(self, inf_loader):
         self.lr_scheduler = warmup_scheduler(self.args, self.optimizer)
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(inf_loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            if self.args.lmd == 0:
-                self.train_step(images, labels)
-            else:
-                self.train_step_min_reg(images, labels)
+            self.train_step(images, labels)
             if cur_step % self.args.print_every == 0:
                 self.train_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, inf_loader.metric)
 

@@ -11,3 +11,5 @@ class VANILA(Attack):
         """
 
         return images
+
+

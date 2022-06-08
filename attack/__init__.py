@@ -2,11 +2,9 @@ from attack.fgsm import FGSM
 from attack.pgd import PGD
 from attack.vanila import *
 from attack.noise import *
-
-
+from attack.ffgsm import FFGSM
 # from .pgddlr import PGDDLR
 # from .rfgsm import RFGSM
-# from attack.ffgsm import FFGSM
 # from .apgd import APGD
 # from .bim import BIM
 # from .cw import CW
@@ -17,22 +15,21 @@ from attack.noise import *
 # from .vanila import VANILA
 
 
-def get_attack(model, name, device, *args, **kwargs):
+def set_attack(model, name, device, *args, **kwargs):
     if name == 'Vanila':
         attack = VANILA(model, device, *args, **kwargs)
     elif name == 'FGSM':
         attack = FGSM(model, device, *args, **kwargs)
     elif name == 'PGD':
         attack = PGD(model, device, *args, **kwargs)
+    elif name == 'FFGSM':
+        attack = FFGSM(model, device, *args, **kwargs)
 #     elif name == 'BIM':
 #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
 #     elif name == 'CW':
 #         attack = CW(model, mean, std, c=1, kappa=0, steps=500, lr=0.01)
 #     elif name == 'RFGSM':
 #         attack = RFGSM(model, mean, std, eps=8 / 255, alpha=10 / 255, steps=1)
-
-#     elif name == 'FFGSM':
-#         attack = FFGSM(model, mean, std, eps=8 / 255, alpha=10 / 255)
 #     elif name == 'TPGD':
 #         attack = TPGD(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
 #     elif name == 'MIFGSM':

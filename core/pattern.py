@@ -1,4 +1,5 @@
 import numpy as np
+
 from core.utils import *
 from models.blocks import *
 
@@ -31,7 +32,7 @@ def retrieve_output(stored_values):
     return hook
 
 
-def retrieve_pattern(stored_values, Gamma):
+def retrieve_pattern_hook(stored_values, Gamma):
     r"""
     Record the activation pattern of each neuron at this layer
     @param stored_values: recorder
@@ -133,6 +134,14 @@ def get_pattern(input_var, Gamma):
     return pattern
 
 
+def get_similarity(pattern, Gamma):
+    ps = []
+    for i in range(len(Gamma) + 1):
+        ps_i = (pattern == 0).sum(axis=0) / len(pattern)
+        ps.append(ps_i)
+    return np.array(ps)
+
+
 def min_max_pattern(pattern):
     max_pattern = pattern.max(axis=0).astype(int)
     min_pattern = pattern.min(axis=0).astype(int)
@@ -159,26 +168,6 @@ def min_pre_hook(stored_values):
         stored_values.append(input_var)
 
     return hook
-
-
-# def pre_activation_hook(module, )
-
-# def add_hook(model, module_type, hook_type='pre'):
-#     post_activation = {}
-#
-#     handles = []
-#
-#     layer = 0
-#     for name, module in model.model.named_modules():
-#         if type(module) == module_type:
-#             handles += [module.register_forward_hook(set_forward_hook(layer))]
-#             layer += 1
-#
-#     return post_activation, handles
-#
-#
-# def add_hook(model, hook, ):
-#     pass
 
 
 class ModelHook:
@@ -209,7 +198,7 @@ class ModelHook:
                     self.hook(storage[module_name], *self.args, **self.kwargs))
                 )
 
-    def  reset(self):
+    def reset(self):
         for handle in self.handles:
             handle.remove()
         self.stored_values = {}
@@ -312,6 +301,16 @@ def unpack(stored_values):
     return storage
 
 
+def unpack2(stored_values):
+    if type(stored_values) == dict:
+        stored_values = list(stored_values.values())
+
+    for idx, sub in enumerate(stored_values):
+        if type(sub) in [list, dict]:
+            stored_values[idx] = unpack2(sub)
+    return stored_values
+
+
 def list_all(data, storage=None):
     if type(data) == list or type(data) == tuple:
         for d in data:
@@ -322,3 +321,16 @@ def list_all(data, storage=None):
     else:
         storage.append(data)
 
+
+def apd(data, storage, ed=False):
+    unpacked = unpack2(data)
+    if len(storage) == 0:
+        storage.extend(unpacked)
+    else:
+        for storage_block, apd_block in zip(storage, unpacked):
+            for storage_layer, apd_layer in zip(storage_block, apd_block):
+                storage_layer.extend(apd_layer)
+
+    if ed:
+        storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
+    return storage

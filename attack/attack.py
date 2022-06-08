@@ -2,8 +2,9 @@ import torch.nn as nn
 from core.utils import *
 
 
-class Attack(object):
+class Attack(nn.Module):
     def __init__(self, model, device, *args, **kwargs):
+        super().__init__()
         # TODO Temporary solution for multi-device, need modification
         mean = kwargs['mean'] if 'mean' in kwargs.keys() else [0, 0, 0]
         std = kwargs['std'] if 'std' in kwargs.keys() else [1, 1, 1]
@@ -41,8 +42,8 @@ class Normalize(nn.Module):
         self.register_buffer('mean', torch.Tensor(mean))
         self.register_buffer('std', torch.Tensor(std))
 
-    def forward(self, input):
+    def forward(self, images):
         # Broadcasting
         mean = self.mean.reshape(1, self.mean.shape[0], 1, 1)
         std = self.std.reshape(1, self.mean.shape[0], 1, 1)
-        return (input - mean) / std
+        return (images - mean) / std

@@ -1,4 +1,4 @@
-from attacks.attack import *
+from attack.attack import *
 
 
 class FFGSM(Attack):
@@ -7,7 +7,7 @@ class FFGSM(Attack):
         self.eps = eps
         self.alpha = alpha
 
-    def attack(self, images, labels):
+    def forward(self, images, labels):
         r"""
         Overridden.
         """
