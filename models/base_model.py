@@ -162,6 +162,7 @@ class BaseModel(nn.Module):
 
         print(msg)
         print('Triming to {0}'.format(new_size))
+        self.logger.info('Triming to {0}'.format(new_size))
         return
 
     def warmup(self, inf_loader):
