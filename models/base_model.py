@@ -154,8 +154,8 @@ class BaseModel(nn.Module):
 
         self.model.train()
         self.model = self.model.cuda()
-        self.optimizer.param_groups.params.clear()
-        self.optimizer.param_groups.params.append(self.model.parameters())
+        self.optimizer.param_groups[0]['params'].clear()
+        self.optimizer.param_groups[0]['params'].append(self.model.parameters())
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
 
