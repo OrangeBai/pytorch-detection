@@ -47,9 +47,16 @@ def train_model(args):
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
-        train_epoch(args, inf_loader, model, cur_epoch)
+        for cur_step in range(args.epoch_step):
+            images, labels = next(inf_loader)
+            model.train_step(images, labels)
 
-        if cur_epoch % 10 == 0:
+            if cur_step % args.print_every == 0:
+                model.train_logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, inf_loader.metric)
+
+        model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
+        inf_loader.reset()
+        if cur_epoch % 10 == 0 and cur_epoch != 0:
             model.pruning_val(cur_epoch, test_loader)
         else:
             model.validate_model(cur_epoch, test_loader)
@@ -59,14 +66,3 @@ def train_model(args):
     return
 
 
-def train_epoch(args, inf_loader, model, cur_epoch):
-    for cur_step in range(args.epoch_step):
-        images, labels = next(inf_loader)
-        model.train_step(images, labels)
-
-        if cur_step % args.print_every == 0:
-            model.train_logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, inf_loader.metric)
-
-    model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
-    inf_loader.reset()
-    return

@@ -55,7 +55,7 @@ class VGG(nn.Module):
                         layers += [LinearBlock(pre_filters, layer)]
                         pre_filters = layer
                     else:
-                        layers += [LinearBlock(pre_filters, self.num_cls, 'noBatchNorm', **{'activation': None})]
+                        layers += [LinearBlock(pre_filters, self.num_cls, **{'activation': None})]
         setattr(self, 'layers', nn.Sequential(*layers))
 
     def forward(self, x):

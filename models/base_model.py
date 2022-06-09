@@ -140,7 +140,7 @@ class BaseModel(nn.Module):
             if type(m) in [LinearBlock, ConvBlock, BasicBlock, BottleNeck]:
                 cur_block_ps = net_same_all[block_counter]
                 pre_block_ps = net_same_all[block_counter - 1]
-                m, shape = prune_block(m, cur_block_ps, pre_block_ps, 0.95)
+                m, shape = prune_block(m, cur_block_ps, pre_block_ps, 0.98)
                 new_model += [m]
                 new_size += [shape]
                 block_counter += 1
@@ -154,7 +154,9 @@ class BaseModel(nn.Module):
         self.model.train()
         self.model = self.model.cuda()
         self.optimizer = init_optimizer(self.args, self.model)
+        le = self.lr_scheduler.last_epoch
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
+        self.lr_scheduler.last_epoch = le
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
 
@@ -221,6 +223,7 @@ class BaseModel(nn.Module):
 
         self.record_result(epoch)
         self.logger.info(msg)
+        print(msg)
         return
 
     def val_logging(self, epoch):
