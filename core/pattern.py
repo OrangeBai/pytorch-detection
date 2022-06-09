@@ -137,7 +137,7 @@ def get_pattern(input_var, Gamma):
 def get_similarity(pattern, Gamma):
     ps = []
     for i in range(len(Gamma) + 1):
-        ps_i = (pattern == 0).sum(axis=0) / len(pattern)
+        ps_i = (pattern == i).sum(axis=0) / len(pattern)
         ps.append(ps_i)
     return np.array(ps)
 

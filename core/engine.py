@@ -47,18 +47,26 @@ def train_model(args):
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
-        for cur_step in range(args.epoch_step):
-            images, labels = next(inf_loader)
-            model.train_step(images, labels)
+        train_epoch(args, inf_loader, model, cur_epoch)
 
-            if cur_step % args.print_every == 0:
-                model.train_logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, inf_loader.metric)
-
-        model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
-        inf_loader.reset()
-
-        model.pruning_val(cur_epoch, test_loader)
+        if cur_epoch % 10 == 0:
+            model.pruning_val(cur_epoch, test_loader)
+        else:
+            model.validate_model(cur_epoch, test_loader)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
+    return
+
+
+def train_epoch(args, inf_loader, model, cur_epoch):
+    for cur_step in range(args.epoch_step):
+        images, labels = next(inf_loader)
+        model.train_step(images, labels)
+
+        if cur_step % args.print_every == 0:
+            model.train_logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, inf_loader.metric)
+
+    model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
+    inf_loader.reset()
     return

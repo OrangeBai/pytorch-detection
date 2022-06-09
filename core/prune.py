@@ -55,3 +55,10 @@ def prune_block(m, cur_block_ps, pre_ps, ratio=0.95):
         raise TypeError
 
     return m, c
+
+
+def compute_mean(net_mean_all, net_mean, idx):
+    for i, (block_all, block) in enumerate(zip(net_mean_all, net_mean)):
+        for j, (layer_all, layer) in enumerate(zip(block_all, block)):
+            net_mean_all[i][j]= (layer_all * idx + layer) / (idx+1)
+    return net_mean_all
