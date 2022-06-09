@@ -154,9 +154,9 @@ class BaseModel(nn.Module):
         self.model.train()
         self.model = self.model.cuda()
         self.optimizer = init_optimizer(self.args, self.model)
-        le = self.lr_scheduler.last_epoch
+        le = self.lr_scheduler.state_dict()
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
-        self.lr_scheduler._step_count = le
+        self.lr_scheduler.load_state_dict(le)
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
 
