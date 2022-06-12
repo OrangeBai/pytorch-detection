@@ -56,10 +56,10 @@ def train_model(args):
 
         model.epoch_logging(cur_epoch, args.num_epoch, time_metrics=inf_loader.metric)
         inf_loader.reset()
-        if cur_epoch % 10 == 0 and cur_epoch != 0:
-            model.pruning_val(cur_epoch, test_loader)
-        else:
-            model.validate_model(cur_epoch, test_loader)
+        # if cur_epoch % 10 == 0 and cur_epoch != 0:
+        #     model.pruning_val(cur_epoch, test_loader)
+        # else:
+        model.validate_model(cur_epoch, test_loader)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
