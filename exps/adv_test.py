@@ -9,7 +9,7 @@ def avd_test(args):
     model.load_model(args.model_dir)
     model.model.eval()
     _, test_loader = set_loader(args)
-    mean, std = get_mean_std(args)
+    mean, std = set_mean_sed(args)
     atk_fgsm = FGSM(model.model, args.devices[0], eps=2/255, mean=mean, std=std)
 
     metric = MetricLogger()

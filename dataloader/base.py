@@ -29,7 +29,7 @@ def set_single_loaders(args, *labels):
         return dataloader.cifar.get_single_sets(args, *labels)
 
 
-def get_mean_std(args):
+def set_mean_sed(args):
     if args.dataset == 'cifar10':
         mean, std = dataloader.cifar.CIAFR10_MEAN_STD
     elif args.dataset == 'cifar100':
