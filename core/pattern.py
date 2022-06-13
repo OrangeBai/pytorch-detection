@@ -4,172 +4,6 @@ from core.utils import *
 from models.blocks import *
 
 
-def retrieve_input_hook(stored_values):
-    """
-    record input values of the module
-    @param stored_values: recorder
-    @return: activation hook
-    """
-
-    def hook(layer, input_var, output_var):
-        input_var = input_var[0].cpu().detach()
-        stored_values.append(input_var)
-
-    return hook
-
-
-def retrieve_output(stored_values):
-    """
-    record input values of the module
-    @param stored_values: recorder
-    @return: activation hook
-    """
-
-    def hook(layer, input_var, output_var):
-        input_var = output_var.cpu().detach()
-        stored_values.append(input_var)
-
-    return hook
-
-
-def retrieve_pattern_hook(stored_values, Gamma):
-    r"""
-    Record the activation pattern of each neuron at this layer
-    @param stored_values: recorder
-    @param Gamma: A set of breakpoints, for instance,
-                        if Gamma is [0],
-                            the pattern of neuron is recorded as
-                                0 for x_in < 0
-                                1 for x_in > 0
-                        if Gamma is [-1, 1]
-                            the pattern of neuron is recorded as
-                                0 for x_in \in (-\inf, -1)
-                                1 for x_in \in (-1, 1)
-                                2 for x_in \in (1, \inf)
-    @return:
-    """
-
-    def hook(layer, input_var, output_var):
-        input_var = input_var[0].cpu().detach()
-        pattern = get_pattern(input_var, Gamma)
-        stored_values.append(pattern)
-
-    return hook
-
-
-def float_neuron_hook(stored_values, Gamma, sample_size=1):
-    """
-    Compute the float neuron for a batch of data
-    @param stored_values: stored value recorded in the ModelHook Class
-    @param Gamma: Separation
-    @param sample_size: Number of Noisy Samples for an instant
-    @return:    [
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 1)
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 2)
-                    ...,
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance n)
-                ]
-    """
-
-    def hook(layer, input_var, output_var):
-        input_var = input_var[0].cpu().detach()
-        pattern = get_pattern(input_var, Gamma)
-        for i in range(0, len(input_var), sample_size):
-            min_pattern, max_pattern = min_max_pattern(pattern[i: i + sample_size])
-            stored_values.append(min_pattern == max_pattern)
-
-    return hook
-
-
-def lb_ub_hook(stored_values, Gamma, grad_bound, sample_size=1):
-    r"""
-    Compute the upper and lower derivative bound for the pattern
-    @param stored_values: recorder
-    @param Gamma: A set of breakpoints, with len #\Gamma. For instance,
-                        if Gamma is [0],
-                            the pattern of neuron is recorded as
-                                0 for x_in < 0
-                                1 for x_in > 0
-                        if Gamma is [-1, 1]
-                            the pattern of neuron is recorded as
-                                0 for x_in \in (-\inf, -1)
-                                1 for x_in \in (-1, 1)
-                                2 for x_in \in (1, \inf)
-    @param grad_bound: A set of gradient bounds for each activation region with length #\Gamma + 1. For instance,
-                        if activation is ReLU with Gamma=[0]
-                            the grad bound should be [(0,0), (1,1)]
-    @param sample_size: number of samples with noise
-    @return: the bound for each neuron, shape as:
-                [
-                    [[grad_lower_bound], [grad_upper_bound]], (instance_1),
-                    [[grad_lower_bound], [grad_upper_bound]], (instance_2),
-                    ...,
-                    [[grad_lower_bound], [grad_upper_bound]], (instance_n)
-                ]
-    """
-
-    def hook(layer, input_var, output_var):
-        input_var = input_var[0].cpu().detach()
-        pattern = get_pattern(input_var, Gamma)
-        batch_grad = []
-        for i in range(0, len(input_var), sample_size):
-            min_pattern, max_pattern = min_max_pattern(pattern[i: i + sample_size])
-            min_grad, max_grad = np.zeros(min_pattern.shape), np.zeros(max_pattern.shape)
-            for j in range(len(Gamma) + 1):
-                min_grad[min_pattern == j] = grad_bound[j][0]
-                max_grad[max_pattern == j] = grad_bound[j][1]
-            stored_values.append((min_grad, max_grad))
-
-    return hook
-
-
-def get_pattern(input_var, Gamma):
-    pattern = np.zeros(input_var.shape)
-    num_of_pattern = len(Gamma)
-    pattern[input_var < Gamma[0]] = 0
-    pattern[input_var > Gamma[-1]] = num_of_pattern
-    for i in range(1, num_of_pattern):
-        valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
-        pattern[valid] = i
-    return pattern
-
-
-def get_similarity(pattern, Gamma):
-    ps = []
-    for i in range(len(Gamma) + 1):
-        ps_i = (pattern == i).sum(axis=0) / len(pattern)
-        ps.append(ps_i)
-    return np.array(ps)
-
-
-def min_max_pattern(pattern):
-    max_pattern = pattern.max(axis=0).astype(int)
-    min_pattern = pattern.min(axis=0).astype(int)
-    return min_pattern, max_pattern
-
-
-def retrieve_fc_max(module_name, stored_value):
-    pass
-
-
-def min_pre_hook(stored_values):
-    """
-    Compute the float neuron for a batch of data
-    @param stored_values: stored value recorded in the ModelHook Class
-    @return:    [
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 1)
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance 2)
-                    ...,
-                    [neuron_1_state, neuron_2_state, ..., nueron_n_state], (for instance n)
-                ]
-    """
-
-    def hook(layer, input_var, output_var):
-        stored_values.append(input_var)
-
-    return hook
-
-
 class ModelHook:
     def __init__(self, model, hook, *args, **kwargs):
         self.model = model
@@ -213,102 +47,132 @@ class ModelHook:
         return res
 
 
-def reformat_pattern(pattern):
+def input_hook(stored_values):
+    """
+    record input values of the module
+    @param stored_values: recorder
+    @return: activation hook
+    """
+
+    def hook(layer, input_var, output_var):
+        input_var = input_var[0].cpu().detach()
+        stored_values.append(input_var)
+
+    return hook
+
+
+def output_hook(stored_values):
+    """
+    record input values of the module
+    @param stored_values: recorder
+    @return: activation hook
+    """
+
+    def hook(layer, input_var, output_var):
+        input_var = output_var.cpu().detach()
+        stored_values.append(input_var)
+
+    return hook
+
+
+def pattern_hook(stored_values, Gamma):
     r"""
-    Reformat the activation pattern. forward hook to instance-wise
-    @param pattern: Activation pattern recorded from forward hook function, format as:
-            {layer_1: [[batch_1, neurons], [batch_2, neurons], ... [batch_n, neurons]]}
-    @return: instance-wise activation pattern, format as:
-            {instance_1: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
-            instance_2: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
-            ...,
-            instance_n: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}]}
-    """
-    for name, layer in pattern.items():
-        pattern[name] = np.row_stack(layer)
-    num_of_instance = len(pattern[list(pattern.keys())[0]])
-    for name, layer in pattern.items():
-        assert len(layer) == num_of_instance
-
-    reformatted_pattern = dict.fromkeys(range(num_of_instance), {})
-    for name, layer in pattern.items():
-        for idx, instance in enumerate(layer):
-            reformatted_pattern[idx][name] = instance
-    return reformatted_pattern
-
-
-def retrieve_float_neurons(pattern, Gamma):
-    """
-    calculate the float neurons of given pattern
-    @param pattern:
+    Record the activation pattern of each neuron at this layer
+    @param stored_values: recorder
+    @param Gamma: A set of breakpoints, for instance,
+                        if Gamma is [0],
+                            the pattern of neuron is recorded as
+                                0 for x_in < 0
+                                1 for x_in > 0
+                        if Gamma is [-1, 1]
+                            the pattern of neuron is recorded as
+                                0 for x_in \in (-\inf, -1)
+                                1 for x_in \in (-1, 1)
+                                2 for x_in \in (1, \inf)
     @return:
     """
-    # TODO optimization
-    all_p = []
-    for idx, layer in pattern.items():
-        stacked_patterns = np.array(layer)
-        layer_pattern = []
-        for i in range(stacked_patterns.shape[1]):
-            instance_pattern = -1 * np.ones((stacked_patterns.shape[-1]))
-            p = get_pattern(stacked_patterns[:, i, :], Gamma)
-            for j in range(len(Gamma) + 1):
-                instance_pattern[np.where(np.all((p == j), axis=0))] = j
-            layer_pattern.append(instance_pattern)
-        all_p.append(layer_pattern)
 
-        # float_neurons[name] = np.all(stacked_patterns, axis=0)
-    return np.array(all_p)
+    def hook(layer, input_var, output_var):
+        input_var = input_var[0].cpu().detach()
+        pattern = get_pattern(input_var, Gamma)
+        stored_values.append(pattern)
+
+    return hook
 
 
-# def add_noise(x, batch_size, mean, std, epsilon=0.5):
-#     """
-#
-#     @param x:
-#     @param batch_size:
-#     @param epsilon:
-#     @return:
-#     """
-#     mean, std = mean_std
-#     data_noise = torch.sign(torch.randn((batch_size,) + x.shape))
-#     # rand_var = torch.randn((batch_size,) + x.shape)
-#     # flatten_var = torch.nn.Flatten()(rand_var)
-#     # norm = torch.linalg.norm(flatten_var, dim=1, keepdim=True)
-#     # standardized_noise = flatten_var.div(norm.expand_as(flatten_var))
-#     # data_noise = torch.reshape(standardized_noise, (batch_size,) + x.shape)
-#     data_noise[0] = 0
-#     x = x + data_noise * epsilon
-#     return x
+def get_pattern(input_var, Gamma):
+    pattern = np.zeros(input_var.shape)
+    num_of_pattern = len(Gamma)
+    pattern[input_var < Gamma[0]] = 0
+    pattern[input_var > Gamma[-1]] = num_of_pattern
+    for i in range(1, num_of_pattern):
+        valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
+        pattern[valid] = i
+    return pattern
 
-def aggregate(stored_values):
-    pass
+
+def get_similarity(pattern, Gamma):
+    ps = []
+    for i in range(len(Gamma) + 1):
+        ps_i = (pattern == i).sum(axis=0) / len(pattern)
+        ps.append(ps_i)
+    return np.array(ps)
+
+
+def min_max_pattern(pattern, mode='min'):
+    if mode == 'min':
+        return pattern.min(axis=0).astype(int)
+    else:
+        return pattern.max(axis=0).astype(int)
+
 
 
 def unpack(stored_values):
+    unpacked = [[np.concatenate(layer)] if type(layer[0]) == np.ndarray else torch.concat(layer)
+                for block in stored_values.values() for layer in block.values()]
+    return unpacked
+
+
+def retrieve_float_neurons(stored_values, sample_size):
     """
-    Remove Layer Name
-    @param stored_values: Stored value from Model hook,
-    @return: list shape of :
-            [
-                (layer_1) [[instance_1], [instance_2],... ,[instance_n]],
-                (layer_2) [[instance_1], [instance_2],... ,[instance_n]],
-                ...,
-                (layer_n) [[instance_1], [instance_2],... ,[instance_n]],
-            ]
+    calculate the float neurons of given pattern
+    @param stored_values: stored value from ModelHook
+    @param sample_size: size of noised samples for each input
+    @return:
     """
-    storage = []
-    for key, val in stored_values.items():
-        storage.append(val)
-    return storage
+    unpacked = unpack(stored_values)
+    return [[[[np.all(layer[i: i + sample_size], axis=0) for i in range(0, len(layer), sample_size)] for layer in block]
+             for block in unpacked]]
 
 
-def unpack2(stored_values):
-    if type(stored_values) == dict:
-        stored_values = list(stored_values.values())
+def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
+    r"""
+    Compute the upper and lower derivative bound for the pattern
+    @param stored_values: recorder
+    @param grad_bound: A set of gradient bounds for each activation region with length #\Gamma + 1. For instance,
+                        if activation is ReLU with Gamma=[0]
+                            the grad bound should be [(0,0), (1,1)]
+    @param sample_size: number of samples with noise
+    @return: the bound for each neuron, shape as:
+                [
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_1),
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_2),
+                    ...,
+                    [[grad_lower_bound], [grad_upper_bound]], (instance_n)
+                ]
+    """
 
-    for idx, sub in enumerate(stored_values):
-        if type(sub) in [list, dict]:
-            stored_values[idx] = unpack2(sub)
-    return stored_values
+    unpacked = unpack(stored_values)
+
+    max_lambda = np.vectorize(lambda x: grad_bound[x][1])
+    min_lambda = np.vectorize(lambda x: grad_bound[x][0])
+
+    lb = [[[min_lambda(min_max_pattern(layer[i: i + sample_size], 'min'))
+            for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
+
+    ub = [[[max_lambda(min_max_pattern(layer[i: i + sample_size], 'max'))
+            for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
+    return lb, ub
 
 
 def list_all(data, storage=None):
@@ -323,7 +187,7 @@ def list_all(data, storage=None):
 
 
 def apd(data, storage, ed=False):
-    unpacked = unpack2(data)
+    unpacked = unpack(data)
     if len(storage) == 0:
         storage.extend(unpacked)
     else:
@@ -334,3 +198,28 @@ def apd(data, storage, ed=False):
     if ed:
         storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
     return storage
+
+
+
+# def reformat_pattern(pattern):
+#     r"""
+#     Reformat the activation pattern. forward hook to instance-wise
+#     @param pattern: Activation pattern recorded from forward hook function, format as:
+#             {layer_1: [[batch_1, neurons], [batch_2, neurons], ... [batch_n, neurons]]}
+#     @return: instance-wise activation pattern, format as:
+#             {instance_1: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
+#             instance_2: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
+#             ...,
+#             instance_n: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}]}
+#     """
+#     for name, layer in pattern.items():
+#         pattern[name] = np.row_stack(layer)
+#     num_of_instance = len(pattern[list(pattern.keys())[0]])
+#     for name, layer in pattern.items():
+#         assert len(layer) == num_of_instance
+#
+#     reformatted_pattern = dict.fromkeys(range(num_of_instance), {})
+#     for name, layer in pattern.items():
+#         for idx, instance in enumerate(layer):
+#             reformatted_pattern[idx][name] = instance
+#     return reformatted_pattern

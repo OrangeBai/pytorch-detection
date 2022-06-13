@@ -6,16 +6,15 @@ from attack import *
 from Lip.utils import *
 
 if __name__ == '__main__':
-    args = set_up_testing('aplip')
+    argv = ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
+    args = set_up_testing('aplip', argv)
     model = BaseModel(args)
     model.load_model(args.model_dir)
     train_loader, test_loader = set_loader(args)
     # TODO refactor noise module
     noise_attack = Noise(model.model, args.devices[0], args.epsilon[0], mean=(0.5,), std=(1,))
 
-    float_hook = ModelHook(model.model, hook=float_neuron_hook, Gamma=[0], sample_size=args.sample_size)
-    ub_lb_hook = ModelHook(model.model, hook=lb_ub_hook, Gamma=[0],
-                           grad_bound=[(0, 0), (1, 1)], sample_size=args.sample_size)
+    float_hook = ModelHook(model.model, hook=pattern_hook, Gamma=[0])
     # Record all the weight matrix
 
     block_weights, block_types = record_blocks(model)
@@ -28,20 +27,20 @@ if __name__ == '__main__':
         noise_img.require_grad = True
 
         a = model.model(noise_img)
-        cur_lb_ub = ub_lb_hook.retrieve_res(unpack)
-        cur_float = float_hook.retrieve_res(unpack)
+        cur_lb_ub = float_hook.retrieve_res(retrieve_lb_ub, reset=False, grad_bound=[(0,0), (1,1)], sample_size=64)
+        cur_float = float_hook.retrieve_res(retrieve_float_neurons, reset=True, sample_size=64, )
         if args.net == 'dnn':
             loc_jac = compute_jac(cur_lb_ub, block_weights, block_types, batch_size=args.batch_size)
             loc_lip = [svd(jac)[1][0] for jac in loc_jac]
         else:
             loc_lip = np.ones(args.batch_size)
 
-        r = np.ones(args.batch_size)
-        linear_counter = 0
-        for block_weight, block_type, block_float in zip(block_weights[:-1], block_types[:-1], cur_float[:-1]):
-            r *= amplify_ratio(block_float, block_weight, block_type)
-        ub_lb_hook.reset()
-        float_hook.reset()
+        # r = np.ones(args.batch_size)
+        # linear_counter = 0
+        # for block_weight, block_type, block_float in zip(block_weights[:-1], block_types[:-1], cur_float[:-1]):
+        #     r *= amplify_ratio(block_float, block_weight, block_type)
+        # ub_lb_hook.reset()
+        # float_hook.reset()
 
         est = loc_lip * r
         avg += [est]

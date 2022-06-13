@@ -117,7 +117,7 @@ class BaseModel(nn.Module):
     def pruning_val(self, epoch, test_loader):
         start = time.time()
         self.model.eval()
-        ap_hook = ModelHook(self.model, retrieve_input_hook)
+        ap_hook = ModelHook(self.model, input_hook)
         metric = MetricLogger()
         storage = []
         net_same_all = []
@@ -125,7 +125,7 @@ class BaseModel(nn.Module):
             images, labels = to_device(self.args.devices[0], images, labels)
             pre_ori = self.model(images)
             top1, top5 = accuracy(pre_ori, labels)
-            unpacked = ap_hook.retrieve_res(unpack2)
+            unpacked = ap_hook.retrieve_res(unpack)
             metric.update(top1_avd=(top1, self.args.batch_size), top5_adv=(top5, self.args.batch_size))
             if idx == 0:
                 net_same_all = find_dead_neuron(unpacked, [0])

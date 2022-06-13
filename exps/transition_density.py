@@ -9,7 +9,7 @@ def cal_td(args):
     model = BaseModel(args)
     model.load_model(args.model_dir)
     model.model.eval()
-    pattern_hook = ModelHook(model.model, retrieve_pattern_hook, Gamma=[0])
+    pattern_hook = ModelHook(model.model, pattern_hook, Gamma=[0])
     loaders = set_single_loaders(args, *[1, 2, 3])
     for data_idx, (x, y, z) in enumerate(zip(*loaders)):
         if data_idx == args.num_test:
@@ -18,9 +18,9 @@ def cal_td(args):
         cks = [torch.concat(line_data[i:i + args.pre_batch], dim=0) for i in range(0, len(line_data), args.pre_batch)]
         for batch_idx, ck in enumerate(cks):
             pre = model.model(ck.cuda())
-
-        pattern_id = pattern_hook.retrieve_res(unpack)
-        pattern_id = [np.concatenate(val, axis=0) for block in pattern_id for val in block.values()]
+            if batch_idx > 10:
+                break
+        pattern_id = pattern_hook.retrieve_res(unpack, reset=False)
 
         td_lst = []
         for layer_idx, layer in enumerate(pattern_id):
