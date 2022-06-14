@@ -51,7 +51,6 @@ class ArgParser:
         self.parser.add_argument('--config', default=None)
         self.parser.add_argument('--prune_ratio', default=0.95)
 
-
         # dataset and experiments
         self.parser.add_argument('--dataset', default='cifar100', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)

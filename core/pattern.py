@@ -47,7 +47,7 @@ class ModelHook:
         return res
 
 
-def input_hook(stored_values):
+def set_input_hook(stored_values):
     """
     record input values of the module
     @param stored_values: recorder
@@ -61,7 +61,7 @@ def input_hook(stored_values):
     return hook
 
 
-def output_hook(stored_values):
+def set_output_hook(stored_values):
     """
     record input values of the module
     @param stored_values: recorder
@@ -75,7 +75,7 @@ def output_hook(stored_values):
     return hook
 
 
-def pattern_hook(stored_values, Gamma):
+def set_pattern_hook(stored_values, Gamma):
     r"""
     Record the activation pattern of each neuron at this layer
     @param stored_values: recorder
@@ -124,7 +124,6 @@ def min_max_pattern(pattern, mode='min'):
         return pattern.min(axis=0).astype(int)
     else:
         return pattern.max(axis=0).astype(int)
-
 
 
 def unpack(stored_values):
@@ -198,8 +197,6 @@ def apd(data, storage, ed=False):
     if ed:
         storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
     return storage
-
-
 
 # def reformat_pattern(pattern):
 #     r"""

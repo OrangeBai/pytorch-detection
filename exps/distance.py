@@ -3,12 +3,14 @@ import torch
 from settings.test_setting import *
 from models.base_model import *
 from exps.utils import *
+
+
 if __name__ == '__main__':
     args = set_up_testing()
     model = BaseModel(args)
     model.load_model(args.model_dir)
     model.model.eval()
-    pattern_hook = ModelHook(model.model, input_hook)
+    pattern_hook = ModelHook(model.model, set_input_hook)
     train_loader, test_loader = set_loader(args)
     td = np.zeros((10, 5120))
     for data, label in test_loader:

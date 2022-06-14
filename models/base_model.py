@@ -117,7 +117,7 @@ class BaseModel(nn.Module):
     def pruning_val(self, epoch, test_loader):
         start = time.time()
         self.model.eval()
-        ap_hook = ModelHook(self.model, input_hook)
+        ap_hook = ModelHook(self.model, set_input_hook)
         metric = MetricLogger()
         storage = []
         net_same_all = []

@@ -1,36 +1,41 @@
-from models.base_model import *
+from exps.non_returnable import *
 from settings.test_setting import *
+from plt.non_returnable import *
 
 if __name__ == '__main__':
-    argv = ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
-    args = set_up_testing('normal', argv)
+    argv = ['--exp_id', 'normal', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
+    args = set_up_testing('td', argv)
     model = BaseModel(args)
     model.load_model(args.model_dir)
     model.model.eval()
 
+    # res = non_returnable_boundary(model, args)
+    plot(args)
 
-    _, test_loader = set_loader(args)
-    model = BaseModel(args)
-    model.load_model(args.model_dir)
-    ap_hook = ModelHook(model.model, output_hook)
-    mean, std = set_mean_sed(args)
-    noise = Noise(model.model, args.devices[0], 4 / 255, mean=mean, std=std)
-    pattern_hook = ModelHook(model.model, input_hook)
-    model.model.eval()
-
-    layer_i = model.model()
-
-    for idx, (images, labels) in enumerate(test_loader):
-        images, labels = to_device(args.devices[0], images, labels)
-        batch_images = noise.attack(images, 256, device=args.devices[0])
-        pre = model.model(batch_images)
-        d = ap_hook.retrieve_res(unpack)
-        w = to_numpy(model.model.layers[0].Conv.weight)
-        pattern = pattern_hook.retrieve_res(unpack)
-        # for i in range(64):
-        #     for j in range(3):
-        #         f = np.fft.fft2(w[i, j])
-        #         p = f.t * w[i, j] * f
+    #
+    #
+    # _, test_loader = set_loader(args)
+    # model = BaseModel(args)
+    # model.load_model(args.model_dir)
+    # ap_hook = ModelHook(model.model, output_hook)
+    # mean, std = set_mean_sed(args)
+    # noise = Noise(model.model, args.devices[0], 4 / 255, mean=mean, std=std)
+    # pattern_hook = ModelHook(model.model, input_hook)
+    # model.model.eval()
+    #
+    # layer_i = model.model()
+    #
+    # for idx, (images, labels) in enumerate(test_loader):
+    #     images, labels = to_device(args.devices[0], images, labels)
+    #     batch_images = noise.attack(images, 256, device=args.devices[0])
+    #     pre = model.model(batch_images)
+    #     d = ap_hook.retrieve_res(unpack)
+    #     w = to_numpy(model.model.layers[0].Conv.weight)
+    #     pattern = pattern_hook.retrieve_res(unpack)
+    # for i in range(64):
+    #     for j in range(3):
+    #         f = np.fft.fft2(w[i, j])
+    #         p = f.t * w[i, j] * f
 
     # argv = ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '128', '--net', 'vgg16', '--dataset', 'cifar100']
     # res = []

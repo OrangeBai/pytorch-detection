@@ -15,6 +15,10 @@ def set_up_testing(test_name='normal', argv=None):
     else:
         raise NameError('test name {0} not found'.format(test_name))
 
+    exp_path = os.path.join(parser.parse_args().model_dir, 'exp')
+    if not os.path.exists(exp_path):
+        os.makedirs(exp_path)
+    parser.add_argument('--exp_path', default=exp_path, type=str)
     return parser.parse_args(args)
 
 
@@ -28,5 +32,12 @@ def ap_lip(parser):
 def td(parser):
     parser.add_argument('--line_breaks', default=2048, type=int)
     parser.add_argument('--num_test', default=100, type=int)
+    parser.add_argument('--pre_batch', default=512)
+    return parser
+
+
+def non_ret(parser):
+    parser.add_argument('--num_test', default=100, type=int)
+    parser.add_argument('--line_breaks', default=2048, type=int)
     parser.add_argument('--pre_batch', default=512)
     return parser

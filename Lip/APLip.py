@@ -14,7 +14,7 @@ if __name__ == '__main__':
     # TODO refactor noise module
     noise_attack = Noise(model.model, args.devices[0], args.epsilon[0], mean=(0.5,), std=(1,))
 
-    float_hook = ModelHook(model.model, hook=pattern_hook, Gamma=[0])
+    float_hook = ModelHook(model.model, hook=set_pattern_hook, Gamma=[0])
     # Record all the weight matrix
 
     block_weights, block_types = record_blocks(model)
