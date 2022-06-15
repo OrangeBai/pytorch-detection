@@ -1,5 +1,7 @@
 from core.engine import *
 from settings.train_settings import *
+import numpy as np
+
 
 if __name__ == '__main__':
     arg_parser = ArgParser(True)

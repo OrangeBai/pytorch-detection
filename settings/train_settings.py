@@ -134,10 +134,9 @@ class ArgParser:
             self.parser.add_argument('--input_size', default=784, type=int)
             self.parser.add_argument('--width', default=1000, type=int)
             self.parser.add_argument('--depth', default=9, type=int)
-        elif args.dataset.lower() in ['cifar10', 'cifar100']:
-            self.parser.set_defaults(model_type='mini')
-        else:
+        elif 'cxfy' in args.net.lower():
             self.parser.set_defaults(model_type='net')
+            self.parser.add_argument('--shape', default='large', type=str)
         return
 
     def dataset(self):
@@ -146,10 +145,13 @@ class ArgParser:
             self.parser.add_argument('--num_cls', default=10)
         elif args.dataset.lower() == 'cifar10':
             self.parser.add_argument('--num_cls', default=10)
+            self.parser.set_defaults(model_type='mini')
         elif args.dataset.lower() == 'cifar100':
             self.parser.add_argument('--num_cls', default=100)
+            self.parser.set_defaults(model_type='mini')
         elif args.dataset.lower() == 'imagenet':
             self.parser.add_argument('--num_cls', default=1000)
+            self.parser.set_defaults(model_type='net')
         return
 
     def devices(self):

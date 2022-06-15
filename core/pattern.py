@@ -17,7 +17,7 @@ class ModelHook:
         self.set_up()
 
     def set_up(self):
-        self.reset()
+        self.remove()
         for module_name, block in self.model.named_modules():
             if type(block) in [LinearBlock, ConvBlock, BottleNeck, BasicBlock]:
                 self.stored_values[module_name] = {}
@@ -32,16 +32,19 @@ class ModelHook:
                     self.hook(storage[module_name], *self.args, **self.kwargs))
                 )
 
-    def reset(self):
+    def remove(self):
         for handle in self.handles:
             handle.remove()
         self.stored_values = {}
 
-    def retrieve_res(self, fun=None, reset=True, *args, **kwargs):
+    def retrieve_res(self, fun=None, reset=True, remove=False, *args, **kwargs):
         if fun is not None:
             res = fun(self.stored_values, *args, **kwargs)
         else:
             res = self.stored_values
+        if remove:
+            self.remove()
+            return res
         if reset:
             self.set_up()
         return res

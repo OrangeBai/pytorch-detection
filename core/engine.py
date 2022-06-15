@@ -1,8 +1,9 @@
-import time
-from core.utils import SmoothedValue
 import logging
+
+from attack import *
+from core.pattern import *
+from dataloader.base import *
 from models import *
-from settings.train_settings import *
 
 
 class InfiniteLoader:
@@ -49,8 +50,9 @@ def train_model(args):
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
-            model.train_step(images, labels)
 
+            # model.train_step(images, labels)
+            cert_train_step(model, images, labels)
             if cur_step % args.print_every == 0:
                 model.train_logging(cur_step, args.epoch_step, cur_epoch, args.num_epoch, inf_loader.metric)
 
@@ -66,3 +68,45 @@ def train_model(args):
     return
 
 
+def train_step(model, images, labels):
+    images, labels = to_device(model.args.devices[0], images, labels)
+    model.optimizer.zero_grad()
+    outputs = model.model(images)
+    loss = model.loss_function(outputs, labels)
+    loss.backward()
+    model.optimizer.step()
+    model.lr_scheduler.step()
+    top1, top5 = accuracy(outputs, labels)
+    model.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
+                         lr=(model.optimizer.param_groups[0]['lr'], 1))
+    model.metrics.synchronize_between_processes()
+    return
+
+
+def cert_train_step(model, images, labels):
+    images, labels = to_device(model.args.devices[0], images, labels)
+    mean, std = set_mean_sed(model.args)
+
+    noise_attack = Noise(model.model, model.args.devices[0], 4 / 255, mean=mean, std=std)
+    lip = LipAttack(model.model, model.args.devices[0], eps=1 / 255, mean=mean, std=std)
+
+    # float_hook = ModelHook(model, set_pattern_hook, Gamma=[0])
+    # noised_sample = noise_attack.attack(images, 8, model.args.devices[0])
+    # model.model(noised_sample)
+    # float_hook.retrieve_res(retrieve_float_neurons, remove=True, sample_size=64)
+
+    perturbation = lip.attack(images, labels)
+    certified_res = (model.model(images + perturbation) - model.model(images)) * 10
+    aa = (1 - torch.nn.functional.one_hot(labels)).mul(certified_res).abs()
+
+    outputs = model.model(images)
+    loss = model.loss_function(outputs + aa.abs(), labels)
+    loss.backward()
+    model.optimizer.step()
+    model.lr_scheduler.step()
+
+    top1, top5 = accuracy(outputs, labels)
+    model.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
+                         lr=(model.optimizer.param_groups[0]['lr'], 1))
+    model.metrics.synchronize_between_processes()
+    return

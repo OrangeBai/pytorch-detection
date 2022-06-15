@@ -3,6 +3,7 @@ from attack.pgd import PGD
 from attack.vanila import *
 from attack.noise import *
 from attack.ffgsm import FFGSM
+from attack.Lip import LipAttack
 # from .pgddlr import PGDDLR
 # from .rfgsm import RFGSM
 # from .apgd import APGD

@@ -74,20 +74,6 @@ class BaseModel(nn.Module):
             res_path = os.path.join(path, 'result_{}'.format(name))
         np.save(res_path, self.result)
 
-    def train_step(self, images, labels):
-        images, labels = to_device(self.args.devices[0], images, labels)
-        self.optimizer.zero_grad()
-        outputs = self.model(images)
-        loss = self.loss_function(outputs, labels)
-        loss.backward()
-        self.optimizer.step()
-        self.lr_scheduler.step()
-        top1, top5 = accuracy(outputs, labels)
-        self.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
-                            lr=(self.optimizer.param_groups[0]['lr'], 1))
-        self.metrics.synchronize_between_processes()
-        return
-
     def record_result(self, epoch, mode='train'):
 
         epoch_result = {}
@@ -240,13 +226,14 @@ def build_model(args):
     else:
         model_file_name = "models." + "net"
         modules = importlib.import_module(model_file_name)
-        for name, cls in modules.__dict__.items():
-            if name.lower() in args.net.lower():
-                model = cls
+        model = modules.set_model(args)
+        # for name, cls in modules.__dict__.items():
+        #     if name.lower() in args.net.lower():
+        #         model = cls
 
     if model is None:
         print("In %s.py, there should be a subclass of BaseModel with class name that matches %s in lowercase." % (
             model_file_name, args.net))
         exit(0)
     else:
-        return to_device(args.devices[0], model(args))[0]
+        return to_device(args.devices[0], model)[0]

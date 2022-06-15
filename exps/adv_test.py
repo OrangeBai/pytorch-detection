@@ -19,6 +19,7 @@ def avd_test(args):
         pre_ori = model.model(images)
         pre_adv = model.model(adv_images)
 
+
         top1, top5 = accuracy(pre_ori, labels)
         metric.update(top1=(top1, args.batch_size), top5=(top5, args.batch_size))
 
