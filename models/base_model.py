@@ -82,8 +82,6 @@ class BaseModel(nn.Module):
         loss.backward()
         self.optimizer.step()
         self.lr_scheduler.step()
-
-
         top1, top5 = accuracy(outputs, labels)
         self.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
                             lr=(self.optimizer.param_groups[0]['lr'], 1))
