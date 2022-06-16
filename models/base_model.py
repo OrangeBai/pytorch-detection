@@ -94,6 +94,7 @@ class BaseModel(nn.Module):
 
         self.model.train()
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+
         self.logger.info(msg)
         print(msg)
         return
@@ -146,21 +147,6 @@ class BaseModel(nn.Module):
         print(msg)
         print('Triming to {0}'.format(new_size))
         self.logger.info('Triming to {0}'.format(new_size))
-        return
-
-    def warmup(self, inf_loader):
-        self.lr_scheduler = warmup_scheduler(self.args, self.optimizer)
-        for cur_step in range(self.args.warmup_steps):
-            images, labels = next(inf_loader)
-            images, labels = to_device(self.args.devices[0], images, labels)
-            self.train_step(images, labels)
-            if cur_step % self.args.print_every == 0:
-                self.train_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, inf_loader.metric)
-
-            if cur_step >= self.args.warmup_steps:
-                break
-        self.optimizer = init_optimizer(self.args, self.model)
-        self.lr_scheduler = init_scheduler(self.args, self.optimizer)
         return
 
     def train_logging(self, step, batch_num, epoch, epoch_num, time_metrics=None):
