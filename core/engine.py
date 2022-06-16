@@ -63,7 +63,7 @@ def train_model(args):
         # if cur_epoch % 10 == 0 and cur_epoch != 0:
         #     model.pruning_val(cur_epoch, test_loader)
         # else:
-        validate_model(model, -1, test_loader, True, alpha=2 / 255, eps=4 / 255, restarts=2)
+        validate_model(model, -1, test_loader, True, alpha=2 / 255, eps=4 / 255, steps=7)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
@@ -137,7 +137,7 @@ def validate_model(model, epoch, test_loader, robust=False, *args, **kwargs):
     model.model.eval()
     if robust:
         fgsm = set_attack(model, 'FGSM', model.args.devices[0], *args, **kwargs)
-        pgd = set_attack(model, 'pgd', model.args.devices[0], *args, **kwargs)
+        pgd = set_attack(model, 'PGD', model.args.devices[0], *args, **kwargs)
     for images, labels in test_loader:
         images, labels = to_device(model.args.devices[0], images, labels)
         pred = model.model(images)
