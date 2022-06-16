@@ -101,7 +101,7 @@ def cert_train_step(model, images, labels):
 
     perturbation = lip.attack(images, labels)
     outputs = model.model(images)
-    certified_res = (model.model(images + perturbation) - outputs) * 30
+    certified_res = (model.model(images + perturbation) - outputs) * 15
     aa = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs()
 
     loss = model.loss_function(outputs + aa, labels)
