@@ -18,7 +18,7 @@ class BaseModel(nn.Module):
         self.model = build_model(args)
         self.optimizer = init_optimizer(args, self.model)
         self.lr_scheduler = init_scheduler(args, self.optimizer)
-        self.loss_function = self.set_loss()
+        self.loss_function = init_loss(args)
 
         self.result = {'train': dict(), 'test': dict()}
         self.metrics = MetricLogger()
@@ -35,10 +35,8 @@ class BaseModel(nn.Module):
         if args.resume:
             self.load_model(args.model_dir, args.resume_name)
 
-    @staticmethod
-    def set_loss():
-        # TODO add more losses
-        return nn.CrossEntropyLoss()
+    def forward(self, x):
+        return self.model(x)
 
     def save_model(self, path, name=None):
         if not name:

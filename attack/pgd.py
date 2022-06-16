@@ -3,16 +3,16 @@ from torch.nn import functional as F
 
 
 class PGD(Attack):
-    def __init__(self, model, eps, alpha, steps=10, restarts=2, *args, **kwargs):
-        super(PGD, self).__init__("PGD", model, *args, **kwargs)
+    def __init__(self, model, device, steps=10,  *args, **kwargs):
+        super(PGD, self).__init__("PGD", model, device, *args, **kwargs)
         self.eps = kwargs['eps'] if 'eps' in kwargs.items() else 8 / 255
         self.alpha = kwargs['alpha'] if 'alpha' in kwargs.items() else 2 / 255
         self.steps = kwargs['steps'] if 'steps' in kwargs.items() else 7
         self.restarts = kwargs['restarts'] if 'restarts' in kwargs.items() else False
 
-    def attack(self, images, labels, random_start=True):
-        images = images.clone().detach().cuda()
-        labels = labels.clone().detach().cuda()
+    def attack(self, images, labels):
+        images = to_device(self.device, images.clone().detach())[0]
+        labels = to_device(self.device, labels.clone().detach())[0]
         images = self._reverse_norm(images)
         loss_fn = nn.CrossEntropyLoss()
 

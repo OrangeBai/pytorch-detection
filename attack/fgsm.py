@@ -7,9 +7,9 @@ class FGSM(Attack):
         super(FGSM, self).__init__(model, device, *args, **kwargs)
         self.eps = kwargs['eps'] if 'eps' in kwargs.keys() else 8 / 255
 
-    def attack(self, images, labels, random_start=True, device=None):
-        images = to_device(device, images.clone().detach())[0]
-        labels = to_device(device, labels.clone().detach())[0]
+    def attack(self, images, labels):
+        images = to_device(self.device, images.clone().detach())[0]
+        labels = to_device(self.device, labels.clone().detach())[0]
         images = self._reverse_norm(images)  # from normalized to (0,1)
 
         loss = nn.CrossEntropyLoss()

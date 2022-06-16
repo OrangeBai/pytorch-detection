@@ -1,7 +1,8 @@
 import logging
 
+from torch.nn.functional import one_hot
+
 from attack import *
-from core.pattern import *
 from dataloader.base import *
 from models import *
 
@@ -45,6 +46,7 @@ def train_model(args):
 
     model = BaseModel(args)
     logging.info(warmup(model, InfiniteLoader(train_loader)))
+    validate_model(model, -1, test_loader, True, alpha=2/255, eps=4/255, restart=2)
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
@@ -61,7 +63,7 @@ def train_model(args):
         # if cur_epoch % 10 == 0 and cur_epoch != 0:
         #     model.pruning_val(cur_epoch, test_loader)
         # else:
-        model.validate_model(cur_epoch, test_loader)
+        validate_model(model, -1, test_loader, True, alpha=2 / 255, eps=4 / 255, restarts=2)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
@@ -71,7 +73,7 @@ def train_model(args):
 def train_step(model, images, labels):
     images, labels = to_device(model.args.devices[0], images, labels)
     model.optimizer.zero_grad()
-    outputs = model.model(images)
+    outputs = model(images)
     loss = model.loss_function(outputs, labels)
     loss.backward()
     model.optimizer.step()
@@ -95,12 +97,12 @@ def cert_train_step(model, images, labels):
     # float_hook = ModelHook(model, set_pattern_hook, Gamma=[0])
     # noised_sample = noise_attack.attack(images, 8, model.args.devices[0])
     # model.model(noised_sample)
-    # float_hook.retrieve_res(retrieve_float_neurons, remove=True, sample_size=64)
+    # float_neurons = float_hook.retrieve_res(retrieve_lb_ub, remove=True, sample_size=64)
 
     perturbation = lip.attack(images, labels)
     outputs = model.model(images)
     certified_res = (model.model(images + perturbation) - outputs) * 30
-    aa = (1 - torch.nn.functional.one_hot(labels)).mul(certified_res).abs()
+    aa = (1 - one_hot(labels)).mul(certified_res).abs()
 
     loss = model.loss_function(outputs + aa, labels)
     loss.backward()
@@ -127,4 +129,33 @@ def warmup(model, inf_loader):
             break
     model.optimizer = init_optimizer(model.args, model.model)
     model.lr_scheduler = init_scheduler(model.args, model.optimizer)
+    return
+
+
+def validate_model(model, epoch, test_loader, robust=False, *args, **kwargs):
+    start = time.time()
+    model.model.eval()
+    if robust:
+        fgsm = set_attack(model, 'FGSM', model.args.devices[0], *args, **kwargs)
+        pgd = set_attack(model, 'pgd', model.args.devices[0], *args, **kwargs)
+    for images, labels in test_loader:
+        images, labels = to_device(model.args.devices[0], images, labels)
+        pred = model.model(images)
+        top1, top5 = accuracy(pred, labels)
+        model.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)))
+        if robust:
+            adv = fgsm.attack(images, labels)
+            pred_adv = model.model(adv)
+            fgsm_top1, fgsm_top5 = accuracy(pred_adv, labels)
+            adv = pgd.attack(images, labels)
+            pred_adv = model.model(adv)
+            pgd_top1, pgd_top5 = accuracy(pred_adv, labels)
+            model.metrics.update(fgsm_top1=(fgsm_top1, len(images)), fgsm_top5=(fgsm_top5, len(images)),
+                                 pgd_top1=(pgd_top1, len(images)), pgd_top5=(pgd_top5, len(images)))
+
+    model.model.train()
+    msg = model.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+
+    model.logger.info(msg)
+    print(msg)
     return

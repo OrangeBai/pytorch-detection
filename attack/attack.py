@@ -6,9 +6,10 @@ class Attack(nn.Module):
     def __init__(self, model, device, *args, **kwargs):
         super().__init__()
         # TODO Temporary solution for multi-device, need modification
+
         mean = kwargs['mean'] if 'mean' in kwargs.keys() else [0, 0, 0]
         std = kwargs['std'] if 'std' in kwargs.keys() else [1, 1, 1]
-
+        self.device = device
         self.norm_layer = Normalize(mean=mean, std=std)
 
         self.model, self.mean, self.std = to_device(device,
