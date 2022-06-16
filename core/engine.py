@@ -46,7 +46,7 @@ def train_model(args):
 
     model = BaseModel(args)
     logging.info(warmup(model, InfiniteLoader(train_loader)))
-    validate_model(model, -1, test_loader, True, alpha=2/255, eps=4/255, restart=2)
+    validate_model(model, -1, test_loader, True, alpha=2/255, eps=4/255, steps=7, restart=2)
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
@@ -102,7 +102,7 @@ def cert_train_step(model, images, labels):
     perturbation = lip.attack(images, labels)
     outputs = model.model(images)
     certified_res = (model.model(images + perturbation) - outputs) * 30
-    aa = (1 - one_hot(labels)).mul(certified_res).abs()
+    aa = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs()
 
     loss = model.loss_function(outputs + aa, labels)
     loss.backward()
@@ -135,9 +135,10 @@ def warmup(model, inf_loader):
 def validate_model(model, epoch, test_loader, robust=False, *args, **kwargs):
     start = time.time()
     model.model.eval()
+    mean, std = set_mean_sed(model.args)
     if robust:
-        fgsm = set_attack(model, 'FGSM', model.args.devices[0], *args, **kwargs)
-        pgd = set_attack(model, 'PGD', model.args.devices[0], *args, **kwargs)
+        fgsm = set_attack(model, 'FGSM', model.args.devices[0], mean=mean, std=std, *args, **kwargs)
+        pgd = set_attack(model, 'PGD', model.args.devices[0], mean=mean, std=std, *args, **kwargs)
     for images, labels in test_loader:
         images, labels = to_device(model.args.devices[0], images, labels)
         pred = model.model(images)

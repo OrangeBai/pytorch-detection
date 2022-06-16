@@ -8,7 +8,7 @@ class PGD(Attack):
         self.eps = kwargs['eps'] if 'eps' in kwargs.items() else 8 / 255
         self.alpha = kwargs['alpha'] if 'alpha' in kwargs.items() else 2 / 255
         self.steps = kwargs['steps'] if 'steps' in kwargs.items() else 7
-        self.restarts = kwargs['restarts'] if 'restarts' in kwargs.items() else False
+        self.restarts = kwargs['restarts'] if 'restarts' in kwargs.items() else 1
 
     def attack(self, images, labels):
         images = to_device(self.device, images.clone().detach())[0]
