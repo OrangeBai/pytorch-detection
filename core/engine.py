@@ -102,7 +102,8 @@ def cert_train_step(model, images, labels):
     outputs = model.model(images)
     certified_res = model.model(images + perturbation) - outputs
     local_lip = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 10000 * 0.86
-    loss = model.loss_function(outputs + model.trained_ratio() * local_lip, labels)
+    loss = model.loss_function(outputs, labels) * (1 - model.trained_ratio()) + \
+           model.trained_ratio() * model.loss_function(outputs + local_lip, labels)
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()
