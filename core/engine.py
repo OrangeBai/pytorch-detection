@@ -110,7 +110,7 @@ def cert_train_step(model, images, labels):
         rate = 3 / 4
     else:
         rate = 1
-    loss = model.loss_function(outputs + rate * 5 * local_lip.detach(), labels)
+    loss = model.loss_function(outputs + rate * 20 * local_lip.detach(), labels)
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()
