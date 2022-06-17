@@ -52,7 +52,6 @@ def train_model(args):
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
-            trained_ratio = model.trained_ratio()
             # model.train_step(images, labels)
             cert_train_step(model, images, labels)
             if cur_step % args.print_every == 0:
