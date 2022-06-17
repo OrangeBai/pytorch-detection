@@ -46,7 +46,7 @@ def train_model(args):
 
     model = BaseModel(args)
     logging.info(warmup(model, InfiniteLoader(train_loader)))
-    validate_model(model, -1, test_loader, True, alpha=2/255, eps=4/255, steps=7, restart=2)
+    validate_model(model, -1, test_loader, True, alpha=1 / 255, eps=4 / 255, steps=7, restart=2)
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
@@ -63,7 +63,7 @@ def train_model(args):
         # if cur_epoch % 10 == 0 and cur_epoch != 0:
         #     model.pruning_val(cur_epoch, test_loader)
         # else:
-        validate_model(model, -1, test_loader, True, alpha=2 / 255, eps=4 / 255, steps=7)
+        validate_model(model, -1, test_loader, True, alpha=1 / 255, eps=4 / 255, steps=7)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
@@ -101,8 +101,8 @@ def cert_train_step(model, images, labels):
 
     perturbation = lip.attack(images, labels)
     outputs = model.model(images)
-    certified_res = (model.model(images + perturbation) - outputs) * 15
-    aa = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs()
+    certified_res = model.model(images + perturbation) - outputs
+    aa = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 160
 
     loss = model.loss_function(outputs + aa, labels)
     loss.backward()
@@ -111,7 +111,7 @@ def cert_train_step(model, images, labels):
 
     top1, top5 = accuracy(outputs, labels)
     model.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
-                         lr=(model.optimizer.param_groups[0]['lr'], 1))
+                         lr=(model.optimizer.param_groups[0]['lr'], 1), aa=(aa.mean(), 1))
     model.metrics.synchronize_between_processes()
     return
 
@@ -134,7 +134,7 @@ def warmup(model, inf_loader):
 
 def validate_model(model, epoch, test_loader, robust=False, *args, **kwargs):
     start = time.time()
-    model.model.eval()
+    model.eval()
     mean, std = set_mean_sed(model.args)
     if robust:
         fgsm = set_attack(model, 'FGSM', model.args.devices[0], mean=mean, std=std, *args, **kwargs)
