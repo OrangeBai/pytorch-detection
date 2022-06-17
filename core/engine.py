@@ -99,11 +99,18 @@ def cert_train_step(model, images, labels):
     # float_neurons = float_hook.retrieve_res(retrieve_lb_ub, remove=True, sample_size=64)
 
     perturbation = lip.attack(images, labels)
-    outputs = model.model(images)
-    certified_res = model.model(images + perturbation) - outputs
+    outputs = model(images)
+    certified_res = model(images + perturbation) - outputs
     local_lip = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 10000 * 0.86
-    loss = model.loss_function(outputs, labels) * (1 - model.trained_ratio()) + \
-           model.trained_ratio() * model.loss_function(outputs + local_lip, labels)
+    if model.trained_ratio() < 0.3:
+        rate = 1 / 4
+    elif model.trained_ratio() < 0.6:
+        rate = 2 / 4
+    elif model.trained_ratio() < 0.8:
+        rate = 3 / 4
+    else:
+        rate = 1
+    loss = model.loss_function(outputs + rate * 5 * local_lip.detach(), labels)
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()
@@ -153,7 +160,7 @@ def validate_model(model, epoch, test_loader, robust=False, *args, **kwargs):
             model.metrics.update(fgsm_top1=(fgsm_top1, len(images)), fgsm_top5=(fgsm_top5, len(images)),
                                  pgd_top1=(pgd_top1, len(images)), pgd_top5=(pgd_top5, len(images)))
 
-    model.model.train()
+    model.train()
     msg = model.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
 
     model.logger.info(msg)
