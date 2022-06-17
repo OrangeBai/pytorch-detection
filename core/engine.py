@@ -52,7 +52,7 @@ def train_model(args):
     for cur_epoch in range(args.num_epoch):
         for cur_step in range(args.epoch_step):
             images, labels = next(inf_loader)
-
+            trained_ratio = model.trained_ratio()
             # model.train_step(images, labels)
             cert_train_step(model, images, labels)
             if cur_step % args.print_every == 0:
@@ -102,16 +102,15 @@ def cert_train_step(model, images, labels):
     perturbation = lip.attack(images, labels)
     outputs = model.model(images)
     certified_res = model.model(images + perturbation) - outputs
-    aa = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 160
-
-    loss = model.loss_function(outputs + aa, labels)
+    local_lip = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 10000 * 0.86
+    loss = model.loss_function(outputs + model.trained_ratio() * local_lip, labels)
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()
 
     top1, top5 = accuracy(outputs, labels)
     model.metrics.update(top1=(top1, len(images)), top5=(top5, len(images)), loss=(loss, len(images)),
-                         lr=(model.optimizer.param_groups[0]['lr'], 1), aa=(aa.mean(), 1))
+                         lr=(model.optimizer.param_groups[0]['lr'], 1), aa=(local_lip.mean(), 1))
     model.metrics.synchronize_between_processes()
     return
 

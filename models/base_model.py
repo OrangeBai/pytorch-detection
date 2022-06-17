@@ -147,6 +147,9 @@ class BaseModel(nn.Module):
         self.logger.info('Triming to {0}'.format(new_size))
         return
 
+    def trained_ratio(self):
+        return self.lr_scheduler.last_epoch / self.args.total_step
+
     def train_logging(self, step, batch_num, epoch, epoch_num, time_metrics=None):
         # TODO maybe a refactor???
         space_fmt = ':' + str(len(str(batch_num))) + 'd'
