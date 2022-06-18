@@ -1,10 +1,9 @@
+import time
 from functools import reduce
-
-import torch
 
 from core.pattern import *
 
-import time
+
 def record_blocks(model):
     """
     Record all the weights of given model
