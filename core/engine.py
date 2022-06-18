@@ -1,5 +1,6 @@
 import logging
 
+import torch
 from torch.nn.functional import one_hot
 
 from attack import *
@@ -46,7 +47,7 @@ def train_model(args):
 
     model = BaseModel(args)
     logging.info(warmup(model, InfiniteLoader(train_loader)))
-    validate_model(model, -1, test_loader, True, alpha=0.58 / 255, eps=0.58 / 255, steps=7, restart=2)
+    validate_model(model, -1, test_loader, True, alpha=1 / 255, eps=1.72 / 255, steps=7, restart=2)
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
@@ -62,7 +63,7 @@ def train_model(args):
         # if cur_epoch % 10 == 0 and cur_epoch != 0:
         #     model.pruning_val(cur_epoch, test_loader)
         # else:
-        validate_model(model, -1, test_loader, True, alpha=0.58/4 / 255, eps=0.58 / 255, steps=7)
+        validate_model(model, -1, test_loader, True, alpha=0.57 / 4 / 255, eps=0.57 / 255, steps=7)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
@@ -99,6 +100,8 @@ def cert_train_step(model, images, labels):
     # float_neurons = float_hook.retrieve_res(retrieve_lb_ub, remove=True, sample_size=64)
 
     perturbation = lip.attack(images, labels)
+    # r = torch.randn(images.shape).cuda()
+    # perturbation = images + r / r.norm(p=2, dim=(1, 2, 3)).view(len(r), 1, 1, 1) * 0.01
     outputs = model(images)
     certified_res = model(images + perturbation) - outputs
     c2 = certified_res.abs().max(axis=1)[0].view(len(certified_res), 1).repeat(1, 10)
@@ -112,8 +115,9 @@ def cert_train_step(model, images, labels):
     else:
         rate = 1
     loss_nor = model.loss_function(outputs, labels)
-    loss_reg = model.loss_function(outputs + rate * 10 * local_lip, labels)
-    loss = loss_reg * 1/4 + loss_nor * 3/4
+    loss_reg = model.loss_function(outputs + 5 * rate*local_lip.detach(), labels) \
+               + 0.1 * local_lip.norm(p=float('inf'), dim=1).mean()
+    loss = loss_reg
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()

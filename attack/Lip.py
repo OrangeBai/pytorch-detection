@@ -1,6 +1,6 @@
 from attack.attack import *
 from core.utils import *
-
+from torch.nn.functional import one_hot
 
 class LipAttack(Attack):
     def __init__(self, model, device, *args, **kwargs):
@@ -15,8 +15,11 @@ class LipAttack(Attack):
         loss = nn.CrossEntropyLoss()
 
         images.requires_grad = True
-        outputs = self.model(images)  # from (0, 1) to normalized, and forward the emodel
-        cost = outputs.norm(p=float('inf'), dim=1).mean()
+        outputs = self.model(images)
+        fake_label = torch.randint(0, 10, (len(images),)).cuda()
+        bool_mat = one_hot(fake_label, num_classes=10).type(torch.float)
+        cost = (outputs * bool_mat).norm(p=1)
+        # cost = outputs.norm(p=float('inf'), dim=1).mean()
 
         grad = torch.autograd.grad(cost, images,
                                    retain_graph=False, create_graph=False)[0]
