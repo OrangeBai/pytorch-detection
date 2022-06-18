@@ -15,6 +15,7 @@ class LinearBlock(nn.Module):
 
         self.FC = nn.Linear(in_channels, out_channels)
         if 'noBatchNorm' not in args:
+            # self.BN = nn.Identity()
             self.BN = nn.BatchNorm1d(out_channels)
         else:
             self.BN = nn.Identity()
@@ -35,13 +36,14 @@ class ConvBlock(nn.Module):
         super().__init__()
         self.Conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
         if 'noBatchNorm' not in kwargs.keys():
+            # self.BN = nn.Identity()
             self.BN = nn.BatchNorm2d(out_channels)
         else:
             self.BN = nn.Identity()
         if 'activation' in kwargs.keys():
             self.act = set_activation(kwargs['activation'])
         else:
-            self.act = nn.ReLU(inplace=False)
+            self.act = nn.LeakyReLU(inplace=False)
 
     def forward(self, x):
         x = self.Conv(x)

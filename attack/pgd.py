@@ -5,10 +5,10 @@ from torch.nn import functional as F
 class PGD(Attack):
     def __init__(self, model, device, *args, **kwargs):
         super(PGD, self).__init__(model, device, *args, **kwargs)
-        self.eps = kwargs['eps'] if 'eps' in kwargs.items() else 8 / 255
-        self.alpha = kwargs['alpha'] if 'alpha' in kwargs.items() else 2 / 255
-        self.steps = kwargs['steps'] if 'steps' in kwargs.items() else 7
-        self.restarts = kwargs['restarts'] if 'restarts' in kwargs.items() else 1
+        self.eps = kwargs['eps'] if 'eps' in kwargs.keys() else 8 / 255
+        self.alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 2 / 255
+        self.steps = kwargs['steps'] if 'steps' in kwargs.keys() else 7
+        self.restarts = kwargs['restarts'] if 'restarts' in kwargs.keys() else 1
 
     def attack(self, images, labels):
         images = to_device(self.device, images.clone().detach())[0]
