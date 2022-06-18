@@ -46,7 +46,7 @@ def train_model(args):
 
     model = BaseModel(args)
     logging.info(warmup(model, InfiniteLoader(train_loader)))
-    validate_model(model, -1, test_loader, True, alpha=1 / 255, eps=4 / 255, steps=7, restart=2)
+    validate_model(model, -1, test_loader, True, alpha=0.58 / 255, eps=0.58 / 255, steps=7, restart=2)
     inf_loader = InfiniteLoader(train_loader)
 
     for cur_epoch in range(args.num_epoch):
@@ -62,7 +62,7 @@ def train_model(args):
         # if cur_epoch % 10 == 0 and cur_epoch != 0:
         #     model.pruning_val(cur_epoch, test_loader)
         # else:
-        validate_model(model, -1, test_loader, True, alpha=1 / 255, eps=4 / 255, steps=7)
+        validate_model(model, -1, test_loader, True, alpha=0.58/4 / 255, eps=0.58 / 255, steps=7)
 
     model.save_model(args.model_dir)
     model.save_result(args.model_dir)
@@ -101,7 +101,8 @@ def cert_train_step(model, images, labels):
     perturbation = lip.attack(images, labels)
     outputs = model(images)
     certified_res = model(images + perturbation) - outputs
-    local_lip = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(certified_res).abs() * 10000 * 0.86
+    c2 = certified_res.abs().max(axis=1)[0].view(len(certified_res), 1).repeat(1, 10)
+    local_lip = (1 - one_hot(labels, num_classes=model.args.num_cls)).mul(c2).abs() * 1000 * 0.86
     if model.trained_ratio() < 0.3:
         rate = 1 / 4
     elif model.trained_ratio() < 0.6:
@@ -110,7 +111,9 @@ def cert_train_step(model, images, labels):
         rate = 3 / 4
     else:
         rate = 1
-    loss = model.loss_function(outputs + rate * 100 * local_lip, labels)
+    loss_nor = model.loss_function(outputs, labels)
+    loss_reg = model.loss_function(outputs + rate * 10 * local_lip, labels)
+    loss = loss_reg * 1/4 + loss_nor * 3/4
     loss.backward()
     model.optimizer.step()
     model.lr_scheduler.step()

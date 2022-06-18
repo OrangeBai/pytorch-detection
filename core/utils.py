@@ -50,10 +50,10 @@ def init_scheduler(args, optimizer):
         gamma = math.pow(args.base_lr / args.lr, 1 / args.total_step)
         lr_scheduler = ExponentialLR(optimizer, gamma)
     elif args.lr_scheduler == 'cyclic':
-        up = args.lr_step * args.up_ratio
-        down = args.lr_step * args.down_ratio
+        up = int(args.total_step * args.up_ratio)
+        down = int(args.total_step * args.down_ratio)
         lr_scheduler = CyclicLR(optimizer, base_lr=args.base_lr, max_lr=args.lr,
-                                step_size_up=up, step_size_down=down, mode='triangular2')
+                                step_size_up=up, step_size_down=down, mode='triangular2', cycle_momentum=False)
     elif args.lr_scheduler == 'static':
         def lambda_rule(t):
             return 1.0

@@ -16,12 +16,11 @@ class LipAttack(Attack):
 
         images.requires_grad = True
         outputs = self.model(images)  # from (0, 1) to normalized, and forward the emodel
-        cost = outputs.norm(p=1, dim=1).mean()
+        cost = outputs.norm(p=float('inf'), dim=1).mean()
 
         grad = torch.autograd.grad(cost, images,
                                    retain_graph=False, create_graph=False)[0]
-
-        perturbation = grad / grad.norm(p=2, dim=(1, 2, 3)).view(len(grad), 1, 1, 1) * 0.0001
+        perturbation = grad / grad.norm(p=2, dim=(1, 2, 3)).view(len(grad), 1, 1, 1) * 0.001
         # adv_images = torch.clamp(adv_images, min=0, max=1).detach()
         #
         # adv_images = self._norm(adv_images)  # from (0,1) to normalized

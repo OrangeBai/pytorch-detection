@@ -41,7 +41,7 @@ class ConvBlock(nn.Module):
         if 'activation' in kwargs.keys():
             self.act = set_activation(kwargs['activation'])
         else:
-            self.act = nn.ReLU(inplace=False)
+            self.act = nn.LeakyReLU(inplace=False)
 
     def forward(self, x):
         x = self.Conv(x)
