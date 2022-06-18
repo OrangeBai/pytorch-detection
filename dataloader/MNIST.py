@@ -1,7 +1,6 @@
 from torchvision import transforms, datasets
 import torch.utils.data as data
 from config import *
-import numpy as np
 
 MNIST_MEAN_STD = (0.1307,), (0.3081,)
 

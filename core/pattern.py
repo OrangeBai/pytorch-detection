@@ -1,8 +1,8 @@
 import numpy as np
-
-from core.utils import *
+from attack import *
+from dataloader.base import *
 from models.blocks import *
-
+from core.utils import *
 
 class ModelHook:
     def __init__(self, model, hook, *args, **kwargs):
@@ -37,14 +37,11 @@ class ModelHook:
             handle.remove()
         self.stored_values = {}
 
-    def retrieve_res(self, fun=None, reset=True, remove=False, *args, **kwargs):
+    def retrieve_res(self, fun=None, reset=True, *args, **kwargs):
         if fun is not None:
             res = fun(self.stored_values, *args, **kwargs)
         else:
             res = self.stored_values
-        if remove:
-            self.remove()
-            return res
         if reset:
             self.set_up()
         return res
@@ -143,8 +140,8 @@ def retrieve_float_neurons(stored_values, sample_size):
     @return:
     """
     unpacked = unpack(stored_values)
-    return [[[[np.all(layer[i: i + sample_size], axis=0) for i in range(0, len(layer), sample_size)] for layer in block]
-             for block in unpacked]]
+    return [[[np.all(layer[i: i + sample_size], axis=0) for i in range(0, len(layer), sample_size)] for layer in block]
+             for block in unpacked]
 
 
 def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
@@ -169,10 +166,10 @@ def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
     max_lambda = np.vectorize(lambda x: grad_bound[x][1])
     min_lambda = np.vectorize(lambda x: grad_bound[x][0])
 
-    lb = [[[min_lambda(min_max_pattern(layer[i: i + sample_size], 'min'))
+    lb = [[[min_max_pattern(layer[i: i + sample_size], 'min')
             for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
 
-    ub = [[[max_lambda(min_max_pattern(layer[i: i + sample_size], 'max'))
+    ub = [[[min_max_pattern(layer[i: i + sample_size], 'max')
             for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
     return lb, ub
 
@@ -200,6 +197,7 @@ def apd(data, storage, ed=False):
     if ed:
         storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
     return storage
+
 
 # def reformat_pattern(pattern):
 #     r"""

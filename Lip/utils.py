@@ -1,10 +1,10 @@
-import numpy as np
 from functools import reduce
-from core.utils import *
-from models.blocks import *
-from numpy.linalg import svd
 
+import torch
 
+from core.pattern import *
+
+import time
 def record_blocks(model):
     """
     Record all the weights of given model
@@ -67,18 +67,80 @@ def compute_jac(temp_pt, block_weights, block_types, batch_size):
     return [reduce(np.matmul, instance_w) for instance_w in all_w.values()]
 
 
-def amplify_ratio(block_pattern, block_weight, block_type):
+def amplify_ratio(block_flt, local_pattern, local_ub, block_weight, block_type):
     if block_type == 'linear':
-        return linear_amplify(block_pattern, block_weight)
+        return linear_amplify(block_flt, local_pattern, local_ub, block_weight)
     elif block_type == 'conv':
-        pass
+        return conv_amplify(local_pattern, local_ub, block_weight)
 
 
-def linear_amplify(pattern, weight):
+def linear_amplify(float_neuron, local_pattern, local_ub, weight):
     r = []
-    for w, (k, p) in zip(weight, pattern.items()):
-        for i in range(len(p)):
-            fixed_matrix = np.matmul(np.diag(p[i]), w)
-            float_matrix = np.matmul(np.diag(1 - p[i]), w)
-            r += [1 + svd(float_matrix)[1][0] / svd(fixed_matrix)[1][0]]
+    t = time.time()
+    weight_inf_norm = torch.tensor(weight[0]).norm(p=1, dim=1)
+    weight_zero_norm = torch.tensor(weight[0]).norm(p=1, dim=0)
+    weight_21_norm = torch.tensor(weight[0]).norm(p=2, dim=0).sum()
+    for f, p, u in zip(float_neuron[0], local_pattern[0], local_ub[0]):
+        fixed_mat = torch.tensor(np.matmul(np.diag((1 - f) * p), weight[0])).cuda()
+        float_mat = torch.tensor(np.matmul(np.diag(f * u), weight[0])).cuda()
+        r.append(to_numpy(1 + torch.svd(float_mat)[1][0] / torch.svd(fixed_mat)[1][0]))
+    t2 = time.time()
+    print(t2 - t)
     return np.array(r)
+    # diag1 = np.apply_along_axis(np.diag, 1, np.array(float_neuron[0]) * np.array(local_pattern[0]))
+    # fixed_matrix = torch.bmm(torch.tensor(diag1, dtype=float), torch.tensor(weight).repeat(len(diag1), 1, 1))
+    # float_matrix = np.matmul(np.diag(1 - float_neuron), np.diag(local_ub), weight)
+    # r += [1 + svd(float_matrix)[1][0] / svd(fixed_matrix)[1][0]]
+
+
+def conv_amplify(local_pattern, local_ub, weight):
+    single_integral = np.matmul(np.array(local_pattern[0]).sum(axis=(2, 3)), np.diag(weight[1])).sum(axis=1)
+    local_integral = np.matmul(np.array(local_ub[0]).sum(axis=(2, 3)), np.diag(weight[1])).sum(axis=1)
+    return local_integral / single_integral
+
+
+def estimate_lip(model, images, sample_size):
+    mean, std = set_mean_sed(model.args)
+    noise_attack = Noise(model.model, model.args.devices[0], 4 / 255, mean=mean, std=std)
+
+    float_hook = ModelHook(model, set_pattern_hook, Gamma=[0])
+    noised_sample = noise_attack.attack(images, sample_size, model.args.devices[0])
+    model.model(images)
+    _, single_patterns = float_hook.retrieve_res(retrieve_lb_ub, sample_size=1, grad_bound=[(0.1, 0.1), (1, 1)])
+
+    model.model(noised_sample)
+    float_neurons = float_hook.retrieve_res(retrieve_float_neurons, reset=False, sample_size=sample_size)
+    _, region_ubs = float_hook.retrieve_res(retrieve_lb_ub, sample_size=sample_size, grad_bound=[(0.1, 0.1), (1, 1)])
+
+    float_hook.remove()
+    block_weights, block_types = record_blocks(model)
+    ratio = np.ones(len(images))
+    for block_float, block_pattern, block_ub, block_weight, block_type in \
+            zip(float_neurons, single_patterns, region_ubs, block_weights, block_types):
+        block_pattern, block_ub = pattern_to_bound([0, 1], block_pattern, block_ub)
+        ratio *= amplify_ratio(block_float, block_pattern, block_ub, block_weight, block_type)
+
+    return 0
+
+
+def pattern_to_bound(bound, *args):
+    res = []
+    for arg in args:
+        float_p = np.array(arg, dtype=float)
+        for i in range(len(bound)):
+            float_p[float_p == i] = bound[i]
+        res += [float_p]
+    return res
+
+
+def linear_block(ratio):
+    pass
+
+# def linear_amplify(pattern, weight):
+#     r = []
+#     for w, (k, p) in zip(weight, pattern.items()):
+#         for i in range(len(p)):
+#             fixed_matrix = np.matmul(np.diag(p[i]), w)
+#             float_matrix = np.matmul(np.diag(1 - p[i]), w)
+#             r += [1 + svd(float_matrix)[1][0] / svd(fixed_matrix)[1][0]]
+#     return np.array(r)

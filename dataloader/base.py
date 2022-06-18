@@ -1,9 +1,6 @@
 import dataloader.cifar
 import dataloader.MNIST
 import dataloader.imagenet
-from core.utils import *
-import time
-from copy import deepcopy
 
 
 def set_loader(args):

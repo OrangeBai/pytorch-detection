@@ -1,7 +1,7 @@
 import logging
-
+import time
 from torch.nn.functional import one_hot
-
+from Lip.utils import *
 from attack import *
 from dataloader.base import *
 from models import *
@@ -93,10 +93,7 @@ def cert_train_step(model, images, labels):
     noise_attack = Noise(model.model, model.args.devices[0], 4 / 255, mean=mean, std=std)
     lip = LipAttack(model.model, model.args.devices[0], eps=1 / 255, mean=mean, std=std)
 
-    # float_hook = ModelHook(model, set_pattern_hook, Gamma=[0])
-    # noised_sample = noise_attack.attack(images, 8, model.args.devices[0])
-    # model.model(noised_sample)
-    # float_neurons = float_hook.retrieve_res(retrieve_lb_ub, remove=True, sample_size=64)
+    lip_ratio = estimate_lip(model, images, 8)
 
     perturbation = lip.attack(images, labels)
     outputs = model(images)

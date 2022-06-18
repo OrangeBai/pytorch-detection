@@ -5,6 +5,7 @@ from dataloader.base import *
 import sys
 import os
 import yaml
+import torch
 
 
 class ArgParser:

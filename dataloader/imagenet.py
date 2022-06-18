@@ -1,6 +1,5 @@
 from config import *
 import os
-import torch
 import torch.utils.data as data
 from torchvision.transforms import *
 from torchvision.datasets import ImageFolder

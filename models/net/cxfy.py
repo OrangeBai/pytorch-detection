@@ -47,11 +47,11 @@ def cxfy42_cifar10_large():
         ConvBlock(64, 64, 3, padding=1),
         nn.MaxPool2d(kernel_size=2, stride=2),
         nn.Flatten(),
-        nn.Linear(64 * 8 * 8, 512),
+        LinearBlock(64 * 8 * 8, 512),
         nn.ReLU(),
-        nn.Linear(512, 512),
+        LinearBlock(512, 512),
         nn.ReLU(),
-        nn.Linear(512, 10)
+        LinearBlock(512, 10)
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
