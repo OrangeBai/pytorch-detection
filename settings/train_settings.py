@@ -72,6 +72,7 @@ class ArgParser:
         self.optimizer()
         self.model_type()
         self.dataset()
+        self.train_mode()
         return self.parser
 
     def get_args(self):
@@ -130,7 +131,6 @@ class ArgParser:
             self.parser.set_defaults(lr=0.01)
             self.parser.add_argument('--beta_1', default=0.9, type=float)
             self.parser.add_argument('--beta_2', default=0.99, type=float)
-            self.parser.add_argument('--eps', default=1e-8, type=float)
             self.parser.add_argument('--weight_decay', default=5e-4, type=float)
         else:
             pass
@@ -229,4 +229,6 @@ class ArgParser:
         elif args.train_mode == 'cert':
             self.parser.add_argument('--num_lip_est', default=20, type=int)
             self.parser.add_argument('--num_flt_est', default=128, type=int)
-            self.parser.add_argument('--noise_eps', default= 2 / 255, type=float)
+            self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
+            self.parser.add_argument('--alpha', default=0.5 / 255, type=float)
+            self.parser.add_argument('--eps', default=2 / 255, type=float)

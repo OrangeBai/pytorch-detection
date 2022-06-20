@@ -25,7 +25,7 @@ def set_attack(model, name, device, *args, **kwargs):
         attack = PGD(model, device, *args, **kwargs)
     elif name.upper() == 'FFGSM':
         attack = FFGSM(model, device, *args, **kwargs)
-    elif name.upper() == 'Lip':
+    elif name.upper() == 'LIP':
         attack = LipAttack(model, device, *args, **kwargs)
 #     elif name == 'BIM':
 #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)

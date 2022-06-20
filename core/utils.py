@@ -82,7 +82,7 @@ def init_optimizer(args, model):
                                     weight_decay=args.weight_decay)
     elif args.optimizer == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, betas=(args.beta_1, args.beta_2),
-                                     eps=1e-8, weight_decay=args.weight_decay)
+                                     weight_decay=args.weight_decay)
     else:
         raise NameError('Optimizer {0} not found'.format(args.lr_scheduler))
     return optimizer

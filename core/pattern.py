@@ -199,6 +199,22 @@ def apd(data, storage, ed=False):
         storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
     return storage
 
+
+def set_gamma(activation):
+    if activation.lower() in ['relu', 'prelu']:
+        return [0]
+    elif activation.lower() == 'sigmoid':
+        return [-0.5, 0.5]
+
+
+def set_lb_ub(activation):
+    if activation.lower() == 'relu':
+        return (0, 0), (1, 1)
+    elif activation.lower() == 'prelu':
+        return (0.1, 0.1), (1, 1)
+    elif activation.lower() == 'sigmoid':
+        return (0, 0.2), (0.2, 0.5), (0, 0.2)
+
 # def reformat_pattern(pattern):
 #     r"""
 #     Reformat the activation pattern. forward hook to instance-wise

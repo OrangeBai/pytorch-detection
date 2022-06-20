@@ -166,22 +166,22 @@ class Trainer:
         self.metrics.update(**kwargs)
         self.metrics.synchronize_between_processes()
 
-    def train_epoch(self, cur_epoch, *args, **kwargs):
-        for cur_step in range(self.args.epoch_step):
+    def train_epoch(self, epoch, *args, **kwargs):
+        for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.train_step(images, labels)
-            if cur_step % self.args.print_every == 0:
-                self.step_logging(cur_step, self.args.epoch_step, cur_epoch, self.args.num_epoch, self.inf_loader.metric)
-        self.train_logging(cur_epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
+            if step % self.args.print_every == 0:
+                self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
+        self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
         self.inf_loader.reset()
         return
 
     def train_model(self):
         self.warmup()
 
-        for cur_epoch in range(self.args.num_epoch):
-            self.train_epoch(cur_epoch)
-            self.validate_epoch(cur_epoch)
+        for epoch in range(self.args.num_epoch):
+            self.train_epoch(epoch)
+            self.validate_epoch(epoch)
 
         self.model.save_model(self.args.model_dir)
         self.model.save_result(self.args.model_dir)

@@ -95,15 +95,15 @@ def conv_amplify(local_pattern, local_ub, weight):
     return region_integral / single_integral
 
 
-def estimate_lip(model, images, sample_size):
-    mean, std = set_mean_sed(model.args)
-    noise_attack = Noise(model.model, model.args.devices[0], 8 / 255, mean=mean, std=std)
+def estimate_lip(args, model, images, sample_size):
+    mean, std = set_mean_sed(args)
+    noise_attack = Noise(model, args.devices[0], 8 / 255, mean=mean, std=std)
 
-    float_hook = ModelHook(model, set_pattern_hook, Gamma=[0])
-    noised_sample = noise_attack.attack(images, sample_size, model.args.devices[0])
-    model.model(noised_sample)
+    float_hook = ModelHook(model, set_pattern_hook, Gamma=set_gamma(args.activation))
+    noised_sample = noise_attack.attack(images, sample_size, args.devices[0])
+    model(noised_sample)
     region_lbs, region_ubs = float_hook.retrieve_res(retrieve_lb_ub, sample_size=sample_size,
-                                                     grad_bound=[(0.1, 0.1), (1, 1)])
+                                                     grad_bound=set_lb_ub(args.activation))
     float_hook.remove()
     block_weights, block_types = record_blocks(model)
     ratio = np.ones(len(images))

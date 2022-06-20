@@ -1,8 +1,5 @@
 from settings.test_setting import set_up_testing
 from models.base_model import *
-from core.pattern import *
-from dataloader.base import *
-from attack import *
 from Lip.utils import *
 
 if __name__ == '__main__':
