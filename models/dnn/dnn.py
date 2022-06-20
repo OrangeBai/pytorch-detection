@@ -11,7 +11,7 @@ class DNN(BaseModel):
         set_up_args = []
         set_up_kwargs = {}
         if args.batch_norm == 0:
-            set_up_args.append('noBatchNorm ')
+            set_up_args.append('noBatchNorm')
         self.layers = self.set_up(*set_up_args, **set_up_kwargs)
 
     def parse_layer_args(self):

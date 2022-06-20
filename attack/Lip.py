@@ -2,6 +2,7 @@ from attack.attack import *
 from core.utils import *
 from torch.nn.functional import one_hot
 
+
 class LipAttack(Attack):
     def __init__(self, model, device, *args, **kwargs):
         super(LipAttack, self).__init__(model, device, *args, **kwargs)

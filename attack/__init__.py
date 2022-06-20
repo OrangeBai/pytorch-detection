@@ -17,14 +17,16 @@ from attack.Lip import LipAttack
 
 
 def set_attack(model, name, device, *args, **kwargs):
-    if name == 'Vanila':
+    if name.upper() == 'Vanila':
         attack = VANILA(model, device, *args, **kwargs)
-    elif name == 'FGSM':
+    elif name.upper() == 'FGSM':
         attack = FGSM(model, device, *args, **kwargs)
-    elif name == 'PGD':
+    elif name.upper() == 'PGD':
         attack = PGD(model, device, *args, **kwargs)
-    elif name == 'FFGSM':
+    elif name.upper() == 'FFGSM':
         attack = FFGSM(model, device, *args, **kwargs)
+    elif name.upper() == 'Lip':
+        attack = LipAttack(model, device, *args, **kwargs)
 #     elif name == 'BIM':
 #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
 #     elif name == 'CW':

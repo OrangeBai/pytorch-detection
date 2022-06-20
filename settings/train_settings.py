@@ -30,10 +30,15 @@ class ArgParser:
     def _init_parser(self):
         self.parser.add_argument('--resume', default=False, action='store_true')
         # step-wise or epoch-wise
-        self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
+        self.parser.add_argument('--epoch_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
+
+        # model settings
         self.parser.add_argument('--batch_norm', default=True, type=int)
+        self.parser.add_argument('--activation', default='ReLU', type=str)
+        # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
+        self.parser.add_argument('--val_mode', default='normal', type=str)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear', 'cyclic'])
@@ -62,7 +67,7 @@ class ArgParser:
         self.parser.add_argument('--mode', default='client')
         self.parser.add_argument('--port', default=52162)
 
-        self.train_type()
+        self.epoch_type()
         self.lr_scheduler()
         self.optimizer()
         self.model_type()
@@ -78,13 +83,13 @@ class ArgParser:
             self.parser.add_argument('--resume_name', default=None)
         return
 
-    def train_type(self):
+    def epoch_type(self):
         """
         set up num_epoch, epoch_step and total step according to given train type and datasest
         !!!!! this must be called after dataset is assigned
         """
         args, _ = self.parser.parse_known_args(self.args)
-        if args.train_type == 'epoch':
+        if args.epoch_type == 'epoch':
             train_loader, _ = set_loader(args)
             self.parser.add_argument('--num_epoch', default=200, type=int)
             self.parser.add_argument('--epoch_step', default=len(train_loader), type=int)
@@ -104,7 +109,7 @@ class ArgParser:
         if args.lr_scheduler == 'milestones':
             self.parser.add_argument('--gamma', default=0.2, type=float)
             self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
-        elif args.lr_scheduler in ['exp','linear']:
+        elif args.lr_scheduler in ['exp', 'linear']:
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)
@@ -216,3 +221,12 @@ class ArgParser:
         else:
             args = self.parser.parse_args()
             return [os.path.join(args.model_dir, 'args.yaml')]
+
+    def train_mode(self):
+        args, _ = self.parser.parse_known_args(self.args)
+        if args.train_mode == 'normal':
+            pass
+        elif args.train_mode == 'cert':
+            self.parser.add_argument('--num_lip_est', default=20, type=int)
+            self.parser.add_argument('--num_flt_est', default=128, type=int)
+            self.parser.add_argument('--noise_eps', default= 2 / 255, type=float)

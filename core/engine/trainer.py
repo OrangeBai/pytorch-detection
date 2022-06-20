@@ -144,23 +144,23 @@ class Trainer:
         print(msg)
         return
 
-    def cert_train_step(self, images, labels):
-        pass
-
     def get_lr(self):
         return self.optimizer.param_groups[0]['lr']
 
-    def train_step(self, images, labels, *args, **kwargs):
+    def train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
         loss.backward()
-        self.optimizer.step()
-        self.lr_scheduler.step()
+        self.step()
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1))
+
+    def step(self):
+        self.optimizer.step()
+        self.lr_scheduler.step()
 
     def update_metric(self, **kwargs):
         self.metrics.update(**kwargs)
@@ -188,8 +188,15 @@ class Trainer:
         return
 
 
-# def cert_train_step(model, images, labels):
-#     return lip_ratio.mean()
+def set_trainer(args):
+    if args.train_mode == 'normal':
+        trainer = Trainer(args)
+    elif args.train_mode == 'cert':
+        train_file_name = 'core.engine.cert_train'
+        modules = importlib.import_module(train_file_name)
+        trainer = modules.__dict__['CertTrainer'](args)
+
+    return trainer
 
 
 

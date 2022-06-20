@@ -13,7 +13,7 @@ cfgs = {
 class VGG(BaseModel):
 
     def __init__(self, args):
-        super().__init__()
+        super().__init__(args)
         self.num_cls = args.num_cls
 
         if args.net.lower() == 'vgg11':
@@ -49,14 +49,14 @@ class VGG(BaseModel):
                     layers += [nn.Flatten()]
             else:
                 if num_pooling < 5:
-                    layers += [ConvBlock(pre_filters, layer, kernel_size=(3, 3), padding=1)]
+                    layers += [ConvBlock(pre_filters, layer, kernel_size=(3, 3), padding=1, **self.set_up_kwargs)]
                     pre_filters = layer
                 else:
                     if layer is not None:
-                        layers += [LinearBlock(pre_filters, layer)]
+                        layers += [LinearBlock(pre_filters, layer, **self.set_up_kwargs)]
                         pre_filters = layer
                     else:
-                        layers += [LinearBlock(pre_filters, self.num_cls, **{'activation': None})]
+                        layers += [LinearBlock(pre_filters, self.num_cls, **self.set_up_kwargs)]
         setattr(self, 'layers', nn.Sequential(*layers))
 
     def forward(self, x):
@@ -64,7 +64,7 @@ class VGG(BaseModel):
         return self.layers(x)
 
 
-def make_layers(cfg, batch_norm=False):
+def make_layers(cfg):
     layers = []
 
     input_channel = 3

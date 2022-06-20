@@ -6,8 +6,9 @@ from core.prune import *
 
 class BaseModel(nn.Module):
     # TODO Record epoch info
-    def __init__(self):
+    def __init__(self, args):
         super(BaseModel, self).__init__()
+        self.set_up_kwargs = {'batch_norm': args.batch_norm, 'activation': args.activation}
 
     def forward(self, x):
         return self.model(x)
@@ -38,7 +39,6 @@ class BaseModel(nn.Module):
             else:
                 raise KeyError
         self.model.load_state_dict(new_dict)
-
 
     # def pruning_val(self, epoch, test_loader):
     #     start = time.time()
