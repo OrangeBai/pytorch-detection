@@ -1,25 +1,13 @@
-import torch.nn as nn
-from core.utils import *
-import importlib
-from core.pattern import *
 import os
-import time
-import datetime
-import logging
-from attack import *
+import importlib
 from collections import OrderedDict
 from core.prune import *
 
 
 class BaseModel(nn.Module):
     # TODO Record epoch info
-    def __init__(self, args):
+    def __init__(self):
         super(BaseModel, self).__init__()
-        self.args = args
-        self.model = build_model(args)
-
-        if args.resume:
-            self.load_model(args.model_dir, args.resume_name)
 
     def forward(self, x):
         return self.model(x)
@@ -29,7 +17,7 @@ class BaseModel(nn.Module):
             model_path = os.path.join(path, 'weights.pth')
         else:
             model_path = os.path.join(path, 'weights_{}.pth'.format(name))
-        torch.save(self.model.state_dict(), model_path)
+        torch.save(self.state_dict(), model_path)
         return
 
     def load_model(self, path, name=None):
@@ -44,7 +32,7 @@ class BaseModel(nn.Module):
 
     def load_weights(self, state_dict):
         new_dict = OrderedDict()
-        for (k1, v1), (k2, v2) in zip(self.model.state_dict().items(), state_dict.items()):
+        for (k1, v1), (k2, v2) in zip(self.state_dict().items(), state_dict.items()):
             if v1.shape == v2.shape:
                 new_dict[k1] = v2
             else:
@@ -109,7 +97,7 @@ def build_model(args):
     if args.model_type == 'dnn':
         model_file_name = "models." + args.model_type
         modules = importlib.import_module(model_file_name)
-        model = modules.__dict__['DNN']
+        model = modules.__dict__['DNN'](args)
     else:
         model_file_name = "models." + "net"
         modules = importlib.import_module(model_file_name)

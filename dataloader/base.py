@@ -29,11 +29,11 @@ def set_single_loaders(args, *labels):
 
 
 def set_mean_sed(args):
-    if args.dataset == 'cifar10':
+    if args.dataset.lower() == 'cifar10':
         mean, std = dataloader.cifar.CIAFR10_MEAN_STD
-    elif args.dataset == 'cifar100':
+    elif args.dataset.lower() == 'cifar100':
         mean, std = dataloader.cifar.CIAFR100_MEAN_STD
-    elif args.dataset == 'mnist':
+    elif args.dataset.lower() == 'mnist':
         mean, std = dataloader.MNIST.MNIST_MEAN_STD
     else:
         raise NameError()

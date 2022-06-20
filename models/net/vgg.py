@@ -1,4 +1,5 @@
 from models.blocks import *
+from models.base_model import BaseModel
 
 cfgs = {
     'vgg11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M', 4096, 4096, None],
@@ -9,7 +10,7 @@ cfgs = {
 }
 
 
-class VGG(nn.Module):
+class VGG(BaseModel):
 
     def __init__(self, args):
         super().__init__()

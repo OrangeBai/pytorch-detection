@@ -8,7 +8,9 @@ if __name__ == '__main__':
     for file_path in arg_parser.files:
         arg_parser.modify_parser(file_path)
 
-        train_model(arg_parser.get_args())
+        trainer = Trainer(arg_parser.get_args())
+        trainer.train_model()
+
 
 
 

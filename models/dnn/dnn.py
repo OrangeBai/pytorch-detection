@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 from models.blocks import *
+from models.base_model import BaseModel
 
 
-class DNN(nn.Module):
+class DNN(BaseModel):
     def __init__(self, args):
         super().__init__()
         self.args = args

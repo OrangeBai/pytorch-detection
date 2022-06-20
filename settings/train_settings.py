@@ -33,6 +33,7 @@ class ArgParser:
         self.parser.add_argument('--train_type', default='epoch', type=str, choices=['epoch', 'step'])
         self.parser.add_argument('--batch_size', default=128, type=int)
         self.parser.add_argument('--batch_norm', default=True, type=int)
+        self.parser.add_argument('--train_mode', default='normal', type=str)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear', 'cyclic'])
