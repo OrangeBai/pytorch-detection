@@ -1,4 +1,5 @@
 import models.net.cxfy
+from models.base_model import *
 from models.blocks import *
 import math
 cfgs = {
@@ -6,9 +7,9 @@ cfgs = {
 }
 
 
-class CXFY(nn.Module):
+class CXFY(BaseModel):
     def __init__(self, args):
-        super().__init__()
+        super().__init__(BaseModel)
         self.args = args
         self.num_cls = args.num_cls
         self.model = self.set_up()
@@ -51,7 +52,7 @@ def cxfy42_cifar10_large():
         nn.ReLU(),
         LinearBlock(512, 512),
         nn.ReLU(),
-        LinearBlock(512, 10)
+        LinearBlock(512, 10, activation=None)
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):

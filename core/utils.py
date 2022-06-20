@@ -279,7 +279,7 @@ def to_device(device_id=None, *args):
 
 
 def check_activation(layer):
-    acts = [nn.ReLU, nn.ELU, nn.Sigmoid, nn.GELU, nn.Tanh]
+    acts = [nn.LeakyReLU, nn.ReLU, nn.ELU, nn.Sigmoid, nn.GELU, nn.Tanh]
     for l in acts:
         if isinstance(layer, l):
             return True

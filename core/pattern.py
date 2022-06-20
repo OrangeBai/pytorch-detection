@@ -4,6 +4,7 @@ from dataloader.base import *
 from models.blocks import *
 from core.utils import *
 
+
 class ModelHook:
     def __init__(self, model, hook, *args, **kwargs):
         self.model = model
@@ -141,7 +142,7 @@ def retrieve_float_neurons(stored_values, sample_size):
     """
     unpacked = unpack(stored_values)
     return [[[np.all(layer[i: i + sample_size], axis=0) for i in range(0, len(layer), sample_size)] for layer in block]
-             for block in unpacked]
+            for block in unpacked]
 
 
 def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
@@ -197,7 +198,6 @@ def apd(data, storage, ed=False):
     if ed:
         storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
     return storage
-
 
 # def reformat_pattern(pattern):
 #     r"""

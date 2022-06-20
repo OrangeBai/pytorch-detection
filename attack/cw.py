@@ -1,5 +1,6 @@
-from attacks.attack import *
+from attack.attack import *
 import torch.optim as optim
+import torch
 
 
 class CW(Attack):
