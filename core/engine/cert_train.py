@@ -52,7 +52,7 @@ class CertTrainer(Trainer):
 
         loss_nor = self.loss_function(outputs, labels)
         loss_reg = self.loss_function(outputs + 2 * local_lip, labels)
-        loss = 0.25 * loss_reg + (1 - self.trained_ratio) * loss_nor
+        loss = self.trained_ratio * loss_reg + (1 - self.trained_ratio) * loss_nor
         loss.backward()
         self.step()
 
