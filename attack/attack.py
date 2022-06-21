@@ -9,6 +9,7 @@ class Attack(nn.Module):
 
         mean = kwargs['mean'] if 'mean' in kwargs.keys() else [0, 0, 0]
         std = kwargs['std'] if 'std' in kwargs.keys() else [1, 1, 1]
+        self.ord = kwargs['ord'] if 'ord' in kwargs.keys() else 'inf'
         self.device = device
         self.norm_layer = Normalize(mean=mean, std=std)
 

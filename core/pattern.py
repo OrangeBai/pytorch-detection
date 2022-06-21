@@ -186,20 +186,6 @@ def list_all(data, storage=None):
         storage.append(data)
 
 
-def apd(data, storage, ed=False):
-    unpacked = unpack(data)
-    if len(storage) == 0:
-        storage.extend(unpacked)
-    else:
-        for storage_block, apd_block in zip(storage, unpacked):
-            for storage_layer, apd_layer in zip(storage_block, apd_block):
-                storage_layer.extend(apd_layer)
-
-    if ed:
-        storage = [[to_numpy(torch.concat(layer))] for block in storage for layer in block]
-    return storage
-
-
 def set_gamma(activation):
     if activation.lower() in ['relu', 'prelu']:
         return [0]

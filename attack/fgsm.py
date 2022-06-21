@@ -21,8 +21,13 @@ class FGSM(Attack):
         grad = torch.autograd.grad(cost, images,
                                    retain_graph=False, create_graph=False)[0]
 
-        adv_images = images + self.eps * grad.sign()
-        adv_images = torch.clamp(adv_images, min=0, max=1).detach()
+        if self.ord == 'inf':
+            adv_images = images + self.eps * grad.sign()
+        else:
+            grad_norm = grad.view(grad.shape[0], -1).norm(2, dim=-1, keepdim=True)
+            grad_norm = grad_norm.view(grad_norm.shape[0], grad_norm.shape[1], 1, 1)
+            adv_images = images + self.eps * grad / grad_norm
 
+        adv_images = torch.clamp(adv_images, min=0, max=1).detach()
         adv_images = self._norm(adv_images)  # from (0,1) to normalized
         return adv_images

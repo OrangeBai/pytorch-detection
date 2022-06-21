@@ -107,7 +107,7 @@ class Trainer:
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            self.train_step(images, labels)
+            Trainer.train_step(self, images, labels)
             if cur_step % self.args.print_every == 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
@@ -120,7 +120,7 @@ class Trainer:
         self.model.lr_scheduler = init_scheduler(self.args, self.model.optimizer)
         return
 
-    def validate_epoch(self, epoch, *args, **kwargs):
+    def validate_epoch(self, epoch):
         start = time.time()
         self.model.eval()
         for images, labels in self.test_loader:

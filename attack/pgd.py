@@ -31,8 +31,20 @@ class PGD(Attack):
                 grad = delta.grad.detach()
                 d = delta
                 g = grad
-                d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps)  # bounds from epsilon
-                d = torch.clamp(d, 0 - images, 1 - images)  # bounds from immage
+                if self.ord == 'inf':
+                    d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps)  # bounds from epsilon  # bounds from image
+                else:
+                    grad_norm = grad.view(grad.shape[0], -1).norm(2, dim=-1, keepdim=True)
+                    grad_norm = grad_norm.view(grad_norm.shape[0], grad_norm.shape[1], 1, 1)
+                    d = d + self.alpha * grad / (grad_norm + 1e-8)
+                    mask = d.view(d.shape[0], -1).norm(2, dim=1) <= self.eps
+
+                    scaling_factor = d.view(d.shape[0], -1).norm(2, dim=-1) + 1e-8
+                    scaling_factor[mask] = self.eps
+
+                    d *= self.eps / (scaling_factor.view(-1, 1, 1, 1))
+
+                d = torch.clamp(d, 0 - images, 1 - images)
                 delta.data = d
                 delta.grad.zero_()
 

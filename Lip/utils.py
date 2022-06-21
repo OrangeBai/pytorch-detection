@@ -100,7 +100,6 @@ def estimate_lip(args, model, images, sample_size):
     model.eval()
     mean, std = set_mean_sed(args)
     noise_attack = Noise(model, args.devices[0], args.noise_eps, mean=mean, std=std)
-
     float_hook = ModelHook(model, set_pattern_hook, Gamma=set_gamma(args.activation))
     noised_sample = noise_attack.attack(images, sample_size, args.devices[0])
     noised_sample = [noised_sample[i:i + 512] for i in range(0, len(noised_sample), 512)]

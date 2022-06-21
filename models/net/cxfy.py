@@ -1,7 +1,7 @@
 import models.net.cxfy
 from models.base_model import *
 from models.blocks import *
-import math
+
 cfgs = {
     'c4f2': [32, 32, 64, 64],
 }
@@ -9,50 +9,48 @@ cfgs = {
 
 class CXFY(BaseModel):
     def __init__(self, args):
-        super().__init__(BaseModel)
+        super().__init__(args)
         self.args = args
         self.num_cls = args.num_cls
         self.model = self.set_up()
 
     def set_up(self):
         model = getattr(models.net.cxfy, '_'.join([self.args.net.lower(), self.args.dataset.lower(), self.args.shape]))
-        return model()
+        return model(**self.set_up_kwargs)
 
     def forward(self, x):
         return self.model(x)
 
-def cxfy42_mnist_large():
+
+def cxfy42_mnist_large(**kwargs):
     model = nn.Sequential(
-        ConvBlock(1, 32, 3, padding=1),
-        ConvBlock(32, 32, 3, padding=1),
+        ConvBlock(1, 32, 3, padding=1, **kwargs),
+        ConvBlock(32, 32, 3, padding=1, **kwargs),
         nn.MaxPool2d(kernel_size=2, stride=2),
-        ConvBlock(32, 64, 3, padding=1),
-        ConvBlock(64, 64, 3, padding=1),
+        ConvBlock(32, 64, 3, padding=1, **kwargs),
+        ConvBlock(64, 64, 3, padding=1, **kwargs),
         nn.MaxPool2d(kernel_size=2, stride=2),
         nn.Flatten(),
-        nn.Linear(64 * 7 * 7, 512),
-        nn.ReLU(),
-        nn.Linear(512, 512),
-        nn.ReLU(),
-        nn.Linear(512, 10)
+        LinearBlock(64 * 7 * 7, 512, **kwargs),
+
+        LinearBlock(512, 512, **kwargs),
+        nn.Linear(512, 10, set_activation(None))
     )
     return model
 
 
-def cxfy42_cifar10_large():
+def cxfy42_cifar10_large(**kwargs):
     model = nn.Sequential(
-        ConvBlock(3, 32, 3, padding=1),
-        ConvBlock(32, 32, 3, padding=1),
+        ConvBlock(3, 32, 3, padding=1, **kwargs),
+        ConvBlock(32, 32, 3, padding=1, **kwargs),
         nn.MaxPool2d(kernel_size=2, stride=2),
-        ConvBlock(32, 64, 3, padding=1),
-        ConvBlock(64, 64, 3, padding=1),
+        ConvBlock(32, 64, 3, padding=1, **kwargs),
+        ConvBlock(64, 64, 3, padding=1, **kwargs),
         nn.MaxPool2d(kernel_size=2, stride=2),
         nn.Flatten(),
-        LinearBlock(64 * 8 * 8, 512),
-        nn.ReLU(),
-        LinearBlock(512, 512),
-        nn.ReLU(),
-        LinearBlock(512, 10, activation=None)
+        LinearBlock(64 * 8 * 8, 512, **kwargs),
+        LinearBlock(512, 512, **kwargs),
+        LinearBlock(512, 10, batch_norm=kwargs['batch_norm'], activation=None)
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):

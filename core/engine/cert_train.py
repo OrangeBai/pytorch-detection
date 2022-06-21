@@ -1,5 +1,5 @@
-from core.engine.trainer import *
 from Lip.utils import *
+from core.engine.trainer import *
 
 
 class CertTrainer(Trainer):
@@ -9,21 +9,22 @@ class CertTrainer(Trainer):
             'mean': self.mean,
             'std': self.std,
             'eps': args.eps,
-            'alpha': args.alpha
+            'alpha': args.alpha,
+            'ord': args.ord
         }
         self.num_flt_est = args.num_flt_est
-
-        self.fgsm = set_attack(self.model, 'FGSM', self.args.devices[0], **attack_args)
-        self.pgd = set_attack(self.model, 'PGD', self.args.devices[0], **attack_args)
+        self.attacks = {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **attack_args),
+                        'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **attack_args),
+                        # 'CW': set_attack(self.model, 'cw', self.args.devices[0], **attack_args)
+                        }
         self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **attack_args)
-        self.lip_metric = SmoothedValue()
         self.est_lip = False
 
     def train_epoch(self, epoch, *args, **kwargs):
 
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
-            if step % 20 == 0:
+            if step % self.args.fre_lip_est == 0:
                 self.est_lip = True
             self.train_step(images, labels)
             self.est_lip = False
@@ -39,11 +40,10 @@ class CertTrainer(Trainer):
         if self.est_lip:
             t = time.time()
             ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-            print(t-time.time())
-            self.lip_metric.update(ratio, len(images))
+            print(t - time.time())
             ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
         else:
-            ratio = self.lip_metric.avg
+            ratio = self.metrics.ratio.avg
 
         perturbation = self.lip.attack(images, labels)
         outputs = self.model(images)
@@ -51,15 +51,39 @@ class CertTrainer(Trainer):
         local_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
 
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + ratio * local_lip, labels)
-        loss = self.trained_ratio * loss_reg + loss_nor * (1 - self.trained_ratio)
+        loss_reg = self.loss_function(outputs + 2 * local_lip, labels)
+        loss = 0.25 * loss_reg + (1 - self.trained_ratio) * loss_nor
         loss.backward()
         self.step()
 
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           l1_lip=(local_lip.norm(p=1), len(images)), l2_lip=(local_lip.norm(p=2), len(images)))
+                           l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
+                           l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
+        if self.est_lip:
+            self.update_metric(ratio=(ratio.mean(), len(images)))
+
+    def validate_epoch(self, epoch):
+        start = time.time()
+        self.model.eval()
+        for images, labels in self.test_loader:
+            images, labels = to_device(self.args.devices[0], images, labels)
+            pred = self.model(images)
+            top1, top5 = accuracy(pred, labels)
+            self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)))
+            for name, attack in self.attacks.items():
+                adv = attack.attack(images, labels)
+                pred_adv = self.model(adv)
+                top1, top5 = accuracy(pred_adv, labels)
+                update_times = {name + 'top1': (top1, len(images)), name + 'top5': (top5, len(images))}
+                self.update_metric(**update_times)
+        self.model.train()
+        msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+
+        self.logger.info(msg)
+        print(msg)
+        return
 
     def train_model(self):
         self.warmup()
@@ -70,3 +94,4 @@ class CertTrainer(Trainer):
 
         self.model.save_model(self.args.model_dir)
         self.model.save_result(self.args.model_dir)
+
