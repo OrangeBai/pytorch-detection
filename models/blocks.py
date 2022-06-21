@@ -9,6 +9,10 @@ def set_activation(activation):
         return nn.ReLU(inplace=False)
     elif activation.lower() == 'prelu':
         return nn.PReLU()
+    elif activation.lower() == 'gelu':
+        return nn.GELU()
+    elif activation.lower() == 'leakyrelu':
+        return nn.LeakyReLU(0.1)
 
 
 def set_bn(batch_norm, dim, channel):

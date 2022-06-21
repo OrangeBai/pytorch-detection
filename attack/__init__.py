@@ -4,6 +4,7 @@ from attack.vanila import *
 from attack.noise import *
 from attack.ffgsm import FFGSM
 from attack.Lip import LipAttack
+from attack.cw import CW
 # from .pgddlr import PGDDLR
 # from .rfgsm import RFGSM
 # from .apgd import APGD
@@ -27,6 +28,8 @@ def set_attack(model, name, device, *args, **kwargs):
         attack = FFGSM(model, device, *args, **kwargs)
     elif name.upper() == 'LIP':
         attack = LipAttack(model, device, *args, **kwargs)
+    elif name.upper() == 'CW':
+        attack = CW(model, device, *args, **kwargs)
 #     elif name == 'BIM':
 #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
 #     elif name == 'CW':

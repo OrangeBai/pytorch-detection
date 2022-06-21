@@ -37,7 +37,7 @@ class ArgParser:
 
         # model settings
         self.parser.add_argument('--batch_norm', default=True, type=int)
-        self.parser.add_argument('--activation', default='PReLU', type=str)
+        self.parser.add_argument('--activation', default='LeakyReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
         self.parser.add_argument('--val_mode', default='normal', type=str)

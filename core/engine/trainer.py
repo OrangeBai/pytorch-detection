@@ -97,7 +97,7 @@ class Trainer:
 
     @property
     def trained_ratio(self):
-        train_ratio = self.lr_scheduler.last_epoch / self.args.total_step < 0.3
+        train_ratio = self.lr_scheduler.last_epoch / self.args.total_step
         if self.args.gamma_type == 'linear':
             return train_ratio
         elif self.args.gamma_type == 'half':

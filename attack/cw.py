@@ -4,7 +4,7 @@ import torch
 
 
 class CW(Attack):
-    def __init__(self, model, mean, std, c=1e-4, kappa=0, steps=500, lr=0.01):
+    def __init__(self, model, mean, std, c=1e-4, kappa=0, steps=100, lr=0.01):
         super(CW, self).__init__("CW", model, mean, std)
         self.c = c
         self.kappa = kappa
