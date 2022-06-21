@@ -1,5 +1,5 @@
 from core.engine.trainer import *
-
+from Lip.utils import estimate_lip
 
 class CertTrainer(Trainer):
     def __init__(self, args):
@@ -39,13 +39,13 @@ class CertTrainer(Trainer):
     def train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
-        # if self.est_lip:
-        #     t = time.time()
-        #     ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-        #     print(t - time.time())
-        #     ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
-        # else:
-        #     ratio = self.metrics.ratio.avg
+        if self.est_lip:
+            t = time.time()
+            ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+            print(t - time.time())
+            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
+        else:
+            ratio = self.metrics.ratio.avg
 
         perturbation = self.lip.attack(images, labels)
         outputs = self.model(images)
@@ -63,8 +63,8 @@ class CertTrainer(Trainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        # if self.est_lip:
-        #     self.update_metric(ratio=(ratio.mean(), len(images)))
+        if self.est_lip:
+            self.update_metric(ratio=(ratio.mean(), len(images)))
 
     def validate_epoch(self, epoch):
         start = time.time()
