@@ -1,9 +1,12 @@
-import torch
-from torch.optim.lr_scheduler import *
-from collections import defaultdict, deque
-import torch.distributed as dist
+import numpy as np
 import math
+import torch
+import torch.distributed as dist
+from torch.optim.lr_scheduler import *
+
 import torch.nn as nn
+
+from collections import defaultdict, deque
 
 
 def warmup_scheduler(args, optimizer):
@@ -170,14 +173,14 @@ class SmoothedValue(object):
     @property
     def median(self):
         # return the median value of in the queue
-        d = torch.tensor(list(self.deque))
+        d = torch.tensor(np.array(list(self.deque)))
         return d.median().item()
 
     @property
     def avg(self):
         # average value of the queue
         try:
-            d = torch.tensor(list(self.deque), dtype=torch.float32)
+            d = torch.tensor(np.array(list(self.deque)), dtype=torch.float32)
             return d.mean().item()
         except ValueError:
             return -1

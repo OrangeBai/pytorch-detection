@@ -23,7 +23,7 @@ class CertTrainer(Trainer):
 
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
-            if step % 10 == 0:
+            if step % 20 == 0:
                 self.est_lip = True
             self.train_step(images, labels)
             self.est_lip = False
@@ -37,8 +37,11 @@ class CertTrainer(Trainer):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
         if self.est_lip:
+            t = time.time()
             ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+            print(t-time.time())
             self.lip_metric.update(ratio, len(images))
+            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
         else:
             ratio = self.lip_metric.avg
 
@@ -48,8 +51,9 @@ class CertTrainer(Trainer):
         local_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
 
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + ratio * local_lip.detach(), labels)
-        loss = loss_reg * self.trained_ratio() + loss_nor * (1 - self.trained_ratio())
+        loss_reg = self.loss_function(outputs + ratio * local_lip, labels)
+        loss = self.trained_ratio * loss_reg + loss_nor * (1 - self.trained_ratio)
+        loss.backward()
         self.step()
 
         top1, top5 = accuracy(outputs, labels)

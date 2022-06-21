@@ -35,7 +35,7 @@ class ArgParser:
 
         # model settings
         self.parser.add_argument('--batch_norm', default=True, type=int)
-        self.parser.add_argument('--activation', default='ReLU', type=str)
+        self.parser.add_argument('--activation', default='PReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
         self.parser.add_argument('--val_mode', default='normal', type=str)
@@ -228,7 +228,7 @@ class ArgParser:
             pass
         elif args.train_mode == 'cert':
             self.parser.add_argument('--num_lip_est', default=20, type=int)
-            self.parser.add_argument('--num_flt_est', default=128, type=int)
+            self.parser.add_argument('--num_flt_est', default=64, type=int)
             self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
             self.parser.add_argument('--alpha', default=0.5 / 255, type=float)
             self.parser.add_argument('--eps', default=2 / 255, type=float)

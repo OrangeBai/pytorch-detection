@@ -95,6 +95,7 @@ class Trainer:
         self.record_result(epoch, 'test')
         return msg
 
+    @property
     def trained_ratio(self):
         return self.lr_scheduler.last_epoch / self.args.total_step
 
