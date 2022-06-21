@@ -1,11 +1,13 @@
-import shutil
-from config import *
 import argparse
-from dataloader.base import *
-import sys
 import os
-import yaml
+import shutil
+import sys
+
 import torch
+import yaml
+
+from config import *
+from dataloader.base import *
 
 
 class ArgParser:
@@ -233,3 +235,5 @@ class ArgParser:
             self.parser.add_argument('--alpha', default=16 / 255, type=float)
             self.parser.add_argument('--eps', default=32 / 255, type=float)
             self.parser.add_argument('--ord', default='l2', type=str)
+            self.parser.add_argument('--gamma_type', default='linear', type=str,
+                                     choices=['linear', 'half', 'milestone'])

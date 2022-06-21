@@ -13,7 +13,7 @@ class Noise(Attack):
         shape = images.shape
         noise = self.eps * torch.sign(torch.randn((shape[0] * batch_size,) + shape[1:]))
         noise[0] = 0
-        images, noise = to_device(device, images, noise)
+        images = images.cpu()
         images = self._reverse_norm(images)
 
         for i in range(shape[0]):

@@ -97,7 +97,18 @@ class Trainer:
 
     @property
     def trained_ratio(self):
-        return self.lr_scheduler.last_epoch / self.args.total_step
+        train_ratio = self.lr_scheduler.last_epoch / self.args.total_step < 0.3
+        if self.args.gamma_type == 'linear':
+            return train_ratio
+        elif self.args.gamma_type == 'half':
+            return train_ratio / 2
+        elif self.args.gamma_type == 'milestone':
+            if train_ratio < 0.3:
+                return 1/4
+            elif train_ratio < 0.6:
+                return 2/4
+            else:
+                return 3/4
 
     def warmup(self):
         if self.args.warmup_steps == 0:
