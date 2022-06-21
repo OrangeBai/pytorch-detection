@@ -42,7 +42,7 @@ class ArgParser:
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear', 'cyclic'])
-        self.parser.add_argument('--optimizer', default='Adam', choices=['SGD', 'Adam'])
+        self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
         self.parser.add_argument('--lr', default=0.1, type=float)
         self.parser.add_argument('--warmup', default=2, type=float)
         # attacks

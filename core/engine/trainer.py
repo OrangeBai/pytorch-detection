@@ -116,8 +116,8 @@ class Trainer:
         self.train_logging(-1, self.args.num_epoch, loader.metric)
         self.validate_epoch(-1)
 
-        self.model.optimizer = init_optimizer(self.args, self.model)
-        self.model.lr_scheduler = init_scheduler(self.args, self.model.optimizer)
+        self.optimizer = init_optimizer(self.args, self.model)
+        self.lr_scheduler = init_scheduler(self.args, self.model.optimizer)
         return
 
     def validate_epoch(self, epoch):
@@ -128,16 +128,6 @@ class Trainer:
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)))
-            # if robust:
-            #     adv = fgsm.attack(images, labels)
-            #     pred_adv = model.model(adv)
-            #     fgsm_top1, fgsm_top5 = accuracy(pred_adv, labels)
-            #     adv = pgd.attack(images, labels)
-            #     pred_adv = model.model(adv)
-            #     pgd_top1, pgd_top5 = accuracy(pred_adv, labels)
-            #     model.metrics.update(fgsm_top1=(fgsm_top1, len(images)), fgsm_top5=(fgsm_top5, len(images)),
-            #                          pgd_top1=(pgd_top1, len(images)), pgd_top5=(pgd_top5, len(images)))
-
         self.model.train()
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
 
