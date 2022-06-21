@@ -183,6 +183,7 @@ class Trainer:
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
+            self.record_result(epoch)
 
         self.model.save_model(self.args.model_dir)
         self.model.save_result(self.args.model_dir)

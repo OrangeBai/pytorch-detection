@@ -1,24 +1,26 @@
-from Lip.utils import *
 from core.engine.trainer import *
 
 
 class CertTrainer(Trainer):
     def __init__(self, args):
         super().__init__(args)
-        attack_args = {
+        self.attack_args = {
             'mean': self.mean,
             'std': self.std,
-            'eps': args.eps,
-            'alpha': args.alpha,
-            'ord': args.ord
+            'eps': self.args.eps,
+            'alpha': self.args.alpha,
+            'ord': self.args.ord
         }
         self.num_flt_est = args.num_flt_est
-        self.attacks = {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **attack_args),
-                        'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **attack_args),
-                        # 'CW': set_attack(self.model, 'cw', self.args.devices[0], **attack_args)
-                        }
-        self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **attack_args)
+        self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **self.attack_args)
         self.est_lip = False
+
+    @property
+    def set_attack(self):
+        return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
+                'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
+                # 'CW': set_attack(self.model, 'cw', self.args.devices[0], **attack_args)
+                }
 
     def train_epoch(self, epoch, *args, **kwargs):
 
@@ -37,13 +39,13 @@ class CertTrainer(Trainer):
     def train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
-        if self.est_lip:
-            t = time.time()
-            ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-            print(t - time.time())
-            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
-        else:
-            ratio = self.metrics.ratio.avg
+        # if self.est_lip:
+        #     t = time.time()
+        #     ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+        #     print(t - time.time())
+        #     ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
+        # else:
+        #     ratio = self.metrics.ratio.avg
 
         perturbation = self.lip.attack(images, labels)
         outputs = self.model(images)
@@ -61,8 +63,8 @@ class CertTrainer(Trainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        if self.est_lip:
-            self.update_metric(ratio=(ratio.mean(), len(images)))
+        # if self.est_lip:
+        #     self.update_metric(ratio=(ratio.mean(), len(images)))
 
     def validate_epoch(self, epoch):
         start = time.time()
@@ -72,11 +74,12 @@ class CertTrainer(Trainer):
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)))
-            for name, attack in self.attacks.items():
+            for name, attack in self.set_attack.items():
                 adv = attack.attack(images, labels)
                 pred_adv = self.model(adv)
                 top1, top5 = accuracy(pred_adv, labels)
-                update_times = {name + 'top1': (top1, len(images)), name + 'top5': (top5, len(images))}
+                update_times = {name + 'top1': (top1, len(images)),
+                                name + 'top5': (top5, len(images))}
                 self.update_metric(**update_times)
         self.model.train()
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
@@ -87,11 +90,10 @@ class CertTrainer(Trainer):
 
     def train_model(self):
         self.warmup()
-
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
+            self.record_result(epoch)
 
         self.model.save_model(self.args.model_dir)
         self.model.save_result(self.args.model_dir)
-
