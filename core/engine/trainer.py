@@ -117,7 +117,7 @@ class Trainer:
         self.validate_epoch(-1)
 
         self.optimizer = init_optimizer(self.args, self.model)
-        self.lr_scheduler = init_scheduler(self.args, self.model.optimizer)
+        self.lr_scheduler = init_scheduler(self.args, self.optimizer)
         return
 
     def validate_epoch(self, epoch):
