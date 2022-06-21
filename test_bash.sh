@@ -14,10 +14,10 @@ while getopts "l:b:n:d:e:" opt; do
   esac
 done
 
-echo $net
-echo $dataset
-echo $lmd
-echo $bnd
-echo $eta
-echo l_${lmd}_b_${bnd}_e_${eta}
-python train.py --net $net --dataset $dataset --exp_id l_${lmd}_b_${bnd}_eta_${eta} --lmd $lmd --bnd $bnd --eta $eta
+if [ "$lmd" = "0.2" ]; then
+    echo "Strings are equal."
+else
+    echo "Strings are not equal."
+fi
+
+echo s_${lmd}
