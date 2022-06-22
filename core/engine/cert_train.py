@@ -52,11 +52,11 @@ class CertTrainer(Trainer):
         perturbation = self.lip.attack(images, labels)
         outputs = self.model(images)
 
-        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86 * self.eps_rob
-        local_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
+        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86
+        worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.eps_rob
 
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + ratio * local_lip, labels)
+        loss_reg = self.loss_function(outputs + ratio * worst_lip, labels)
         loss = self.trained_ratio * loss_reg + (1 - self.trained_ratio) * loss_nor
         loss.backward()
         self.step()

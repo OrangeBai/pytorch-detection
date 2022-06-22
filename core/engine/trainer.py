@@ -28,6 +28,15 @@ class Trainer:
             filename=os.path.join(args.model_dir, 'logger'))
         self.logger.info(args)
 
+        self.attack_args = {
+            'mean': self.mean,
+            'std': self.std,
+            'eps': self.args.eps,
+            'alpha': self.args.alpha,
+            'ord': self.args.ord
+        }
+        self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **self.attack_args)
+
     def save_result(self, path, name=None):
         if not name:
             res_path = os.path.join(path, 'result')
@@ -156,11 +165,19 @@ class Trainer:
         self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
+
+        perturbation = self.lip.attack(images, labels)
+        outputs = self.model(images)
+
+        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86
+
         loss.backward()
         self.step()
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
-                           loss=(loss, len(images)), lr=(self.get_lr(), 1))
+                           loss=(loss, len(images)), lr=(self.get_lr(), 1),
+                           l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
+                           l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
 
     def step(self):
         self.optimizer.step()
