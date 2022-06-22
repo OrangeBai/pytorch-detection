@@ -1,5 +1,6 @@
-from core.engine.trainer import *
 from Lip.utils import estimate_lip
+from core.engine.trainer import *
+
 
 class CertTrainer(Trainer):
     def __init__(self, args):
@@ -14,6 +15,7 @@ class CertTrainer(Trainer):
         self.num_flt_est = args.num_flt_est
         self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **self.attack_args)
         self.est_lip = False
+        self.eps_rob = args.eps * 2
 
     @property
     def set_attack(self):
@@ -39,21 +41,22 @@ class CertTrainer(Trainer):
     def train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
-        # if self.est_lip:
-        #     t = time.time()
-        #     ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-        #     print(t - time.time())
-        #     ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
-        # else:
-        #     ratio = self.metrics.ratio.avg
+        if self.est_lip:
+            t = time.time()
+            ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+            print(t - time.time())
+            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
+        else:
+            ratio = self.metrics.ratio.avg
 
         perturbation = self.lip.attack(images, labels)
         outputs = self.model(images)
-        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86
+
+        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86 * self.eps_rob
         local_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
 
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + 5 * local_lip, labels)
+        loss_reg = self.loss_function(outputs + ratio * local_lip, labels)
         loss = self.trained_ratio * loss_reg + (1 - self.trained_ratio) * loss_nor
         loss.backward()
         self.step()
@@ -63,8 +66,8 @@ class CertTrainer(Trainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        # if self.est_lip:
-        #     self.update_metric(ratio=(ratio.mean(), len(images)))
+        if self.est_lip:
+            self.update_metric(ratio=(ratio.mean(), len(images)))
 
     def validate_epoch(self, epoch):
         start = time.time()

@@ -109,6 +109,8 @@ class Trainer:
                 return 2/4
             else:
                 return 3/4
+        elif self.args.gamma_type == 'static':
+            return 0.1
 
     def warmup(self):
         if self.args.warmup_steps == 0:
