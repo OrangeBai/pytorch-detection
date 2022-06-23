@@ -1,10 +1,10 @@
-import logging
 import datetime
-from torch.nn.functional import one_hot
+import logging
+
 from models import *
 
 
-class Trainer:
+class BaseTrainer:
     def __init__(self, args):
         self.args = args
         self.model = build_model(args)
@@ -28,14 +28,7 @@ class Trainer:
             filename=os.path.join(args.model_dir, 'logger'))
         self.logger.info(args)
 
-        self.attack_args = {
-            'mean': self.mean,
-            'std': self.std,
-            'eps': self.args.eps,
-            'alpha': self.args.alpha,
-            'ord': self.args.ord
-        }
-        self.lip = set_attack(self.model, 'Lip', self.args.devices[0], **self.attack_args)
+        self.lip = set_attack(self.model, 'Lip', args.devices[0], ord=args.ord)
 
     def save_result(self, path, name=None):
         if not name:
@@ -113,11 +106,11 @@ class Trainer:
             return train_ratio / 2
         elif self.args.gamma_type == 'milestone':
             if train_ratio < 0.3:
-                return 1/4
+                return 1 / 4
             elif train_ratio < 0.6:
-                return 2/4
+                return 2 / 4
             else:
-                return 3/4
+                return 3 / 4
         elif self.args.gamma_type == 'static':
             return 0.1
 
@@ -129,20 +122,19 @@ class Trainer:
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            Trainer.train_step(self, images, labels)
+            self.normal_train_step(images, labels)
             if cur_step % self.args.print_every == 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
             if cur_step >= self.args.warmup_steps:
                 break
         self.train_logging(-1, self.args.num_epoch, loader.metric)
-        self.validate_epoch(-1)
 
         self.optimizer = init_optimizer(self.args, self.model)
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
         return
 
-    def validate_epoch(self, epoch):
+    def normal_validate_epoch(self, epoch):
         start = time.time()
         self.model.eval()
         for images, labels in self.test_loader:
@@ -160,17 +152,13 @@ class Trainer:
     def get_lr(self):
         return self.optimizer.param_groups[0]['lr']
 
-    def train_step(self, images, labels):
+    def normal_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
 
-        perturbation = self.lip.attack(images, labels)
-        outputs = self.model(images)
-
-        local_lip = (self.model(images + perturbation) - outputs) * 10000 * 0.86
-
+        local_lip = self.lip.attack(images, outputs)
         loss.backward()
         self.step()
         top1, top5 = accuracy(outputs, labels)
@@ -187,38 +175,13 @@ class Trainer:
         self.metrics.update(**kwargs)
         self.metrics.synchronize_between_processes()
 
-    def train_epoch(self, epoch, *args, **kwargs):
+    def normal_train_epoch(self, epoch, *args, **kwargs):
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
-            self.train_step(images, labels)
+            self.normal_train_step(images, labels)
             if step % self.args.print_every == 0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
         self.inf_loader.reset()
         return
-
-    def train_model(self):
-        self.warmup()
-
-        for epoch in range(self.args.num_epoch):
-            self.train_epoch(epoch)
-            self.validate_epoch(epoch)
-            self.record_result(epoch)
-
-        self.model.save_model(self.args.model_dir)
-        self.model.save_result(self.args.model_dir)
-        return
-
-
-def set_trainer(args):
-    if args.train_mode == 'normal':
-        trainer = Trainer(args)
-    elif args.train_mode == 'cert':
-        train_file_name = 'core.engine.cert_train'
-        modules = importlib.import_module(train_file_name)
-        trainer = modules.__dict__['CertTrainer'](args)
-
-    return trainer
-
-
 

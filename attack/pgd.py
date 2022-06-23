@@ -42,7 +42,6 @@ class PGD(Attack):
                     scaling_factor[mask] = self.eps
                     #
                     d = d * self.eps / (scaling_factor.view(-1, 1, 1, 1))
-                    pass
 
                 d = torch.clamp(d, 0 - images, 1 - images)
                 delta.data = d

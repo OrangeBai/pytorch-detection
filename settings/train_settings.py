@@ -36,8 +36,8 @@ class ArgParser:
         self.parser.add_argument('--batch_size', default=128, type=int)
 
         # model settings
-        self.parser.add_argument('--batch_norm', default=True, type=int)
-        self.parser.add_argument('--activation', default='LeakyReLU', type=str)
+        self.parser.add_argument('--batch_norm', default=False, type=int)
+        self.parser.add_argument('--activation', default='ReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
         self.parser.add_argument('--val_mode', default='normal', type=str)
@@ -47,8 +47,6 @@ class ArgParser:
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
         self.parser.add_argument('--lr', default=0.1, type=float)
         self.parser.add_argument('--warmup', default=2, type=float)
-        # attacks
-        self.parser.add_argument('--attack', default='vanila', type=str, choices=['vanila', 'fgsm', 'pgd', 'ffgsm'])
         # model type
         self.parser.add_argument('--model_type', default='net', choices=['dnn', 'mini', 'net'])
         self.parser.add_argument('--net', default='vgg16', type=str)
@@ -226,14 +224,20 @@ class ArgParser:
 
     def train_mode(self):
         args, _ = self.parser.parse_known_args(self.args)
-        if args.train_mode == 'normal':
-            pass
-        elif args.train_mode == 'cert':
-            self.parser.add_argument('--fre_lip_est', default=50, type=int)
-            self.parser.add_argument('--num_flt_est', default=32, type=int)
-            self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
-            self.parser.add_argument('--alpha', default=16 / 255, type=float)
-            self.parser.add_argument('--eps', default=32 / 255, type=float)
-            self.parser.add_argument('--ord', default='l2', type=str)
-            self.parser.add_argument('--gamma_type', default='linear', type=str,
-                                     choices=['linear', 'half', 'milestone'])
+        # Certifiable training
+        self.parser.add_argument('--fre_lip_est', default=50, type=int)
+        self.parser.add_argument('--num_flt_est', default=32, type=int)
+        self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
+        self.parser.add_argument('--gamma_type', default='linear', type=str,
+                                 choices=['linear', 'half', 'milestone'])
+        self.parser.add_argument('--ord', default='l2', type=str)
+
+        # Adversarial Training
+        self.parser.add_argument('--attack', default='fgsm', type=str)
+        self.parser.add_argument('--alpha', default=18 / 255, type=float)
+        self.parser.add_argument('--eps', default=36 / 255, type=float)
+
+        # Prune Training
+        self.parser.add_argument('--prune_rate', default=0.95, type=float)
+        self.parser.add_argument('--prune_every', default=20, type=float)
+

@@ -1,6 +1,6 @@
 from settings.test_setting import set_up_testing
 from models.base_model import *
-from Lip.utils import *
+from core.lip import *
 
 if __name__ == '__main__':
     argv = ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']

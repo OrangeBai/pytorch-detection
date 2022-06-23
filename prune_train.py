@@ -1,4 +1,3 @@
-from core.engine import *
 from settings.train_settings import *
 
 if __name__ == '__main__':

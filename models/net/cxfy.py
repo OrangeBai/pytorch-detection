@@ -12,14 +12,14 @@ class CXFY(BaseModel):
         super().__init__(args)
         self.args = args
         self.num_cls = args.num_cls
-        self.model = self.set_up()
+        self.layers = self.set_up()
 
     def set_up(self):
         model = getattr(models.net.cxfy, '_'.join([self.args.net.lower(), self.args.dataset.lower(), self.args.shape]))
         return model(**self.set_up_kwargs)
 
     def forward(self, x):
-        return self.model(x)
+        return self.layers(x)
 
 
 def cxfy42_mnist_large(**kwargs):
@@ -50,7 +50,7 @@ def cxfy42_cifar10_large(**kwargs):
         nn.Flatten(),
         LinearBlock(64 * 8 * 8, 512, **kwargs),
         LinearBlock(512, 512, **kwargs),
-        LinearBlock(512, 10, batch_norm=kwargs['batch_norm'], activation=None)
+        LinearBlock(512, 10, batch_norm=0, activation=None)
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
