@@ -14,7 +14,7 @@ class Trainer(CertTrainer):
             self.record_result(epoch)
 
         self.model.save_model(self.args.model_dir)
-        self.model.save_result(self.args.model_dir)
+        self.save_result(self.args.model_dir)
 
     def train_epoch(self, epoch):
         if self.args.train_mode == 'cert':
@@ -36,3 +36,15 @@ class Trainer(CertTrainer):
         else:
             raise NameError
         return
+
+    def train_step(self, images, labels):
+        if self.args.train_mode == 'cert':
+            self.cert_train_step(images, labels)
+        elif self.args.train_mode == 'normal':
+            self.normal_train_step(images, labels)
+        elif self.args.train_mode == 'adv':
+            self.adv_train_step(images, labels)
+        # elif self.args.train_mode == 'prune':
+        #     train_epoch = self.prune_train_epoch
+        else:
+            raise NameError

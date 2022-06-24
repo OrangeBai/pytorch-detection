@@ -38,10 +38,10 @@ class CertTrainer(AdvTrainer):
         outputs = self.model(images)
         local_lip = (self.model(images + perturbation) - outputs) * 10000
         if self.args.ord == 'l2':
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.args.eps
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.args.eps * 4
         else:
             eps = torch.norm(torch.ones(images[0].shape) * self.args.eps, p=2)
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * eps
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * eps * 4
 
         self.optimizer.zero_grad()
         loss_nor = self.loss_function(outputs, labels)

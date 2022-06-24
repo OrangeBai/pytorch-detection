@@ -122,7 +122,7 @@ class BaseTrainer:
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            self.normal_train_step(images, labels)
+            self.train_step(images, labels)
             if cur_step % self.args.print_every == 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
@@ -192,3 +192,6 @@ class BaseTrainer:
     def validate_epoch(self, epoch):
         pass
 
+
+    def train_step(self, images, labels):
+        pass

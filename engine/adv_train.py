@@ -20,7 +20,7 @@ class AdvTrainer(BaseTrainer):
                 # 'CW': set_attack(self.model, 'CW', self.args.devices[0], **self.attack_args)
                 }
 
-    def adv_train_epoch(self, epoch, *args, **kwargs):
+    def adv_train_epoch(self, epoch):
 
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
