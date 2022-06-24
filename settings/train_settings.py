@@ -234,8 +234,8 @@ class ArgParser:
 
         # Adversarial Training
         self.parser.add_argument('--attack', default='FGSM', type=str)
-        self.parser.add_argument('--alpha', default=1 / 255, type=float)
-        self.parser.add_argument('--eps', default=2 / 255, type=float)
+        self.parser.add_argument('--alpha', default=18 / 255, type=float)
+        self.parser.add_argument('--eps', default=36 / 255, type=float)
 
         # Prune Training
         self.parser.add_argument('--prune_rate', default=0.95, type=float)
