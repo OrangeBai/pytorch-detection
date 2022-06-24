@@ -128,7 +128,7 @@ def min_max_pattern(pattern, mode='min'):
 
 
 def unpack(stored_values):
-    unpacked = [[np.concatenate(layer)] if type(layer[0]) == np.ndarray else torch.concat(layer)
+    unpacked = [[np.concatenate(layer)] if type(layer[0]) == np.ndarray else [torch.concat(layer)]
                 for block in stored_values.values() for layer in block.values()]
     return unpacked
 

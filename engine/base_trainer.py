@@ -154,11 +154,12 @@ class BaseTrainer:
 
     def normal_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        self.optimizer.zero_grad()
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
 
-        local_lip = self.lip.attack(images, outputs)
+        perturbation = self.lip.attack(images, labels)
+        local_lip = (self.model(images + perturbation) - outputs) * 10000
+        self.optimizer.zero_grad()
         loss.backward()
         self.step()
         top1, top5 = accuracy(outputs, labels)

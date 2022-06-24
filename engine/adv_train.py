@@ -33,13 +33,17 @@ class AdvTrainer(BaseTrainer):
 
     def adv_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        self.optimizer.zero_grad()
         adv_images = self.attacks[self.args.attack].attack(images, labels)
         outputs = self.model(adv_images)
+
+        perturbation = self.lip.attack(images, labels)
+        local_lip = (self.model(images + perturbation) - self.model(images)) * 10000
+
         loss = self.loss_function(outputs, labels)
+        self.optimizer.zero_grad()
         loss.backward()
         self.step()
-        local_lip = self.lip.attack(images, outputs)
+
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
@@ -61,8 +65,9 @@ class AdvTrainer(BaseTrainer):
                 update_times = {name + 'top1': (top1, len(images)),
                                 name + 'top5': (top5, len(images))}
                 self.update_metric(**update_times)
-        self.model.train()
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
         print(msg)
+
+        self.model.train()
         return

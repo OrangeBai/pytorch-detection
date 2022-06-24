@@ -1,1 +1,1 @@
-python --dataset cifar10 --net vgg16 --batch_size 128 --warmup 2 --num_epoch 60 --exp_id test_lip --optimizer SGD --lr 0.05 --train_mode cert
+python train.py --dataset cifar10 --net vgg16 --batch_size 128 --warmup 2 --num_epoch 60 --exp_id test_lip --optimizer Adam --lr 0.01 --train_mode cert

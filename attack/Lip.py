@@ -1,6 +1,7 @@
+from torch.nn.functional import one_hot
+
 from attack.attack import *
 from core.utils import *
-from torch.nn.functional import one_hot
 
 
 class LipAttack(Attack):
@@ -14,19 +15,16 @@ class LipAttack(Attack):
 
         images.requires_grad = True
         outputs = self.model(images)
-        fake_label = torch.randint(0, 10, (len(images),)).cuda()
+        flags = 1 - one_hot(labels, num_classes=outputs.shape[1]).type(torch.float).cuda()
         if self.ord == 'l2':
-            cost = outputs.norm(p=2)
+            cost = (outputs * flags).norm(p=2, dim=-1).mean()
         else:
-            bool_mat = one_hot(fake_label, num_classes=10).type(torch.float)
-            cost = (outputs * bool_mat).norm(p=1)
+            cost = (outputs * flags).norm(p=1, dim=-1).mean()
 
-        grad = torch.autograd.grad(cost, images, retain_graph=True, create_graph=False)[0]
+        grad = torch.autograd.grad(cost, images, retain_graph=False, create_graph=False)[0]
 
         if self.ord == 'l2':
             perturbation = grad / grad.norm(p=2, dim=(1, 2, 3)).view(len(grad), 1, 1, 1) * 0.0001
-            local_lip = (self.model(images + perturbation) - outputs) * 10000
         else:
             perturbation = grad.sign() * 0.0001
-            local_lip = (self.model(images + perturbation) - outputs) * 10000
-        return local_lip
+        return perturbation.detach()
