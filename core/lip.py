@@ -1,5 +1,4 @@
 from functools import reduce
-from convex_adversarial import robust_loss
 from core.pattern import *
 
 
