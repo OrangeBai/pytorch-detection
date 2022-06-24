@@ -129,7 +129,7 @@ class BaseTrainer:
             if cur_step >= self.args.warmup_steps:
                 break
         self.train_logging(-1, self.args.num_epoch, loader.metric)
-
+        self.validate_epoch(-1)
         self.optimizer = init_optimizer(self.args, self.model)
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
         return
@@ -185,4 +185,10 @@ class BaseTrainer:
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
         self.inf_loader.reset()
         return
+
+    def train_epoch(self, epoch):
+        pass
+
+    def validate_epoch(self, epoch):
+        pass
 

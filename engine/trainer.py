@@ -8,7 +8,6 @@ class Trainer(CertTrainer):
 
     def train_model(self):
         self.warmup()
-        self.validate_epoch(-1)
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
