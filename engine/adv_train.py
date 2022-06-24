@@ -1,5 +1,5 @@
 from engine.base_trainer import *
-from convex_adversarial import robust_loss
+
 
 class AdvTrainer(BaseTrainer):
     def __init__(self, args):

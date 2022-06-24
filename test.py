@@ -1,13 +1,37 @@
 from exps.non_returnable import *
 from settings.test_setting import *
 from plt.non_returnable import *
+from smooth.core import *
+
 
 if __name__ == '__main__':
     argv = ['--exp_id', 'normal', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
     args = set_up_testing('td', argv)
-    model = BaseModel(args)
+    model = build_model(args)
     model.load_model(args.model_dir)
-    model.model.eval()
+
+    smoothed = Smooth(model, args.num_cls, 0.25)
+    _, test_dataset = set_data_set(args)
+    for i in range(len(test_dataset)):
+
+        # only certify every args.skip examples, and stop after args.max examples
+        if i % 1 != 0:
+            continue
+        if i == -1:
+            break
+
+        (x, label) = test_dataset[i]
+        x = x.cuda()
+        # before_time = time()
+
+        # make the prediction
+        prediction = smoothed.predict(x, 10000, 0.001, 1000)
+
+        # after_time = time()
+        correct = int(prediction == label)
+
+        # time_elapsed = str(datetime.timedelta(seconds=(after_time - before_time)))
+    model.eval()
 
     # res = non_returnable_boundary(model, args)
     plot(args)

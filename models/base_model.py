@@ -12,7 +12,7 @@ class BaseModel(nn.Module):
         self.set_up_kwargs = {'batch_norm': args.batch_norm, 'activation': args.activation}
 
     def forward(self, x):
-        return self.model(x)
+        pass
 
     def save_model(self, path, name=None):
         if not name:
@@ -39,7 +39,7 @@ class BaseModel(nn.Module):
                 new_dict[k1] = v2
             else:
                 raise KeyError
-        self.model.load_state_dict(new_dict)
+        self.load_state_dict(new_dict)
 
     # def pruning_val(self, epoch, test_loader):
     #     start = time.time()

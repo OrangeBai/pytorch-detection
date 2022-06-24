@@ -6,7 +6,7 @@ MNIST_MEAN_STD = (0.1307,), (0.3081,)
 
 
 def get_loaders(args):
-    mean, std = (0.5,), (1,)
+    mean, std = MNIST_MEAN_STD
     data_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
@@ -63,3 +63,14 @@ def get_single_sets(args, *labels):
         shuffle=False,
         pin_memory=True,
     ) for sub_set in sub_sets]
+
+
+def get_dataset(args):
+    mean, std = MNIST_MEAN_STD
+    data_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+    train_dataset = datasets.MNIST(DATA_PATH, train=True, transform=data_transform, download=True)
+    test_dataset = datasets.MNIST(DATA_PATH, train=False, transform=data_transform, download=True)
+    return train_dataset, test_dataset
