@@ -73,7 +73,6 @@ def amplify_ratio(local_lb, local_ub, block_weight, block_type):
 
 
 def linear_amplify(local_lb, local_ub, weight):
-    r = []
     float_neuron = local_lb[0] != local_ub[0]
     weight_2__norm = np.linalg.norm(weight[0], ord=2, axis=1)
     batch_float = np.array(local_ub[0]) * float_neuron
@@ -89,13 +88,38 @@ def linear_amplify(local_lb, local_ub, weight):
 
 
 def conv_amplify(local_pattern, local_ub, weight):
-    single_integral = np.matmul(np.array(local_pattern[0] + local_ub[0]).sum(axis=(2, 3)) / 2, np.diag(weight[1])).sum(
-        axis=1)
-    region_integral = np.matmul(np.array(local_ub[0]).sum(axis=(2, 3)), np.diag(weight[1])).sum(axis=1)
+    if len(weight) > 1:
+        single_integral = np.matmul(np.array(local_pattern[0] + local_ub[0]).sum(axis=(2, 3)) / 2, np.diag(weight[1])).sum(
+            axis=1)
+        region_integral = np.matmul(np.array(local_ub[0]).sum(axis=(2, 3)), np.diag(weight[1])).sum(axis=1)
+    else:
+        single_integral = (np.array(local_pattern[0] + local_ub[0]).sum(axis=(2, 3)) / 2).sum(axis=1)
+        region_integral = np.array(local_ub[0]).sum(axis=(2, 3)).sum(axis=1)
     return region_integral / single_integral
 
 
 def estimate_lip(args, model, images, sample_size):
+    model.eval()
+    mean, std = set_mean_sed(args)
+    noise_attack = Noise(model, None, args.noise_eps, mean=mean, std=std)
+    float_hook = ModelHook(model, set_pattern_hook, Gamma=set_gamma(args.activation))
+    noised_sample = noise_attack.attack(images, sample_size, args.devices[0])
+    noised_sample = [noised_sample[i:i + 512] for i in range(0, len(noised_sample), 512)]
+    for n in noised_sample:
+        model(to_device(args.devices[0], n)[0])
+    region_lbs, region_ubs = float_hook.retrieve_res(retrieve_lb_ub, sample_size=sample_size,
+                                                     grad_bound=set_lb_ub(args.activation))
+    float_hook.remove()
+    block_weights, block_types = record_blocks(model)
+    ratio = np.ones(len(images))
+    for block_lb, block_ub, block_weight, block_type in zip(region_lbs, region_ubs, block_weights, block_types):
+        region_lbs, block_ub = pattern_to_bound([0, 1], block_lb, block_ub)
+        ratio *= amplify_ratio(region_lbs, block_ub, block_weight, block_type)
+    model.train()
+    return ratio
+
+
+def estimate_lip2(args, model, images, sample_size):
     model.eval()
     mean, std = set_mean_sed(args)
     noise_attack = Noise(model, None, args.noise_eps, mean=mean, std=std)

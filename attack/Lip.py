@@ -12,7 +12,6 @@ class LipAttack(Attack):
         images = to_device(device, images.clone().detach())[0]
         images = self._reverse_norm(images)  # from normalized to (0,1)
 
-
         images.requires_grad = True
         outputs = self.model(images)
         fake_label = torch.randint(0, 10, (len(images),)).cuda()
@@ -22,7 +21,7 @@ class LipAttack(Attack):
             bool_mat = one_hot(fake_label, num_classes=10).type(torch.float)
             cost = (outputs * bool_mat).norm(p=1)
 
-        grad = torch.autograd.grad(cost, images, retain_graph=False, create_graph=False)[0]
+        grad = torch.autograd.grad(cost, images, retain_graph=True, create_graph=False)[0]
 
         if self.ord == 'l2':
             perturbation = grad / grad.norm(p=2, dim=(1, 2, 3)).view(len(grad), 1, 1, 1) * 0.0001
