@@ -36,7 +36,7 @@ class ArgParser:
         self.parser.add_argument('--batch_size', default=128, type=int)
 
         # model settings
-        self.parser.add_argument('--batch_norm', default=0, type=int)
+        self.parser.add_argument('--batch_norm', default=1, type=int)
         self.parser.add_argument('--activation', default='LeakyReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
