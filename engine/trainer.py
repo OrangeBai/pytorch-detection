@@ -40,7 +40,7 @@ class Trainer(CertTrainer):
 
     def train_step(self, images, labels):
         if self.args.train_mode == 'cert':
-            self.cert_train_step(images, labels)
+            self.normal_train_step(images, labels)
         elif self.args.train_mode == 'normal':
             self.normal_train_step(images, labels)
         elif self.args.train_mode == 'adv':
