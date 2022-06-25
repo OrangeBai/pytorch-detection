@@ -5,8 +5,10 @@ class AdvTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
         self.attack_args = {
-            'mean': self.mean,
-            'std': self.std,
+            # 'mean': self.mean,
+            # 'std': self.std,
+            'mean': [0,0,0],
+            'std': [1,1,1],
             'eps': self.args.eps,
             'alpha': self.args.alpha,
             'ord': self.args.ord

@@ -170,7 +170,7 @@ def evaluate_BCP(loader, model, epsilon, epoch, log, verbose, args, u_list):
 
 def BCP_loss(net_bcp, epsilon, X, y, u_list=None, sniter=1, opt_iter=1, show=False, bce=False, linfty=False):
     mu, mu_prev, r_prev, ibp_mu, ibp_mu_prev, ibp_r_prev, W, u_list = net_bcp(X, epsilon, u_list, sniter)
-    onehot_y = utils.one_hot(y)
+    onehot_y = one_hot(y)
     bcp_translation = BCP_translation(mu_prev, r_prev, ibp_mu_prev, ibp_r_prev, W, opt_iter, show)
     bcp_translation[bcp_translation != bcp_translation] = 0
     bcp_logit = translation(mu, bcp_translation, onehot_y)
@@ -214,13 +214,18 @@ class net_BCP(nn.Module):
         if args.linfty:
             r *= np.sqrt(x.reshape(x.size(0), -1).size(1))  ### 55.4256
 
-        depth = len(list(self.model.children()))  # number of main layers
+        available_modules = [nn.Conv2d, nn.ReLU, nn.LeakyReLU, nn.BatchNorm2d, nn.Linear, nn.MaxPool2d, nn.BatchNorm1d, nn.Flatten]
+        model_list = [n for n in self.model.modules() if type(n) in available_modules]
+
+        depth = len(model_list)  # number of main layers
         ibp_mu = mu
 
         if u_list is None:
             u_list = [None] * depth
         self.u_list = u_list
-        for i, layer in enumerate(self.model.children()):
+
+
+        for i, layer in enumerate(model_list):
             if (i + 1) == depth:
                 mu_prev = mu
                 r_prev = r
@@ -243,6 +248,8 @@ class net_BCP(nn.Module):
                 mu, r, ibp_mu, ibp_r = self.bcp_bacthnorm2d(layer, mu, r, ibp_mu, ibp_r, i)
             elif isinstance(layer, nn.LeakyReLU):
                 mu, r, ibp_mu, ibp_r = self.bcp_leakyrelu(layer, mu, r, ibp_mu, ibp_r, i)
+            elif isinstance(layer, nn.BatchNorm1d):
+                mu, r, ibp_mu, ibp_r = self.bcp_bacthnorm1d(layer, mu, r, ibp_mu, ibp_r, i)
 
     def bcp_conv2d(self, layer, mu, r, ibp_mu, ibp_r, i):
         ibp_mu = self._conv2d(ibp_mu, layer.weight, layer.bias, layer.stride, padding=layer.padding)
@@ -402,11 +409,11 @@ class net_BCP(nn.Module):
 
     def bcp_bacthnorm1d(self, layer, mu, r, ibp_mu, ibp_r, i):
         if layer.training:
-            mean = mu.mean(0).mean(-1).mean(-1).view(1, -1, 1, 1).detach()
-            var = ((mu - mean) ** 2).mean(0).mean(-1).mean(-1).view(1, -1, 1, 1).detach()
+            mean = mu.mean(0).mean(-1).mean(-1).view(1, -1).detach()
+            var = ((mu - mean) ** 2).mean(0).mean(-1).mean(-1).view(1, -1).detach()
         else:
-            mean = copy.deepcopy(layer.state_dict()['running_mean']).view(1, -1, 1, 1)
-            var = copy.deepcopy(layer.state_dict()['running_var']).view(1, -1, 1, 1)
+            mean = copy.deepcopy(layer.state_dict()['running_mean']).view(1, -1)
+            var = copy.deepcopy(layer.state_dict()['running_var']).view(1, -1)
 
         scale = layer.state_dict()['weight']
         bias = layer.state_dict()['bias']
@@ -417,12 +424,12 @@ class net_BCP(nn.Module):
 
         p = torch.max(torch.abs(ww))
         ibp_mu1 = mu_after
-        ibp_r1 = r.view(-1, 1, 1, 1) * ww.view(1, -1, 1, 1).abs()
+        ibp_r1 = r.view(-1, 1) * ww.view(1, -1).abs()
         ibp_ub1 = ibp_mu1 + ibp_r1
         ibp_lb1 = ibp_mu1 - ibp_r1
 
-        ibp_mu = self._batchnorm2d(ibp_mu, mean, var, scale, bias, bn_eps)
-        ibp_r = self._batchnorm2d(ibp_r, torch.zeros_like(mean), var, scale.abs(), torch.zeros_like(bias), bn_eps)
+        ibp_mu = self._batchnorm1d(ibp_mu, mean, var, scale, bias, bn_eps)
+        ibp_r = self._batchnorm1d(ibp_r, torch.zeros_like(mean), var, scale.abs(), torch.zeros_like(bias), bn_eps)
         ibp_ub = ibp_mu + ibp_r
         ibp_lb = ibp_mu - ibp_r
 
@@ -461,8 +468,21 @@ class net_BCP(nn.Module):
     def _avgpool2d(self, x, kernel_size, stride, padding=0):
         return F.avg_pool2d(x, kernel_size=kernel_size, stride=stride, padding=padding)
 
-    def _batchnorm1d(self):
-        pass
+    def _batchnorm1d(self, x, mean, var, weight, bias, bn_eps):
+        mean = mean.repeat(x.size()[0], 1)
+        var = var.repeat(x.size()[0], 1)
+        weight = weight.view(1, -1)
+        bias = bias.view(1, -1)
+        weight = weight.repeat(x.size()[0], 1)
+        bias = bias.repeat(x.size()[0], 1)
+
+        multiplier = torch.rsqrt(var + bn_eps) * weight  ### rsqrt=1/sqrt
+
+        b = -multiplier * mean + bias
+        y = multiplier * x
+        y += b
+
+        return y
 
     def _batchnorm2d(self, x, mean, var, weight, bias, bn_eps):
         mean = mean.repeat(x.size()[0], 1, x.size()[2], x.size()[3])

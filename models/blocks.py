@@ -41,9 +41,9 @@ class LinearBlock(nn.Module):
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=(3, 3), padding=1, *args, **kwargs):
+    def __init__(self, in_channels, out_channels, kernel_size=(3, 3), padding=1, stride=1, *args, **kwargs):
         super().__init__()
-        self.Conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
+        self.Conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding, stride=stride)
         self.BN = set_bn(kwargs['batch_norm'], 2, out_channels)
         self.Act = set_activation(kwargs['activation'])
 

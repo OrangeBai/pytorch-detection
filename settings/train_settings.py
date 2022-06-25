@@ -36,8 +36,8 @@ class ArgParser:
         self.parser.add_argument('--batch_size', default=128, type=int)
 
         # model settings
-        self.parser.add_argument('--batch_norm', default=True, type=int)
-        self.parser.add_argument('--activation', default='LeakyReLU', type=str)
+        self.parser.add_argument('--batch_norm', default=0, type=int)
+        self.parser.add_argument('--activation', default='ReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
         self.parser.add_argument('--val_mode', default='normal', type=str)
@@ -125,13 +125,13 @@ class ArgParser:
         if args.optimizer == 'SGD':
             # SGD parameters
             self.parser.set_defaults(lr=0.1)
-            self.parser.add_argument('--weight_decay', default=5e-4, type=float)
+            self.parser.add_argument('--weight_decay', default=1e-3, type=float)
             self.parser.add_argument('--momentum', default=0.9, type=float)
         elif args.optimizer == 'Adam':
             self.parser.set_defaults(lr=0.01)
             self.parser.add_argument('--beta_1', default=0.9, type=float)
             self.parser.add_argument('--beta_2', default=0.99, type=float)
-            self.parser.add_argument('--weight_decay', default=5e-4, type=float)
+            self.parser.add_argument('--weight_decay', default=1e-3, type=float)
         else:
             pass
         return

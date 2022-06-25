@@ -94,7 +94,7 @@ def argparser(data='cifar10', model='large',
     parser.add_argument('--drop_last', action='store_true')
     parser.add_argument('--no_shuffle', action='store_true')
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     args.augmentation = not (args.no_augmentation)
     args.shuffle = not (args.no_shuffle)

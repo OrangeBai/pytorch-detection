@@ -25,16 +25,14 @@ class CXFY(BaseModel):
 def cxfy42_mnist_large(**kwargs):
     model = nn.Sequential(
         ConvBlock(1, 32, 3, padding=1, **kwargs),
-        ConvBlock(32, 32, 3, padding=1, **kwargs),
-        nn.MaxPool2d(kernel_size=2, stride=2),
+        ConvBlock(32, 32, 4, padding=1, stride=2, **kwargs),
         ConvBlock(32, 64, 3, padding=1, **kwargs),
-        ConvBlock(64, 64, 3, padding=1, **kwargs),
-        nn.MaxPool2d(kernel_size=2, stride=2),
+        ConvBlock(64, 64, 4, padding=1, stride=2, **kwargs),
         nn.Flatten(),
-        LinearBlock(64 * 7 * 7, 512, **kwargs),
+        LinearBlock(64 * 7 * 7, 512, batch_norm=0, activation='LeakyReLU'),
 
-        LinearBlock(512, 512, **kwargs),
-        nn.Linear(512, 10, set_activation(None))
+        LinearBlock(512, 512, batch_norm=0, activation='LeakyReLU'),
+        nn.Linear(512, 10)
     )
     return model
 
@@ -42,15 +40,14 @@ def cxfy42_mnist_large(**kwargs):
 def cxfy42_cifar10_large(**kwargs):
     model = nn.Sequential(
         ConvBlock(3, 32, 3, padding=1, **kwargs),
-        ConvBlock(32, 32, 3, padding=1, **kwargs),
-        nn.MaxPool2d(kernel_size=2, stride=2),
+        ConvBlock(32, 32, 4, padding=1, stride=2, **kwargs),
         ConvBlock(32, 64, 3, padding=1, **kwargs),
-        ConvBlock(64, 64, 3, padding=1, **kwargs),
-        nn.MaxPool2d(kernel_size=2, stride=2),
+        ConvBlock(64, 64, 4, padding=1, stride=2, **kwargs),
         nn.Flatten(),
-        LinearBlock(64 * 8 * 8, 512, **kwargs),
+        LinearBlock(64 * 8 * 8, 512,**kwargs),
+
         LinearBlock(512, 512, **kwargs),
-        LinearBlock(512, 10, batch_norm=0, activation=None)
+        nn.Linear(512, 10)
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):
