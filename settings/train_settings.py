@@ -37,7 +37,7 @@ class ArgParser:
 
         # model settings
         self.parser.add_argument('--batch_norm', default=0, type=int)
-        self.parser.add_argument('--activation', default='ReLU', type=str)
+        self.parser.add_argument('--activation', default='LeakyReLU', type=str)
         # trainer settings
         self.parser.add_argument('--train_mode', default='normal', type=str)
         self.parser.add_argument('--val_mode', default='normal', type=str)
@@ -59,7 +59,7 @@ class ArgParser:
         self.parser.add_argument('--prune_ratio', default=0.95)
 
         # dataset and experiments
-        self.parser.add_argument('--dataset', default='cifar100', type=str)
+        self.parser.add_argument('--dataset', default='cifar10', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
         # gpu settings
         self.parser.add_argument('--cuda', default=[0], type=list)
@@ -125,13 +125,13 @@ class ArgParser:
         if args.optimizer == 'SGD':
             # SGD parameters
             self.parser.set_defaults(lr=0.1)
-            self.parser.add_argument('--weight_decay', default=1e-3, type=float)
+            self.parser.add_argument('--weight_decay', default=5e-4, type=float)
             self.parser.add_argument('--momentum', default=0.9, type=float)
         elif args.optimizer == 'Adam':
             self.parser.set_defaults(lr=0.01)
             self.parser.add_argument('--beta_1', default=0.9, type=float)
             self.parser.add_argument('--beta_2', default=0.99, type=float)
-            self.parser.add_argument('--weight_decay', default=1e-3, type=float)
+            self.parser.add_argument('--weight_decay', default=5e-4, type=float)
         else:
             pass
         return

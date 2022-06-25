@@ -27,11 +27,11 @@ class CertTrainer(AdvTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        # if self.est_lip:
-        #     ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-        #     ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
-        # else:
-        #     ratio = self.metrics.ratio.avg
+        if self.est_lip:
+            ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
+        else:
+            ratio = self.metrics.ratio.avg
 
         perturbation = self.lip.attack(images, labels)
 
@@ -45,7 +45,7 @@ class CertTrainer(AdvTrainer):
 
         self.optimizer.zero_grad()
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + 8 * worst_lip, labels)
+        loss_reg = self.loss_function(outputs + ratio * worst_lip, labels)
         loss = self.trained_ratio * loss_reg + (1 - self.trained_ratio) * loss_nor
         loss.backward()
         self.step()
@@ -55,6 +55,6 @@ class CertTrainer(AdvTrainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        # if self.est_lip:
-        #     self.update_metric(ratio=(ratio.mean(), len(images)))
+        if self.est_lip:
+            self.update_metric(ratio=(ratio.mean(), len(images)))
 
