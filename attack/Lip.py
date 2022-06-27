@@ -16,7 +16,7 @@ class LipAttack(Attack):
         images.requires_grad = True
         outputs = self.model(images)
         flags = 1 - one_hot(labels, num_classes=outputs.shape[1]).type(torch.float).cuda()
-        if self.ord != 'l2':
+        if self.ord == 'l2':
             cost = (outputs * flags).norm(p=2, dim=-1).mean()
         else:
             cost = (outputs * flags).norm(p=1, dim=-1).mean()
