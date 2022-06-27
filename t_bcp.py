@@ -8,9 +8,10 @@ from core.smooth_analyze import *
 from core.smooth import *
 from models.net.cxfy import *
 if __name__ == '__main__':
-    argv = ['--exp_id', 'test_lip', '--net', 'cxfy42', '--dataset', 'cifar10', '--batch_norm', '0', '--activation', 'ReLU']
+    argv = ['--exp_id', 'bcp', '--net', 'cxfy42', '--dataset', 'cifar10', '--batch_norm', '0', '--activation', 'ReLU',
+            '--data_bn', '0']
     args = set_up_testing('td', argv)
-    state_dict = torch.load(r'/home/orange/Main/Experiment/cifar10/cifar_10_bcp/temporary_best.pth')['state_dict']
+    state_dict = torch.load(r'/home/orange/Main/Experiment/cifar10/cifar10_cxfy42_bcp/temporary_best.pth')['state_dict']
     model = build_model(args)
     model.load_weights(state_dict[0])
     model = model.eval()
@@ -25,4 +26,4 @@ if __name__ == '__main__':
         top1, top5 = accuracy(pred, labels)
         metrics.update(top1=(top1, len(images)), top5=(top5, len(images)))
     smooth_pred(model, args)
-    ApproximateAccuracy(r'/home/orange/Main/Experiment/cifar10/cifar10_cxfy42_test_bcp_smooth')
+    ApproximateAccuracy(r'/home/orange/Main/Experiment/cifar10/cifar10_cxfy42_bcp/smooth').at_radii(np.array([32/255]))

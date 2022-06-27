@@ -23,7 +23,7 @@ def set_up_testing(test_name='normal', argv=None):
     exp_path = os.path.join(parser.parse_args().model_dir, 'exp')
     if not os.path.exists(exp_path):
         os.makedirs(exp_path)
-    parser.add_argument('--exp_path', default=exp_path, type=str)
+    parser.add_argument('--exp_dir', default=exp_path, type=str)
     return parser.parse_args(args)
 
 
@@ -54,4 +54,5 @@ def smoothed_certify(parser):
     parser.add_argument("--N0", type=int, default=100)
     parser.add_argument("--N", type=int, default=100000, help="number of samples to use")
     parser.add_argument("--smooth_alpha", type=float, default=0.001, help="failure probability")
+    parser.add_argument('--data_bn', type=int, default=1)
     return parser

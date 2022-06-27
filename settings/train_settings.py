@@ -36,6 +36,7 @@ class ArgParser:
         self.parser.add_argument('--batch_size', default=128, type=int)
 
         # model settings
+        self.parser.add_argument('--data_bn', type=int, default=1)
         self.parser.add_argument('--batch_norm', default=1, type=int)
         self.parser.add_argument('--activation', default='LeakyReLU', type=str)
         # trainer settings
@@ -219,7 +220,7 @@ class ArgParser:
 
             return os.listdir(os.path.join(os.getcwd(), self.get_args().yaml_files))
         else:
-            args = self.parser.parse_args()
+            args, _ = self.parser.parse_known_args(self.args)
             return [os.path.join(args.model_dir, 'args.yaml')]
 
     def train_mode(self):
