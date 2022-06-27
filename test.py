@@ -7,15 +7,16 @@ from core.BCP_utils import argparser
 from core.smooth_analyze import *
 from core.smooth import *
 if __name__ == '__main__':
-    argv = ['--exp_id', 'test_lip', '--net', 'cxfy42', '--dataset', 'cifar10']
-    args = set_up_testing('td', argv)
+    # argv = ['--exp_id', 'test_lip', '--net', 'cxfy42', '--dataset', 'cifar10']
+    args = set_up_testing('td', None)
     model = build_model(args)
     model.load_model(args.model_dir)
     model = model.eval()
+
     # _, test_loader = set_loader(args)
     # args2 = argparser()
     # evaluate_BCP(test_loader, model, 32/255, -1, -1, -1, args2, None)
-    # smooth_pred(model, args)
+    smooth_pred(model, args)
     ApproximateAccuracy(r'/home/orange/Main/Experiment/cifar10/cifar10_cxfy42_test_lipsmooth')
     # smoothed = Smooth(model, args.num_cls, 0.25)
     # _, test_dataset = set_data_set(args)

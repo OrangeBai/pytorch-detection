@@ -76,7 +76,7 @@ class ArgParser:
         return self.parser
 
     def get_args(self):
-        return self.parser.parse_args(self.args)
+        return self.parser.parse_known_args(self.args)[0]
 
     def resume(self):
         args, _ = self.parser.parse_known_args(self.args)

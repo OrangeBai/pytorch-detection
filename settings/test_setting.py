@@ -6,12 +6,17 @@ def set_up_testing(test_name='normal', argv=None):
     arg_parser = ArgParser(False, argv)
     parser = arg_parser.parser
     args = arg_parser.args
+
+    parser.add_argument('--test_name', default='normal', type=str)
+    test_name = parser.parse_known_args(args)[0].test_name
     if test_name == 'normal':
         pass
     elif test_name.lower() == 'aplip':
         parser = ap_lip(parser)
     elif test_name.lower() == 'td':
         parser = td(parser)
+    elif test_name.lower() == 'smooth':
+        parser = smoothed_certify(parser)
     else:
         raise NameError('test name {0} not found'.format(test_name))
 
@@ -40,4 +45,13 @@ def non_ret(parser):
     parser.add_argument('--num_test', default=100, type=int)
     parser.add_argument('--line_breaks', default=2048, type=int)
     parser.add_argument('--pre_batch', default=512)
+    return parser
+
+
+def smoothed_certify(parser):
+    parser.add_argument("--sigma", type=float, help="noise hyperparameter", default=0.25)
+    parser.add_argument("--batch", type=int, default=1000, help="batch size")
+    parser.add_argument("--N0", type=int, default=100)
+    parser.add_argument("--N", type=int, default=100000, help="number of samples to use")
+    parser.add_argument("--smooth_alpha", type=float, default=0.001, help="failure probability")
     return parser

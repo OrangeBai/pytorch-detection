@@ -44,7 +44,7 @@ def cxfy42_cifar10_large(**kwargs):
         ConvBlock(32, 64, 3, padding=1, **kwargs),
         ConvBlock(64, 64, 4, padding=1, stride=2, **kwargs),
         nn.Flatten(),
-        LinearBlock(64 * 8 * 8, 512,**kwargs),
+        LinearBlock(64 * 8 * 8, 512, **kwargs),
 
         LinearBlock(512, 512, **kwargs),
         nn.Linear(512, 10)

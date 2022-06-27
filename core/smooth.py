@@ -1,16 +1,16 @@
 import datetime
 from time import time
-
+import os
 from core.smooth_core import *
 from dataloader.base import *
 from core.smooth_analyze import *
 
 
 def smooth_pred(model, args):
-    smoothed_classifier = Smooth(model, args.num_cls, 0.25)
+    smoothed_classifier = Smooth(model, args.num_cls, args.sigma)
 
     # prepare output file
-    outfile = args.model_dir + 'smooth'
+    outfile = os.path.join(args.exp_dir, 'smooth')
     f = open(outfile, 'w')
     print("idx\tlabel\tpredict\tradius\tcorrect\ttime", file=f, flush=True)
 
@@ -29,7 +29,7 @@ def smooth_pred(model, args):
         before_time = time.time()
         # certify the prediction of g around x
         x = x.cuda()
-        prediction, radius = smoothed_classifier.certify(x, 100, 10000, 0.001, 1000)
+        prediction, radius = smoothed_classifier.certify(x, args.N0, args.N, args.smooth_alpha, args.batch)
         after_time = time.time()
         correct = int(prediction == label)
 
