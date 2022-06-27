@@ -9,16 +9,13 @@ class CertTrainer(AdvTrainer):
     def __init__(self, args):
         super().__init__(args)
         self.num_flt_est = args.num_flt_est
-        self.est_lip = False
+        self.est_lip = 0
 
     def cert_train_epoch(self, epoch):
-
+        self.est_lip = 0
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
-            if step % self.args.fre_lip_est == 0:
-                self.est_lip = True
             self.cert_train_step(images, labels)
-            self.est_lip = False
             if step % self.args.print_every == 0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
 
@@ -26,8 +23,9 @@ class CertTrainer(AdvTrainer):
         self.inf_loader.reset()
 
     def cert_train_step(self, images, labels):
+
         images, labels = to_device(self.args.devices[0], images, labels)
-        if self.est_lip:
+        if self.est_lip % self.args.fre_est_lip == 0:
             ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
             ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
         else:
@@ -38,10 +36,10 @@ class CertTrainer(AdvTrainer):
         outputs = self.model(images)
         local_lip = (self.model(images + perturbation) - outputs) * 10000
         if self.args.ord == 'l2':
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.args.eps * 2
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.args.eps
         else:
             eps = torch.norm(torch.ones(images[0].shape) * self.args.eps, p=2)
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * eps * 2
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * eps
 
         self.optimizer.zero_grad()
         loss_nor = self.loss_function(outputs, labels)
@@ -55,6 +53,7 @@ class CertTrainer(AdvTrainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        if self.est_lip:
+        if self.est_lip % self.args.fre_est_lip==0:
             self.update_metric(ratio=(ratio.mean(), len(images)))
+        self.est_lip += 1
 

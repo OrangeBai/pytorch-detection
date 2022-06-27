@@ -157,16 +157,21 @@ class BaseTrainer:
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
 
-        perturbation = self.lip.attack(images, labels)
-        local_lip = (self.model(images + perturbation) - outputs) * 10000
         self.optimizer.zero_grad()
         loss.backward()
         self.step()
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
-                           loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
+                           loss=(loss, len(images)), lr=(self.get_lr(), 1))
+        if self.args.record_lip:
+            self.record_lip(images, labels, outputs)
+
+    def record_lip(self, images, labels, outputs):
+        perturbation = self.lip.attack(images, labels)
+        local_lip = (self.model(images + perturbation) - outputs) * 10000
+        self.update_metric(l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
+        return
 
     def step(self):
         self.optimizer.step()
@@ -191,7 +196,6 @@ class BaseTrainer:
 
     def validate_epoch(self, epoch):
         pass
-
 
     def train_step(self, images, labels):
         pass

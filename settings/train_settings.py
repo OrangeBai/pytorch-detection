@@ -225,7 +225,7 @@ class ArgParser:
     def train_mode(self):
         args, _ = self.parser.parse_known_args(self.args)
         # Certifiable training
-        self.parser.add_argument('--fre_lip_est', default=50, type=int)
+        self.parser.add_argument('--fre_est_lip', default=50, type=int)
         self.parser.add_argument('--num_flt_est', default=32, type=int)
         self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
         self.parser.add_argument('--gamma_type', default='linear', type=str,
@@ -241,3 +241,5 @@ class ArgParser:
         self.parser.add_argument('--prune_rate', default=0.95, type=float)
         self.parser.add_argument('--prune_every', default=20, type=float)
 
+        # other settings
+        self.parser.add_argument('--record_lip', default=1, type=float)
