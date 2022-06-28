@@ -1,23 +1,19 @@
 from exps.non_returnable import *
 from settings.test_setting import *
-from plt.non_returnable import *
-from smooth.core import *
-from core.BCP import *
-from core.BCP_utils import argparser
-from core.smooth_analyze import *
-from core.smooth import *
+from exps.base import *
 if __name__ == '__main__':
-    # argv = ['--exp_id', 'test_lip', '--net', 'cxfy42', '--dataset', 'cifar10']
-    args = set_up_testing('td', None)
+    argv = ['--exp_id', 'cert_noBN_Adam_0.001_0', '--net', 'cxfy42', '--dataset', 'cifar10', '--data_bn', '0', '--batch_norm', '0']
+    args = set_up_testing(argv)
     model = build_model(args)
     model.load_model(args.model_dir)
     model = model.eval()
 
+    exp = set_exp(args)
+    exp(model, args)
+
     # _, test_loader = set_loader(args)
     # args2 = argparser()
     # evaluate_BCP(test_loader, model, 32/255, -1, -1, -1, args2, None)
-    smooth_pred(model, args)
-    ApproximateAccuracy(r'/home/orange/Main/Experiment/cifar10/cifar10_cxfy42_test_lipsmooth')
     # smoothed = Smooth(model, args.num_cls, 0.25)
     # _, test_dataset = set_data_set(args)
     # for i in range(len(test_dataset)):

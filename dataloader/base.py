@@ -4,6 +4,7 @@ import dataloader.imagenet
 import time
 from core.utils import MetricLogger
 
+
 def set_data_set(args):
     if 'mnist' in args.dataset.lower():
         train_set, test_set = dataloader.MNIST.get_dataset(args)
@@ -14,6 +15,7 @@ def set_data_set(args):
     else:
         raise NameError()
     return train_set, test_set
+
 
 def set_loader(args):
     """
@@ -39,14 +41,20 @@ def set_single_loaders(args, *labels):
 
 
 def set_mean_sed(args):
-    if args.dataset.lower() == 'cifar10':
-        mean, std = dataloader.cifar.CIAFR10_MEAN_STD
-    elif args.dataset.lower() == 'cifar100':
-        mean, std = dataloader.cifar.CIAFR100_MEAN_STD
-    elif args.dataset.lower() == 'mnist':
-        mean, std = dataloader.MNIST.MNIST_MEAN_STD
+    if args.data_bn == 0:
+        if args.dataset.lower() in ['cifar10', 'cifar100']:
+            mean, std = [0, 0, 0], [1, 1, 1]
+        else:
+            mean, std = [0], [1]
     else:
-        raise NameError()
+        if args.dataset.lower() == 'cifar10':
+            mean, std = dataloader.cifar.CIAFR10_MEAN_STD
+        elif args.dataset.lower() == 'cifar100':
+            mean, std = dataloader.cifar.CIAFR100_MEAN_STD
+        elif args.dataset.lower() == 'mnist':
+            mean, std = dataloader.MNIST.MNIST_MEAN_STD
+        else:
+            raise NameError()
     return mean, std
 
 

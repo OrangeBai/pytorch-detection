@@ -2,7 +2,7 @@ from settings.train_settings import *
 import argparse
 
 
-def set_up_testing(test_name='normal', argv=None):
+def set_up_testing(argv=None):
     arg_parser = ArgParser(False, argv)
     parser = arg_parser.parser
     args = arg_parser.args
@@ -20,10 +20,10 @@ def set_up_testing(test_name='normal', argv=None):
     else:
         raise NameError('test name {0} not found'.format(test_name))
 
-    exp_path = os.path.join(parser.parse_args().model_dir, 'exp')
-    if not os.path.exists(exp_path):
-        os.makedirs(exp_path)
-    parser.add_argument('--exp_dir', default=exp_path, type=str)
+    exp_dir = os.path.join(parser.parse_args().model_dir, 'exp')
+    if not os.path.exists(exp_dir):
+        os.makedirs(exp_dir)
+    parser.add_argument('--exp_dir', default=exp_dir, type=str)
     return parser.parse_args(args)
 
 
@@ -49,10 +49,9 @@ def non_ret(parser):
 
 
 def smoothed_certify(parser):
-    parser.add_argument("--sigma", type=float, help="noise hyperparameter", default=0.25)
+    parser.add_argument("--sigma", type=float, help="noise hyperparameter", default=0.125)
     parser.add_argument("--batch", type=int, default=1000, help="batch size")
     parser.add_argument("--N0", type=int, default=100)
     parser.add_argument("--N", type=int, default=100000, help="number of samples to use")
     parser.add_argument("--smooth_alpha", type=float, default=0.001, help="failure probability")
-    parser.add_argument('--data_bn', type=int, default=1)
     return parser
