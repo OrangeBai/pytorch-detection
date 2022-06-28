@@ -1,6 +1,6 @@
-from engine.cert_train import CertTrainer
 from core.BCP_utils import argparser
 from engine.cert_train import CertTrainer
+from core.BCP import evaluate_BCP
 
 
 class Trainer(CertTrainer):
@@ -9,10 +9,13 @@ class Trainer(CertTrainer):
 
     def train_model(self):
         self.warmup()
+        evaluate_BCP(self.test_loader, self.model, 1 / 255, -1, -1, -1, argparser(), None)
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
             self.record_result(epoch)
+            rb = evaluate_BCP(self.test_loader, self.model, 1/255, -1, -1, -1, argparser(), None)
+            self.model.train()
 
         self.model.save_model(self.args.model_dir)
         self.save_result(self.args.model_dir)

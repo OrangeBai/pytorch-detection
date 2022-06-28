@@ -214,7 +214,8 @@ class net_BCP(nn.Module):
         if args.linfty:
             r *= np.sqrt(x.reshape(x.size(0), -1).size(1))  ### 55.4256
 
-        available_modules = [nn.Conv2d, nn.ReLU, nn.LeakyReLU, nn.BatchNorm2d, nn.Linear, nn.MaxPool2d, nn.BatchNorm1d, nn.Flatten]
+        available_modules = [nn.Conv2d, nn.ReLU, nn.LeakyReLU, nn.BatchNorm2d, nn.Linear, nn.MaxPool2d, nn.BatchNorm1d,
+                             nn.Flatten]
         model_list = [n for n in self.model.modules() if type(n) in available_modules]
 
         depth = len(model_list)  # number of main layers
@@ -223,7 +224,6 @@ class net_BCP(nn.Module):
         if u_list is None:
             u_list = [None] * depth
         self.u_list = u_list
-
 
         for i, layer in enumerate(model_list):
             if (i + 1) == depth:

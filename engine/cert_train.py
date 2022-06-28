@@ -1,5 +1,4 @@
 from torch.nn.functional import one_hot
-from core.pattern import *
 from core.lip import *
 from engine import *
 from core.utils import *
@@ -23,28 +22,34 @@ class CertTrainer(AdvTrainer):
         self.inf_loader.reset()
 
     def cert_train_step(self, images, labels):
-
         images, labels = to_device(self.args.devices[0], images, labels)
-        if self.est_lip % self.args.fre_est_lip == 0:
-            ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
-            ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
-        else:
-            ratio = self.metrics.ratio.avg
-
+        # if self.est_lip % self.args.fre_est_lip == 0:
+        #     ratio = estimate_lip(self.args, self.model, images, self.num_flt_est)
+        #     ratio = torch.tensor(ratio).view(len(ratio), 1).cuda()
+        # else:
+        #     ratio = self.metrics.ratio.avg
+        pattern_hook = ModelHook(self.model, set_input_hook, device='gpu')
+        outputs = self.model(images)
+        pt = pattern_hook.retrieve_res(unpack)
+        pattern_hook.remove()
+        pt = [i for j in pt[-2:] for i in j]
+        pt_loss = torch.tensor(1.0).cuda()
+        for p in pt:
+            pt_loss += p[p.abs() < 1e-1].abs().sum()
+        pt_loss = torch.log(pt_loss) * 0.01
         perturbation = self.lip.attack(images, labels)
 
-        outputs = self.model(images)
         local_lip = (self.model(images + perturbation) - outputs) * 10000
         if self.args.ord == 'l2':
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * self.args.eps
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
         else:
-            eps = torch.norm(torch.ones(images[0].shape) * self.args.eps, p=2)
-            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs() * eps
-
+            # eps = torch.norm(torch.ones(images[0].shape) * self.args.eps, p=2)
+            worst_lip = (1 - one_hot(labels, num_classes=self.args.num_cls)).mul(local_lip).abs()
         self.optimizer.zero_grad()
         loss_nor = self.loss_function(outputs, labels)
-        loss_reg = self.loss_function(outputs + ratio * worst_lip, labels)
-        loss = self.trained_ratio * loss_reg + (1 - self.trained_ratio) * loss_nor
+        loss_reg = self.loss_function(outputs + self.trained_ratio * worst_lip, labels)
+        lip_loss = torch.log(1 + worst_lip.norm(p=2, dim=-1).mean()) * 0.01
+        loss = loss_nor - pt_loss + loss_reg * self.trained_ratio
         loss.backward()
         self.step()
 
@@ -53,7 +58,6 @@ class CertTrainer(AdvTrainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
-        if self.est_lip % self.args.fre_est_lip==0:
-            self.update_metric(ratio=(ratio.mean(), len(images)))
-        self.est_lip += 1
-
+        # if self.est_lip % self.args.fre_est_lip == 0:
+        #     self.update_metric(ratio=(ratio.mean(), len(images)))
+        # self.est_lip += 1

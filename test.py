@@ -2,7 +2,7 @@ from exps.non_returnable import *
 from settings.test_setting import *
 from exps.base import *
 if __name__ == '__main__':
-    argv = ['--exp_id', 'cert_noBN_Adam_0.001_0', '--net', 'cxfy42', '--dataset', 'cifar10', '--data_bn', '0', '--batch_norm', '0']
+    argv = ['--exp_id', 'cert_noBN_Adam_0.001_2', '--net', 'cxfy42', '--dataset', 'cifar10', '--data_bn', '0', '--batch_norm', '0']
     args = set_up_testing(argv)
     model = build_model(args)
     model.load_model(args.model_dir)

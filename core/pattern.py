@@ -48,7 +48,7 @@ class ModelHook:
         return res
 
 
-def set_input_hook(stored_values):
+def set_input_hook(stored_values, device='cpu'):
     """
     record input values of the module
     @param stored_values: recorder
@@ -56,11 +56,31 @@ def set_input_hook(stored_values):
     """
 
     def hook(layer, input_var, output_var):
-        input_var = input_var[0].cpu().detach()
-        stored_values.append(input_var)
+        input_var = input_var[0]
+        if device == 'cpu':
+            stored_values.append(input_var.cpu().detach())
+        else:
+            stored_values.append(input_var)
 
     return hook
 
+
+def set_bound_hook(stored_values, bound=1e-1, device='cpu'):
+    """
+    record input values of the module
+    @param stored_values: recorder
+    @return: activation hook
+    """
+
+    def hook(layer, input_var, output_var):
+        input_var = input_var[0]
+        bound_sum = input_var[input_var.abs() < bound].abs().sum()
+        if device == 'cpu':
+            stored_values.append(bound_sum.cpu().detach())
+        else:
+            stored_values.append(bound_sum)
+
+    return hook
 
 def set_output_hook(stored_values):
     """
