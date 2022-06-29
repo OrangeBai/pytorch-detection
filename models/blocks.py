@@ -1,6 +1,9 @@
-import torch.nn as nn
 import torch.nn.functional as F
 from core.utils import *
+import torch.nn.functional as F
+
+from core.utils import *
+
 
 def set_activation(activation):
     if activation is None:
@@ -74,6 +77,36 @@ class FloatFC(nn.Module):
         x = self.fc(x)
         x[mask] = 0
         return x
+
+
+class DualNet(nn.Module):
+    def __init__(self, net, Gamma):
+        super().__init__()
+        self.net = net
+        self.Gamma = Gamma
+
+    def forward(self, x_1, x_2):
+        for module in self.net.layers.children():
+            pass
+
+
+    def dual_forward(self, module, x_1, x_2):
+        if type(module) == ConvBlock:
+            x_1 = module.Conv(x_1)
+            x_2 = module.Conv(x_2)
+
+            x_1 = module.BN(x_1)
+            x_2 = self._batch_norm_2d(module.BN, x_2)
+
+            for i in self.Gamma:
+                pass
+
+    @staticmethod
+    def _batch_norm_2d(layer, x_2):
+        return F.batch_norm(x_2, layer.running_mean, layer.running_var, layer.weight, layer.bias)
+
+
+
 
 
 class FloatNet(nn.Module):

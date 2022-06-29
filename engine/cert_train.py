@@ -27,6 +27,7 @@ class CertTrainer(AdvTrainer):
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         n = images + torch.randn_like(images, device='cuda') * 0.1
+
         outputs = self.model(n)
         loss_nor = self.loss_function(outputs, labels)
 
