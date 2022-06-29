@@ -81,43 +81,58 @@ class FloatNet(nn.Module):
         super().__init__()
         self.net = net
 
-    def first_forward(self, x, bound, compute_type='fix'):
+        self.masks = None
+        self.cur_block = -1
+
+    def forward(self, x, bound=0.01, compute_type='fix', skip=4):
+        self.net.eval()
         masks = []
+        self.cur_block = -1
         for module in self.net.layers.children():
-            if type(module) == ConvBlock:
-                x = self._conv_block(x, module)
-                x, mask = self.compute_mask(x, bound, compute_type)
+            x = self.block_forward(x, module)
+            if type(module) in [ConvBlock, LinearBlock]:
+                mask = self.compute_mask(x, bound, compute_type)
                 masks += [mask]
-            elif type(module) == LinearBlock:
-                x = self._linear_block(x, module)
-                x, mask = self.compute_mask(x, bound, compute_type)
-                masks += [mask]
-            else:
-                x = module(x)
+                if self.cur_block >= skip:
+                    x[~torch.tensor(mask).cuda()] = 0
+        self.masks = masks
+        self.net.train()
+        return x
 
-        return x, masks
+    def mask_forward(self, x, inverse=False, skip=4):
+        self.net.eval()
+        self.cur_block = -1
+        for module in self.net.layers.children():
+            x = self.block_forward(x, module)
+            if type(module) in [ConvBlock, LinearBlock]:
+                if self.cur_block >= skip:
+                    if inverse:
+                        x[torch.tensor(self.masks[self.cur_block]).cuda()] = 0
+                    else:
+                        x[~torch.tensor(self.masks[self.cur_block]).cuda()] = 0
+        self.net.train()
+        return x
 
-    def forward(self, x, masks, inverse=False):
-        mask_mean = 0
-        for module, mask in zip(self.net.layers.children(), masks):
-            if type(module) == ConvBlock:
-                x = self._conv_block(x, module)
-                if inverse:
-                    x[mask] = 0
-                else:
-                    x[~mask] = 0
-                mask_mean += mask.mean()
-            elif type(module) == LinearBlock:
-                x = self._linear_block(x, module)
-                if inverse:
-                    x[mask] = 0
-                else:
-                    x[~mask] = 0
-                mask_mean += mask.mean()
-            else:
-                x = module(x)
+    def block_forward(self, x, module):
+        if type(module) == ConvBlock:
+            x = self._conv_block(x, module)
+            self.cur_block += 1
+        elif type(module) == LinearBlock:
+            x = self._linear_block(x, module)
+            self.cur_block += 1
+        else:
+            x = module(x)
+        return x
 
-        return x, mask_mean
+    @property
+    def mask_ratio(self):
+        mask_mean = []
+        if self.masks is None:
+            return 0
+        for b_mask in self.masks:
+            for l_mask in b_mask:
+                mask_mean += [l_mask.mean()]
+        return np.array(mask_mean).mean()
 
     @staticmethod
     def compute_mask(x, bound, compute_type):
@@ -125,8 +140,7 @@ class FloatNet(nn.Module):
             mask = x.abs() > bound
         else:
             mask = x.abs() < bound
-        x[~mask] = 0
-        return x, to_numpy(mask)
+        return to_numpy(mask)
 
     def _conv_block(self, x, module):
         x = self._conv2d(x, module.Conv.weight, module.Conv.bias, module.Conv.stride, padding=module.Conv.padding)

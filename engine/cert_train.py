@@ -10,7 +10,8 @@ class CertTrainer(AdvTrainer):
         super().__init__(args)
         self.num_flt_est = args.num_flt_est
         self.est_lip = 0
-        self.float_net = FloatNet(self.model)
+        self.flt_net = FloatNet(self.model)
+        # self.attacks = self.set_attack
 
     def cert_train_epoch(self, epoch):
         self.est_lip = 0
@@ -26,17 +27,20 @@ class CertTrainer(AdvTrainer):
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         n = images + torch.randn_like(images, device='cuda') * 0.1
-        float_output, masks = self.float_net.first_forward(images, 0.01, 'float')
-        fixed_output, mask_mean = self.float_net(n, masks, inverse=True)
-        # float_output_n, mask_mean = self.float_net(n, masks, inverse=True)
-        loss_nor = self.loss_function(fixed_output, labels)
+        outputs = self.model(n)
+        loss_nor = self.loss_function(outputs, labels)
 
-        loss = loss_nor
+        flt_outputs = self.flt_net(images, 0.01, 'float', skip=0)
+        flt_outputs_n = self.flt_net.mask_forward(n, inverse=False)
+        worst_flt = (1-one_hot(labels, num_classes=flt_outputs.shape[1])).multiply(flt_outputs - flt_outputs_n)
+        worst_flt = worst_flt.norm(p=2, dim=-1).mean()
+        loss = loss_nor + worst_flt * 0.01
         self.step(loss)
 
-        top1, top5 = accuracy(fixed_output, labels)
+        top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
+                           mask=(self.flt_net.mask_ratio, 1)
                            # l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            # l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images))
                            )

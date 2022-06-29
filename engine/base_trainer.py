@@ -129,9 +129,10 @@ class BaseTrainer:
             if cur_step >= self.args.warmup_steps:
                 break
         self.train_logging(-1, self.args.num_epoch, loader.metric)
-        self.validate_epoch(-1)
+        # self.validate_epoch(-1)
         self.optimizer = init_optimizer(self.args, self.model)
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
+        self.inf_loader.reset()
         return
 
     def normal_validate_epoch(self, epoch):
@@ -161,8 +162,8 @@ class BaseTrainer:
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1))
-        if self.args.record_lip:
-            self.record_lip(images, labels, outputs)
+        # if self.args.record_lip:
+        #     self.record_lip(images, labels, outputs)
 
     def record_lip(self, images, labels, outputs):
         perturbation = self.lip.attack(images, labels)

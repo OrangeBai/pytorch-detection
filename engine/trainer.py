@@ -19,7 +19,7 @@ class Trainer(CertTrainer):
             #     self.model.save_model(self.args.model_dir)
             #     rb = rb_1
             self.model.train()
-
+        self.normal_validate_epoch(-1)
         self.model.save_model(self.args.model_dir)
         self.save_result(self.args.model_dir)
 
