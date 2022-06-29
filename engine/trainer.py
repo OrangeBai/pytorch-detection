@@ -9,12 +9,15 @@ class Trainer(CertTrainer):
 
     def train_model(self):
         self.warmup()
-        evaluate_BCP(self.test_loader, self.model, 1 / 255, -1, -1, -1, argparser(), None)
+        # rb = evaluate_BCP(self.test_loader, self.model, 1 / 255, -1, -1, -1, argparser(), None)
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
             self.record_result(epoch)
-            rb = evaluate_BCP(self.test_loader, self.model, 1/255, -1, -1, -1, argparser(), None)
+            # evaluate_BCP(self.test_loader, self.model, 1/255, -1, -1, -1, argparser(), None)
+            # if rb_1 < rb:
+            #     self.model.save_model(self.args.model_dir)
+            #     rb = rb_1
             self.model.train()
 
         self.model.save_model(self.args.model_dir)

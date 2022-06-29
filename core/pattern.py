@@ -58,7 +58,7 @@ def set_input_hook(stored_values, device='cpu'):
     def hook(layer, input_var, output_var):
         input_var = input_var[0]
         if device == 'cpu':
-            stored_values.append(input_var.cpu().detach())
+            stored_values.append(to_numpy(input_var))
         else:
             stored_values.append(input_var)
 

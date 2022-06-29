@@ -1,9 +1,11 @@
-import os
-import torch.nn as nn
 import datetime
-from dataloader.base import *
-from core.smooth_core import *
+import os
+
+import torch.nn as nn
+
 from core.smooth_analyze import *
+from core.smooth_core import *
+from dataloader.base import *
 
 
 def smooth_test(model, args):
@@ -17,6 +19,7 @@ def smooth_test(model, args):
     np.save(output_path, certify_res)
     return
 
+
 class Normalize(nn.Module):
     def __init__(self, mean, std):
         super(Normalize, self).__init__()
@@ -28,6 +31,7 @@ class Normalize(nn.Module):
         mean = self.mean.reshape(1, self.mean.shape[0], 1, 1)
         std = self.std.reshape(1, self.mean.shape[0], 1, 1)
         return (images - mean) / std
+
 
 def smooth_pred(model, args):
     smoothed_classifier = Smooth(model, args.num_cls, args.sigma)

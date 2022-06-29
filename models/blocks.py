@@ -1,6 +1,6 @@
-import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
+from core.utils import *
 
 def set_activation(activation):
     if activation is None:
@@ -52,6 +52,101 @@ class ConvBlock(nn.Module):
         x = self.BN(x)
         x = self.Act(x)
         return x
+
+
+class FloatConv(nn.Module):
+    def __init__(self, conv):
+        super().__init__()
+        self.conv = conv
+
+    def forward(self, x, mask):
+        x = self.conv(x)
+        x[mask] = 0
+        return x
+
+
+class FloatFC(nn.Module):
+    def __init__(self, fc):
+        super().__init__()
+        self.fc = fc
+
+    def forward(self, x, mask):
+        x = self.fc(x)
+        x[mask] = 0
+        return x
+
+
+class FloatNet(nn.Module):
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+
+    def first_forward(self, x, bound, compute_type='fix'):
+        masks = []
+        for module in self.net.layers.children():
+            if type(module) == ConvBlock:
+                x = self._conv_block(x, module)
+                x, mask = self.compute_mask(x, bound, compute_type)
+                masks += [mask]
+            elif type(module) == LinearBlock:
+                x = self._linear_block(x, module)
+                x, mask = self.compute_mask(x, bound, compute_type)
+                masks += [mask]
+            else:
+                x = module(x)
+
+        return x, masks
+
+    def forward(self, x, masks, inverse=False):
+        mask_mean = 0
+        for module, mask in zip(self.net.layers.children(), masks):
+            if type(module) == ConvBlock:
+                x = self._conv_block(x, module)
+                if inverse:
+                    x[mask] = 0
+                else:
+                    x[~mask] = 0
+                mask_mean += mask.mean()
+            elif type(module) == LinearBlock:
+                x = self._linear_block(x, module)
+                if inverse:
+                    x[mask] = 0
+                else:
+                    x[~mask] = 0
+                mask_mean += mask.mean()
+            else:
+                x = module(x)
+
+        return x, mask_mean
+
+    @staticmethod
+    def compute_mask(x, bound, compute_type):
+        if compute_type == 'fix':
+            mask = x.abs() > bound
+        else:
+            mask = x.abs() < bound
+        x[~mask] = 0
+        return x, to_numpy(mask)
+
+    def _conv_block(self, x, module):
+        x = self._conv2d(x, module.Conv.weight, module.Conv.bias, module.Conv.stride, padding=module.Conv.padding)
+        x = module.BN(x)
+        x = module.Act(x)
+        return x
+
+    def _linear_block(self, x, module):
+        x = self._linear(x, module.FC.weight, module.FC.bias)
+        x = module.BN(x)
+        x = module.Act(x)
+        return x
+
+    @staticmethod
+    def _conv2d(x, w, b, stride=1, padding=0):
+        return F.conv2d(x, w, bias=b, stride=stride, padding=padding)
+
+    @staticmethod
+    def _linear(x, w, b):
+        return F.linear(x, w, b)
 
 
 class BasicBlock(nn.Module):

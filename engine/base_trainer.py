@@ -122,7 +122,7 @@ class BaseTrainer:
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            self.train_step(images, labels)
+            self.normal_train_step(images, labels)
             if cur_step % self.args.print_every == 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
@@ -157,9 +157,7 @@ class BaseTrainer:
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.step()
+        self.step(loss)
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1))
@@ -173,7 +171,9 @@ class BaseTrainer:
                            l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
         return
 
-    def step(self):
+    def step(self, loss):
+        self.optimizer.zero_grad()
+        loss.backward()
         self.optimizer.step()
         self.lr_scheduler.step()
 

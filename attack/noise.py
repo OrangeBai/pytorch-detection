@@ -11,9 +11,9 @@ class Noise(Attack):
 
     def attack(self, images, batch_size=128, device=None):
         shape = images.shape
-        noise = self.eps * torch.sign(torch.randn((shape[0] * batch_size,) + shape[1:]))
-        noise[0] = 0
-        images = images.cpu()
+        noise = self.eps * torch.sign(torch.randn((shape[0] * batch_size,) + shape[1:])).cuda()
+        noise[0: shape[0] * batch_size : batch_size] = 0
+        # images = images.cpu()
         images = self._reverse_norm(images)
 
         for i in range(shape[0]):
