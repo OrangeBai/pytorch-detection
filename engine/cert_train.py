@@ -1,5 +1,6 @@
+import torch
 from torch.nn.functional import one_hot
-
+from models.blocks import FloatNet, DualNet
 from core.lip import *
 from core.utils import *
 from engine import *
@@ -11,6 +12,7 @@ class CertTrainer(AdvTrainer):
         self.num_flt_est = args.num_flt_est
         self.est_lip = 0
         self.flt_net = FloatNet(self.model)
+        self.dual_net = DualNet(self.model, set_gamma(args.activation))
         # self.attacks = self.set_attack
 
     def cert_train_epoch(self, epoch):
@@ -28,14 +30,15 @@ class CertTrainer(AdvTrainer):
         images, labels = to_device(self.args.devices[0], images, labels)
         n = images + torch.randn_like(images, device='cuda') * 0.1
 
-        outputs = self.model(n)
-        loss_nor = self.loss_function(outputs, labels)
+        outputs, _, fixed_neurons = self.dual_net(images, n)
+        fixed_output = self.dual_net.masked_forward(images, fixed_neurons)
 
-        flt_outputs = self.flt_net(images, 0.01, 'float', skip=0)
-        flt_outputs_n = self.flt_net.mask_forward(n, inverse=False)
-        worst_flt = (1-one_hot(labels, num_classes=flt_outputs.shape[1])).multiply(flt_outputs - flt_outputs_n)
-        worst_flt = worst_flt.norm(p=2, dim=-1).mean()
-        loss = loss_nor + worst_flt * 0.01
+        loss_fixed = self.loss_function(fixed_output, labels)
+        # loss_float = (outputs - fixed_output).norm(p=2, dim=-1).mean()
+
+        perturbation = self.lip.attack(images, labels)
+        loss_lip = self.loss_function(self.model(images + perturbation) * self.args.eps * self.trained_ratio, labels)
+        loss = loss_fixed + loss_lip
         self.step(loss)
 
         top1, top5 = accuracy(outputs, labels)

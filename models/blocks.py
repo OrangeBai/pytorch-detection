@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 from core.utils import *
-import torch.nn.functional as F
-
+from core.pattern import *
+import time
 from core.utils import *
 
 
@@ -80,15 +80,18 @@ class FloatFC(nn.Module):
 
 
 class DualNet(nn.Module):
-    def __init__(self, net, Gamma):
+    def __init__(self, net, gamma):
         super().__init__()
         self.net = net
-        self.Gamma = Gamma
+        self.gamma = gamma
 
     def forward(self, x_1, x_2):
+        fixed_neurons = []
         for module in self.net.layers.children():
-            pass
+            x_1, x_2, fix = self.dual_forward(module, x_1, x_2)
+            fixed_neurons += [fix]
 
+        return x_1, x_2, fixed_neurons
 
     def dual_forward(self, module, x_1, x_2):
         if type(module) == ConvBlock:
@@ -96,17 +99,50 @@ class DualNet(nn.Module):
             x_2 = module.Conv(x_2)
 
             x_1 = module.BN(x_1)
-            x_2 = self._batch_norm_2d(module.BN, x_2)
+            x_2 = self._batch_norm(module.BN, x_2)
 
-            for i in self.Gamma:
-                pass
+            fixed = x_1 * x_2 > 0
+            # t = time.time()
+            # p_1 = get_pattern(to_numpy(x_1), self.gamma)
+            # p_2 = get_pattern(to_numpy(x_2), self.gamma)
+            # print(time.time() - t)
+            # fix = p_1 == p_2
+
+            return module.Act(x_1), module.Act(x_2), fixed.detach()
+
+        elif type(module) == LinearBlock:
+            x_1 = module.FC(x_1)
+            x_2 = module.FC(x_2)
+
+            x_1 = module.BN(x_1)
+            x_2 = self._batch_norm(module.BN, x_2)
+
+            fixed = x_1 * x_2 > 0
+            # p_1 = get_pattern(to_numpy(x_1), self.gamma)
+            # p_2 = get_pattern(to_numpy(x_2), self.gamma)
+            #
+            # fix = p_1 == p_2
+
+            return module.Act(x_1), module.Act(x_2), fixed.detach()
+
+        else:
+            return module(x_1), module(x_2), None
 
     @staticmethod
-    def _batch_norm_2d(layer, x_2):
-        return F.batch_norm(x_2, layer.running_mean, layer.running_var, layer.weight, layer.bias)
+    def _batch_norm(layer, x):
+        if type(layer) in [nn.BatchNorm2d, nn.BatchNorm1d]:
+            return F.batch_norm(x, layer.running_mean, layer.running_var, layer.weight, layer.bias)
+        else:
+            return x
 
-
-
+    def masked_forward(self, x, masks):
+        # self.net.eval()
+        for mask, module in zip(masks, self.net.layers.children()):
+            x = module(x)
+            if mask is not None:
+                x[~mask] = 0
+        # self.net.train()
+        return x
 
 
 class FloatNet(nn.Module):
@@ -116,6 +152,9 @@ class FloatNet(nn.Module):
 
         self.masks = None
         self.cur_block = -1
+
+
+
 
     def forward(self, x, bound=0.01, compute_type='fix', skip=4):
         self.net.eval()
