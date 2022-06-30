@@ -28,23 +28,34 @@ class CertTrainer(AdvTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
+        # n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
         n = images + torch.randn_like(images, device='cuda') * 0.1
 
-        outputs, _, fixed_neurons = self.dual_net(images, n)
-        fixed_output = self.dual_net.masked_forward(images, fixed_neurons)
+        # outputs = self.model(images)
+        # noise_output = self.model(n)
+        outputs = self.dual_net.compute_float(n, images)
+        noise_output = self.dual_net.masked_forward(images)
 
-        loss_fixed = self.loss_function(fixed_output, labels)
-        # loss_float = (outputs - fixed_output).norm(p=2, dim=-1).mean()
+        loss_normal = self.loss_function(outputs, labels)
+        # loss_flt = self.loss_function(float_output, labels)
+        loss_float = (outputs - noise_output)
+        loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
+        # loss_float = self.loss_function(loss_float, labels)
+        loss_float = loss_float.norm(p=2).mean()
 
-        perturbation = self.lip.attack(images, labels)
-        loss_lip = self.loss_function(self.model(images + perturbation) * self.args.eps * self.trained_ratio, labels)
-        loss = loss_fixed + loss_lip
+        # perturbation = self.lip.attack(images, labels)
+        # local_lip = (self.model(images + perturbation) - outputs) * 10000
+        # worst_lip = (1-one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
+        # loss_lip = self.loss_function(outputs + worst_lip * self.args.eps * self.trained_ratio, labels)
+
+        # loss = loss_normal
+        loss = loss_normal + loss_float * 0.01
         self.step(loss)
 
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           mask=(self.flt_net.mask_ratio, 1)
+                           mask=(self.flt_net.mask_ratio, 1),
                            # l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            # l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images))
                            )

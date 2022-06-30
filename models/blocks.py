@@ -1,3 +1,4 @@
+import torch
 import torch.nn.functional as F
 from core.utils import *
 from core.pattern import *
@@ -84,14 +85,17 @@ class DualNet(nn.Module):
         super().__init__()
         self.net = net
         self.gamma = gamma
+        self.fixed_neurons = None
 
-    def forward(self, x_1, x_2):
+    def compute_float(self, x_1, x_2):
         fixed_neurons = []
-        for module in self.net.layers.children():
+        for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.dual_forward(module, x_1, x_2)
             fixed_neurons += [fix]
-
-        return x_1, x_2, fixed_neurons
+            if fix is not None:
+                x_1[~fix].require_grad = False
+        self.fixed_neurons = fixed_neurons
+        return x_1
 
     def dual_forward(self, module, x_1, x_2):
         if type(module) == ConvBlock:
@@ -135,14 +139,18 @@ class DualNet(nn.Module):
         else:
             return x
 
-    def masked_forward(self, x, masks):
+    def masked_forward(self, x):
         # self.net.eval()
-        for mask, module in zip(masks, self.net.layers.children()):
-            x = module(x)
-            if mask is not None:
-                x[~mask] = 0
+        fix = x
+        for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+            if type(module) in [ConvBlock, LinearBlock]:
+                fix = module(fix)
+                # fix[mask].require_grad = False
+            else:
+                fix = module(fix)
+
         # self.net.train()
-        return x
+        return fix
 
 
 class FloatNet(nn.Module):
@@ -152,9 +160,6 @@ class FloatNet(nn.Module):
 
         self.masks = None
         self.cur_block = -1
-
-
-
 
     def forward(self, x, bound=0.01, compute_type='fix', skip=4):
         self.net.eval()
