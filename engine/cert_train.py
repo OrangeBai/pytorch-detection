@@ -49,7 +49,7 @@ class CertTrainer(AdvTrainer):
         # loss_lip = self.loss_function(outputs + worst_lip * self.args.eps * self.trained_ratio, labels)
 
         # loss = loss_normal
-        loss = loss_normal + loss_float * 0.01
+        loss = loss_normal
         self.step(loss)
 
         top1, top5 = accuracy(outputs, labels)

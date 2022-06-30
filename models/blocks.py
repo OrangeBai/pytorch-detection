@@ -93,7 +93,10 @@ class DualNet(nn.Module):
             x_1, x_2, fix = self.dual_forward(module, x_1, x_2)
             fixed_neurons += [fix]
             if fix is not None:
-                x_1[~fix].require_grad = False
+                x_1 = x_1[~fix].detach()
+                x_11[fix] = x_1[fix]
+                x_1 = x_11
+                # x_1[~fix] = x_1[~fix].detach()
         self.fixed_neurons = fixed_neurons
         return x_1
 
@@ -121,7 +124,7 @@ class DualNet(nn.Module):
             x_1 = module.BN(x_1)
             x_2 = self._batch_norm(module.BN, x_2)
 
-            fixed = x_1 * x_2 > 0
+            fixed = x_1 * x_2 > -9999999999
             # p_1 = get_pattern(to_numpy(x_1), self.gamma)
             # p_2 = get_pattern(to_numpy(x_2), self.gamma)
             #
@@ -145,6 +148,7 @@ class DualNet(nn.Module):
         for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             if type(module) in [ConvBlock, LinearBlock]:
                 fix = module(fix)
+                # fix[~mask] = 0
                 # fix[mask].require_grad = False
             else:
                 fix = module(fix)
