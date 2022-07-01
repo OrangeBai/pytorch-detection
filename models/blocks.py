@@ -1,8 +1,6 @@
-import torch
 import torch.nn.functional as F
-from core.utils import *
+
 from core.pattern import *
-import time
 from core.utils import *
 
 
@@ -93,10 +91,8 @@ class DualNet(nn.Module):
             x_1, x_2, fix = self.dual_forward(module, x_1, x_2)
             fixed_neurons += [fix]
             if fix is not None:
-                x_1 = x_1[~fix].detach()
-                x_11[fix] = x_1[fix]
-                x_1 = x_11
-                # x_1[~fix] = x_1[~fix].detach()
+                xx = 1.01 * x_1 * fix + 1.0 * x_1 * ~fix
+                x_1 = xx
         self.fixed_neurons = fixed_neurons
         return x_1
 
@@ -124,7 +120,7 @@ class DualNet(nn.Module):
             x_1 = module.BN(x_1)
             x_2 = self._batch_norm(module.BN, x_2)
 
-            fixed = x_1 * x_2 > -9999999999
+            fixed = x_1 * x_2 > 0
             # p_1 = get_pattern(to_numpy(x_1), self.gamma)
             # p_2 = get_pattern(to_numpy(x_2), self.gamma)
             #
@@ -148,13 +144,36 @@ class DualNet(nn.Module):
         for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             if type(module) in [ConvBlock, LinearBlock]:
                 fix = module(fix)
+                fix = 1.0 * fix * ~mask + 1 * fix * mask
+                # xx = (fix + fix.detach() * mask) / 2 + fix * ~mask
+                # fix = xx
                 # fix[~mask] = 0
-                # fix[mask].require_grad = False
             else:
                 fix = module(fix)
 
         # self.net.train()
         return fix
+
+    def over_fitting_forward(self, x):
+        fixed_neurons = []
+        for i, module in enumerate(self.net.layers.children()):
+            if type(module) == ConvBlock:
+                x = module.BN(module.Conv(x))
+                p0 = (x < 0).sum(axis=0) > 0.98 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.98 * len(x)
+                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x = x * 1.01 * p + x * 1 * ~p
+                x = module.Act(x)
+            elif type(module) == LinearBlock:
+                x = module.BN(module.FC(x))
+                p0 = (x < 0).sum(axis=0) > 0.98 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.98 * len(x)
+                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x = x * 1.01 * p + x * 1 * ~p
+                x = module.Act(x)
+            else:
+                x = module(x)
+        return x
 
 
 class FloatNet(nn.Module):

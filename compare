@@ -1,19 +1,11 @@
-flt net eps = 0.1, without noise, skip=0
-TRN INF:	top1: 83.4219 (82.4160)	top5: 99.2188 (99.2040)	loss: 0.4798 (0.5069)	lr: 0.0008 (0.0008)	mask: 0.3762 (0.3761)	time: 36.6184
-VAL INF:	top1: 80.7031 (79.8099)	top5: 99.3359 (98.8699)	FGSMtop1: 59.2969 (59.4799)	FGSMtop5: 98.1250 (97.4299)	PGDtop1: 57.0312 (57.1199)	PGDtop5: 98.0859 (97.4499)	time:14.6664
+float not detached for noise, 0.1 noise, 0.1 float ratio
 
-flt net eps = 0.01, without noise, skip=0
-TRN INF:	top1: 83.1719 (82.0880)	top5: 99.3750 (99.1820)	loss: 0.4813 (0.5147)	lr: 0.0008 (0.0008)	mask: 0.8954 (0.8955)	time: 36.1243
-VAL INF:	top1: 81.4844 (81.7299)	top5: 99.4922 (99.0699)	FGSMtop1: 58.9453 (59.2499)	FGSMtop5: 97.7734 (97.2799)	PGDtop1: 55.1172 (55.3799)	PGDtop5: 97.6172 (97.1599)	time:14.6799
-
-flt net eps = 0.01, without noise, skip=4
-TRN INF:	top1: 83.5234 (81.6660)	top5: 99.1406 (99.1580)	loss: 0.4861 (0.5249)	lr: 0.0008 (0.0008)	mask: 0.8980 (0.8981)	time: 35.3209
-VAL INF:	top1: 80.4688 (81.1999)	top5: 99.2578 (99.1499)	FGSMtop1: 59.6094 (59.6899)	FGSMtop5: 97.5391 (97.3999)	PGDtop1: 57.3047 (56.9499)	PGDtop5: 97.4609 (97.3799)	time:14.6534
-
-flt net eps = 0.01, without noise, skip=4, with float minimize
-
-nor net
-TRN INF:	top1: 84.7500 (81.9580)	top5: 99.1797 (99.2260)	loss: 0.4749 (0.5131)	lr: 0.0008 (0.0008)	mask: 0.0000 (0.0000)	time: 32.2373
-VAL INF:	top1: 81.4453 (81.9499)	top5: 99.3359 (99.0599)	FGSMtop1: 59.2578 (59.5899)	FGSMtop5: 97.6562 (97.6299)	PGDtop1: 55.0391 (55.2199)	PGDtop5: 97.4609 (97.4699)	time:14.5883
+TRN INF:	top1: 71.2734 (69.1460)	top5: 97.9062 (97.2440)	loss: 1.1846 (1.2216)	lr: 0.0008 (0.0008)	mask: 0.0000 (0.0000)	time: 42.9454
+VAL INF:	top1: 69.8047 (70.8499)	top5: 97.8906 (97.4799)	FGSMtop1: 43.9062 (44.3500)	FGSMtop5: 92.6172 (93.6499)	PGDtop1: 41.3672 (41.9400)	PGDtop5: 93.1250 (94.1599)	time:14.6318
+VAL INF:	top1: 69.8047 (70.8499)	top5: 97.8906 (97.4799)	time:1.6916
 
 
+normal 1.1 fix 0.9 float
+TRN INF:	top1: 79.5391 (77.4260)	top5: 98.7109 (98.7000)	loss: 0.0016 (0.0326)	lr: 0.0008 (0.0008)	mask: 0.0000 (0.0000)	time: 45.3468
+VAL INF:	top1: 75.8594 (77.0599)	top5: 98.8281 (98.5399)	FGSMtop1: 14.1406 (14.3700)	FGSMtop5: 80.6250 (81.6299)	PGDtop1: 4.1797 (4.0800)	PGDtop5: 76.4453 (76.8099)	time:14.5953
+VAL INF:	top1: 75.8594 (77.0599)	top5: 98.8281 (98.5399)	time:1.6674
