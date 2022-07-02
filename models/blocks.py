@@ -88,28 +88,34 @@ class DualNet(nn.Module):
     def compute_float(self, x_1, x_2):
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
-            x_1, x_2, fix = self.dual_forward(module, x_1, x_2)
+            x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             fixed_neurons += [fix]
-            if fix is not None:
-                xx = 1.01 * x_1 * fix + 1.0 * x_1 * ~fix
-                x_1 = xx
         self.fixed_neurons = fixed_neurons
         return x_1
 
-    def dual_forward(self, module, x_1, x_2):
+    def masked_forward(self, x, fix_ratio=1, float_ratio=1):
+        for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+            if type(module) == ConvBlock:
+                x = module.BN(module.Conv(x))
+                x = float_ratio * x * ~mask + fix_ratio * x * mask
+                x = module.Act(x)
+            elif type(module) == LinearBlock:
+                x = module.BN(module.FC(x))
+                x = float_ratio * x * ~mask + fix_ratio * x * mask
+                x = module.Act(x)
+            else:
+                x = module(x)
+        return x
+
+    def compute_fix(self, module, x_1, x_2):
         if type(module) == ConvBlock:
             x_1 = module.Conv(x_1)
             x_2 = module.Conv(x_2)
 
-            x_1 = module.BN(x_1)
+            x_1 = self._batch_norm(module.BN, x_1)
             x_2 = self._batch_norm(module.BN, x_2)
 
             fixed = x_1 * x_2 > 0
-            # t = time.time()
-            # p_1 = get_pattern(to_numpy(x_1), self.gamma)
-            # p_2 = get_pattern(to_numpy(x_2), self.gamma)
-            # print(time.time() - t)
-            # fix = p_1 == p_2
 
             return module.Act(x_1), module.Act(x_2), fixed.detach()
 
@@ -117,14 +123,10 @@ class DualNet(nn.Module):
             x_1 = module.FC(x_1)
             x_2 = module.FC(x_2)
 
-            x_1 = module.BN(x_1)
+            x_1 = self._batch_norm(module.BN, x_1)
             x_2 = self._batch_norm(module.BN, x_2)
 
             fixed = x_1 * x_2 > 0
-            # p_1 = get_pattern(to_numpy(x_1), self.gamma)
-            # p_2 = get_pattern(to_numpy(x_2), self.gamma)
-            #
-            # fix = p_1 == p_2
 
             return module.Act(x_1), module.Act(x_2), fixed.detach()
 
@@ -138,38 +140,22 @@ class DualNet(nn.Module):
         else:
             return x
 
-    def masked_forward(self, x):
-        # self.net.eval()
-        fix = x
-        for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-            if type(module) in [ConvBlock, LinearBlock]:
-                fix = module(fix)
-                fix = 1.0 * fix * ~mask + 1 * fix * mask
-                # xx = (fix + fix.detach() * mask) / 2 + fix * ~mask
-                # fix = xx
-                # fix[~mask] = 0
-            else:
-                fix = module(fix)
-
-        # self.net.train()
-        return fix
-
     def over_fitting_forward(self, x):
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
             if type(module) == ConvBlock:
                 x = module.BN(module.Conv(x))
-                p0 = (x < 0).sum(axis=0) > 0.98 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.98 * len(x)
+                p0 = (x < 0).sum(axis=0) > 0.99 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.99 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = x * 1.01 * p + x * 1 * ~p
+                x = x * 1.1 * p + x * 1 * ~p
                 x = module.Act(x)
             elif type(module) == LinearBlock:
                 x = module.BN(module.FC(x))
-                p0 = (x < 0).sum(axis=0) > 0.98 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.98 * len(x)
+                p0 = (x < 0).sum(axis=0) > 0.99 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.99 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = x * 1.01 * p + x * 1 * ~p
+                x = x * 1.1 * p + x * 1 * ~p
                 x = module.Act(x)
             else:
                 x = module(x)

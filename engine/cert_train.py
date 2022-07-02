@@ -28,29 +28,35 @@ class CertTrainer(AdvTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        # n = images + torch.sign(torch.randn_like(images, device='cuda')) * 16/255
-        n = images + torch.randn_like(images, device='cuda') * 0.05
-
+        n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
+        # n = images + torch.randn_like(images, device='cuda') * 0.1
+        # n = self.attacks['FGSM'].attack(images, labels)
         # outputs = self.model(images)
-        # noise_output = self.model(n)
         outputs = self.dual_net.compute_float(images, n)
-        noise_output = self.dual_net.masked_forward(n)
 
-        loss_normal = self.loss_function(outputs, labels)
+        # output_reg = self.model(n)
+        output_reg = self.dual_net.over_fitting_forward(images)
+        # output_reg = self.dual_net.masked_forward(images, 1 - 0.1 * self.trained_ratio, 1)
+
+        # output_reg = self.dual_net.masked_forward(images, 1 - 0.00 * (1 - self.trained_ratio), 1)
+        # output_flt = self.dual_net.masked_forward(images, 1, 1 + 1 * (1 - self.trained_ratio))
+        # noise_output = self.dual_net.masked_forward(n, 1, 1 + 1 * (1 - self.trained_ratio))
+
+        loss_normal = self.loss_function(output_reg, labels)
         # loss_flt = self.loss_function(float_output, labels)
-        loss_float = (outputs - noise_output)
-        loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
+        # loss_float = (output_flt - noise_output)
+        # loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
         # loss_float = self.loss_function(loss_float, labels)
-        loss_float = loss_float.norm(p=2).mean()
+        # loss_float = loss_float.norm(p=2).mean()
 
         # perturbation = self.lip.attack(images, labels)
-        perturbation = torch.sign(torch.randn_like(images)) * self.args.eps * 2
-        local_lip = (self.model(images + perturbation) - outputs) * 10000
-        worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(outputs + worst_lip * self.trained_ratio, labels)
+        # perturbation = torch.sign(torch.randn_like(images)) * self.args.eps * 2
+        # local_lip = (self.model(images + perturbation) - outputs) * 10000
+        # worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
+        # loss_lip = self.loss_function(outputs + worst_lip * self.trained_ratio, labels)
 
         # loss = loss_normal
-        loss = loss_normal + loss_float * 0.1
+        loss = loss_normal
         self.step(loss)
 
         top1, top5 = accuracy(outputs, labels)

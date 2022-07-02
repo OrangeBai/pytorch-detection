@@ -13,9 +13,8 @@ class AdvTrainer(BaseTrainer):
             'alpha': self.args.alpha,
             'ord': self.args.ord
         }
-        self.attacks = self.set_attack
+        self.attacks = self.set_attack()
 
-    @property
     def set_attack(self):
         return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
                 'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
@@ -43,8 +42,7 @@ class AdvTrainer(BaseTrainer):
 
         loss = self.loss_function(outputs, labels)
         self.optimizer.zero_grad()
-        loss.backward()
-        self.step()
+        self.step(loss)
 
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
