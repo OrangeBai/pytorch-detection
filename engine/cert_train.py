@@ -28,15 +28,15 @@ class CertTrainer(AdvTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
-        # n = images + torch.randn_like(images, device='cuda') * 0.1
+        # n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
+        n = images + torch.randn_like(images, device='cuda') * 0.1
         # n = self.attacks['FGSM'].attack(images, labels)
         # outputs = self.model(images)
         outputs = self.dual_net.compute_float(images, n)
 
-        # output_reg = self.model(n)
+        # output_reg = self.model(images)
         output_reg = self.dual_net.over_fitting_forward(images)
-        # output_reg = self.dual_net.masked_forward(images, 1 - 0.1 * self.trained_ratio, 1)
+        # output_reg = self.dual_net.masked_forward(n, 1, 2)
 
         # output_reg = self.dual_net.masked_forward(images, 1 - 0.00 * (1 - self.trained_ratio), 1)
         # output_flt = self.dual_net.masked_forward(images, 1, 1 + 1 * (1 - self.trained_ratio))

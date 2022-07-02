@@ -145,17 +145,17 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             if type(module) == ConvBlock:
                 x = module.BN(module.Conv(x))
-                p0 = (x < 0).sum(axis=0) > 0.99 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.99 * len(x)
+                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = x * 1.1 * p + x * 1 * ~p
+                x = x * 1.2 * p + x * 1 * ~p
                 x = module.Act(x)
             elif type(module) == LinearBlock:
                 x = module.BN(module.FC(x))
-                p0 = (x < 0).sum(axis=0) > 0.99 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.99 * len(x)
+                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = x * 1.1 * p + x * 1 * ~p
+                x = x * 1.2 * p + x * 1 * ~p
                 x = module.Act(x)
             else:
                 x = module(x)

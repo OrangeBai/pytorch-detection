@@ -5,3 +5,5 @@
 #echo $a
 python train.py --ord inf --optimizer SGD --lr 0.05 --dataset cifar10 --net cxfy42 --train_mode cert --exp_id 000 --batch_norm 1 --num_epoch 60 --warmup 1
 python train.py --ord inf --optimizer SGD --lr 0.05 --dataset cifar10 --net cxfy42 --train_mode normal --exp_id 000 --batch_norm 1 --num_epoch 60 --warmup 1
+
+python train.py --dataset cifar10 --net cxfy42 --batch_size 256 --warmup 1 --num_epoch 120 --train_mode cert --optimizer SGD --lr 0.1 --exp_id over_bench --batch_norm 1 --activation ReLU
