@@ -1,6 +1,6 @@
 import datetime
 import logging
-
+from attack import set_attack
 from models import *
 
 
@@ -29,6 +29,23 @@ class BaseTrainer:
         self.logger.info(args)
 
         self.lip = set_attack(self.model, 'Lip', args.devices[0], ord=args.ord)
+
+        self.attack_args = {
+            'mean': self.mean,
+            'std': self.std,
+            # 'mean': [0,0,0],
+            # 'std': [1,1,1],
+            'eps': self.args.eps,
+            'alpha': self.args.alpha,
+            'ord': self.args.ord
+        }
+        self.attacks = self.set_attack()
+
+    def set_attack(self):
+        return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
+                'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
+                # 'CW': set_attack(self.model, 'CW', self.args.devices[0], **self.attack_args)
+                }
 
     def save_result(self, path, name=None):
         if not name:

@@ -4,22 +4,8 @@ from engine.base_trainer import *
 class AdvTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
-        self.attack_args = {
-            'mean': self.mean,
-            'std': self.std,
-            # 'mean': [0,0,0],
-            # 'std': [1,1,1],
-            'eps': self.args.eps,
-            'alpha': self.args.alpha,
-            'ord': self.args.ord
-        }
-        self.attacks = self.set_attack()
 
-    def set_attack(self):
-        return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
-                'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
-                # 'CW': set_attack(self.model, 'CW', self.args.devices[0], **self.attack_args)
-                }
+
 
     def adv_train_epoch(self, epoch):
 

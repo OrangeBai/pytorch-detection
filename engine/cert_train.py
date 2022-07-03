@@ -31,11 +31,11 @@ class CertTrainer(AdvTrainer):
         # n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
         n = images + torch.randn_like(images, device='cuda') * 0.1
         # n = self.attacks['FGSM'].attack(images, labels)
-        # outputs = self.model(images)
-        outputs = self.dual_net.compute_float(images, n)
+        output_reg = self.model(n)
+        # output_reg, output_noise = self.dual_net.compute_float(n, images, -0.2 * self.trained_ratio, 0.1 * self.trained_ratio)
 
         # output_reg = self.model(images)
-        output_reg = self.dual_net.over_fitting_forward(images)
+        # output_reg = self.dual_net.over_fitting_forward(images)
         # output_reg = self.dual_net.masked_forward(n, 1, 2)
 
         # output_reg = self.dual_net.masked_forward(images, 1 - 0.00 * (1 - self.trained_ratio), 1)
@@ -43,10 +43,8 @@ class CertTrainer(AdvTrainer):
         # noise_output = self.dual_net.masked_forward(n, 1, 1 + 1 * (1 - self.trained_ratio))
 
         loss_normal = self.loss_function(output_reg, labels)
-        # loss_flt = self.loss_function(float_output, labels)
-        # loss_float = (output_flt - noise_output)
+        # loss_float = (output_reg - output_noise)
         # loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
-        # loss_float = self.loss_function(loss_float, labels)
         # loss_float = loss_float.norm(p=2).mean()
 
         # perturbation = self.lip.attack(images, labels)
@@ -59,8 +57,8 @@ class CertTrainer(AdvTrainer):
         loss = loss_normal
         self.step(loss)
 
-        top1, top5 = accuracy(outputs, labels)
-        self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
+        top1, top5 = accuracy(output_reg, labels)
+        self.update_metric(top1=(top1, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            mask=(self.flt_net.mask_ratio, 1),
                            # l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),

@@ -85,13 +85,22 @@ class DualNet(nn.Module):
         self.gamma = gamma
         self.fixed_neurons = None
 
-    def compute_float(self, x_1, x_2):
+    def compute_float(self, x_1, x_2, fixed_ratio, float_ratio):
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
+            if fix is not None:
+                x_1 = self.x_mask(x_1, fixed_ratio, fix) + self.x_mask(x_1, float_ratio, ~fix)
+                x_2 = self.x_mask(x_2, fixed_ratio, fix) + self.x_mask(x_2, float_ratio, ~fix)
+                x_1 = module.Act(x_1)
+                x_2 = module.Act(x_2)
             fixed_neurons += [fix]
         self.fixed_neurons = fixed_neurons
-        return x_1
+        return x_1, x_2
+
+    @staticmethod
+    def x_mask(x, ratio, mask):
+        return x * (1 + ratio) * mask - x.detach() * ratio * mask
 
     def masked_forward(self, x, fix_ratio=1, float_ratio=1):
         for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
@@ -112,23 +121,25 @@ class DualNet(nn.Module):
             x_1 = module.Conv(x_1)
             x_2 = module.Conv(x_2)
 
-            x_1 = self._batch_norm(module.BN, x_1)
-            x_2 = self._batch_norm(module.BN, x_2)
+            x_1 = module.BN(x_1)
+            # x_2 = self._batch_norm(module, x_2)
+            x_2 = module.BN(x_2)
 
             fixed = x_1 * x_2 > 0
 
-            return module.Act(x_1), module.Act(x_2), fixed.detach()
+            return x_1, x_2, fixed.detach()
 
         elif type(module) == LinearBlock:
             x_1 = module.FC(x_1)
             x_2 = module.FC(x_2)
 
-            x_1 = self._batch_norm(module.BN, x_1)
-            x_2 = self._batch_norm(module.BN, x_2)
+            x_1 = module.BN(x_1)
+            # x_2 = self._batch_norm(module, x_2)
+            x_2 = module.BN(x_2)
 
             fixed = x_1 * x_2 > 0
 
-            return module.Act(x_1), module.Act(x_2), fixed.detach()
+            return x_1, x_2, fixed.detach()
 
         else:
             return module(x_1), module(x_2), None
@@ -148,6 +159,8 @@ class DualNet(nn.Module):
                 p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
                 p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x_mean, x_var = x.mean().detach(), x.var().detach()
+                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
                 x = x * 1.2 * p + x * 1 * ~p
                 x = module.Act(x)
             elif type(module) == LinearBlock:
@@ -155,7 +168,9 @@ class DualNet(nn.Module):
                 p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
                 p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
                 p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = x * 1.2 * p + x * 1 * ~p
+                x_mean, x_var = x.mean().detach(), x.var().detach()
+                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
+                x = x * 1.5 * p + x * 1 * ~p
                 x = module.Act(x)
             else:
                 x = module(x)
