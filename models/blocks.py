@@ -1,3 +1,5 @@
+from torch.nn import functional as F
+
 from core.pattern import *
 from core.utils import *
 
