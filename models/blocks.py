@@ -1,5 +1,3 @@
-import torch.nn.functional as F
-
 from core.pattern import *
 from core.utils import *
 
@@ -89,7 +87,7 @@ class DualNet(nn.Module):
         self.gamma = set_gamma(args.activation)
         self.balance = args.balance
         self.fixed_neurons = None
-        if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn ==0:
+        if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn == 0:
             Warning('All etas equal to zero, use normal training!')
 
     def update_ratio(self, trained_ratio):
@@ -137,6 +135,7 @@ class DualNet(nn.Module):
             return x * (1 + ratio) * mask - x.detach() * ratio * mask
         else:
             return x * (1 + ratio) * mask
+
     @staticmethod
     def compute_pre_act(module, x):
         if type(module) == ConvBlock:
@@ -200,7 +199,6 @@ class DualNet(nn.Module):
             else:
                 x = module(x)
         return x
-
 
     def dn_block_forward(self, x, dn_ratio):
         p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
