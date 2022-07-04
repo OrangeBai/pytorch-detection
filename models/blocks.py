@@ -176,6 +176,32 @@ class DualNet(nn.Module):
         else:
             return x
 
+    def over_fitting_forward(self, x):
+        fixed_neurons = []
+        for i, module in enumerate(self.net.layers.children()):
+            if type(module) == ConvBlock:
+                x = module.BN(module.Conv(x))
+                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
+                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x_mean, x_var = x.mean().detach(), x.var().detach()
+                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
+                x = x * 1.2 * p + x * 1 * ~p
+                x = module.Act(x)
+            elif type(module) == LinearBlock:
+                x = module.BN(module.FC(x))
+                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
+                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x_mean, x_var = x.mean().detach(), x.var().detach()
+                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
+                x = x * 1.5 * p + x * 1 * ~p
+                x = module.Act(x)
+            else:
+                x = module(x)
+        return x
+
+
     def dn_block_forward(self, x, dn_ratio):
         p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
         p1 = (x > 0).sum(axis=0) > 0.9 * len(x)

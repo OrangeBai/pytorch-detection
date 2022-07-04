@@ -22,9 +22,9 @@ class Trainer(AdvTrainer, CertTrainer):
         self.save_result(self.args.model_dir)
 
     def train_epoch(self, epoch):
-        if self.args.train_mode == 'cert':
+        if self.args.train_mode == 'cer':
             self.cert_train_epoch(epoch)
-        elif self.args.train_mode == 'normal':
+        elif self.args.train_mode == 'std':
             self.normal_train_epoch(epoch)
         elif self.args.train_mode == 'adv':
             self.adv_train_epoch(epoch)
@@ -34,9 +34,9 @@ class Trainer(AdvTrainer, CertTrainer):
             raise NameError
 
     def validate_epoch(self, epoch):
-        if self.args.val_mode in ['adv', 'cert']:
+        if self.args.val_mode in ['adv', 'cer']:
             return self.adv_validate_epoch(epoch)
-        elif self.args.val_mode == 'normal':
+        elif self.args.val_mode == 'std':
             return self.normal_validate_epoch(epoch)
         # elif self.args.val_mode == 'prune':
         #     validate_epoch = self.prune_validate_epoch
@@ -44,9 +44,9 @@ class Trainer(AdvTrainer, CertTrainer):
             raise NameError
 
     def train_step(self, images, labels):
-        if self.args.train_mode == 'cert':
+        if self.args.train_mode == 'cer':
             self.cert_train_step(images, labels)
-        elif self.args.train_mode == 'normal':
+        elif self.args.train_mode == 'std':
             self.normal_train_step(images, labels)
         elif self.args.train_mode == 'adv':
             self.adv_train_step(images, labels)

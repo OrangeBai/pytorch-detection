@@ -40,8 +40,8 @@ class ArgParser:
         self.parser.add_argument('--batch_norm', default=1, type=int)
         self.parser.add_argument('--activation', default='LeakyReLU', type=str)
         # trainer settings
-        self.parser.add_argument('--train_mode', default='normal', type=str)
-        self.parser.add_argument('--val_mode', default='normal', type=str)
+        self.parser.add_argument('--train_mode', default='std', type=str)
+        self.parser.add_argument('--val_mode', default='std', type=str)
         # scheduler and optimizer
         self.parser.add_argument('--lr_scheduler', default='milestones',
                                  choices=['static', 'milestones', 'exp', 'linear', 'cyclic'])
@@ -94,7 +94,7 @@ class ArgParser:
         args, _ = self.parser.parse_known_args(self.args)
         if args.epoch_type == 'epoch':
             train_loader, _ = set_loader(args)
-            self.parser.add_argument('--num_epoch', default=120, type=int)
+            self.parser.add_argument('--num_epoch', default=200, type=int)
             self.parser.add_argument('--epoch_step', default=len(train_loader), type=int)
             self.parser.add_argument('--warmup_steps', default=int(len(train_loader) * args.warmup), type=int)
             args, _ = self.parser.parse_known_args(self.args)
@@ -186,8 +186,8 @@ class ArgParser:
         @return:
         """
         args, _ = self.parser.parse_known_args(self.args)
-        exp_name = '_'.join([args.dataset, str(args.net), str(args.exp_id)])
-        path = os.path.join(MODEL_PATH, args.dir, args.dataset, exp_name)
+        exp_name = '_'.join([str(args.net), str(args.exp_id)])
+        path = os.path.join(MODEL_PATH, args.dataset, args.dir, exp_name)
         if train:
             if os.path.exists(path):
                 shutil.rmtree(path)
