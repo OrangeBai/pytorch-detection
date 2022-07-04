@@ -94,7 +94,7 @@ class ArgParser:
         args, _ = self.parser.parse_known_args(self.args)
         if args.epoch_type == 'epoch':
             train_loader, _ = set_loader(args)
-            self.parser.add_argument('--num_epoch', default=200, type=int)
+            self.parser.add_argument('--num_epoch', default=120, type=int)
             self.parser.add_argument('--epoch_step', default=len(train_loader), type=int)
             self.parser.add_argument('--warmup_steps', default=int(len(train_loader) * args.warmup), type=int)
             args, _ = self.parser.parse_known_args(self.args)
@@ -110,8 +110,8 @@ class ArgParser:
     def lr_scheduler(self):
         args, _ = self.parser.parse_known_args(self.args)
         if args.lr_scheduler == 'milestones':
-            self.parser.add_argument('--gamma', default=0.2, type=float)
-            self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
+            self.parser.add_argument('--gamma', default=0.1, type=float)
+            self.parser.add_argument('--milestones', default=[0.5, 0.75], nargs='+', type=float)  # for milestone
         elif args.lr_scheduler in ['exp', 'linear']:
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':
