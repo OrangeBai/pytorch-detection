@@ -38,8 +38,8 @@ do
   do
     for id in 0 1 2 3 4
     do
-      qsub pytorch-detection.sh --net cxfy42 --train_mode std --act ${act} --batch_size ${batchSize} --dir 10run/${act}_${batchSize} --exp_id std_0${id}
-      qsub pytorch-detection.sh --net cxfy42 --train_mode cer --act ${act} --batch_size ${batchSize} --dir 10run/${act}_${batchSize} --exp_id gen_0${id} --eta_dn 0.1 --dn_rate 0.9 --balance 0
+      qsub pytorch-detection.sh --net cxfy42 --train_mode std --act ${act} --batch_size ${batchSize} --dir 10run_cifar10/${act}_${batchSize} --exp_id std_0${id}
+      qsub pytorch-detection.sh --net cxfy42 --train_mode cer --act ${act} --batch_size ${batchSize} --dir 10run_cifar10/${act}_${batchSize} --exp_id gen_0${id} --eta_dn 0.1 --dn_rate 0.9 --balance 0
     done
   done
 done

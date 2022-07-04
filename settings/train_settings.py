@@ -187,7 +187,7 @@ class ArgParser:
         """
         args, _ = self.parser.parse_known_args(self.args)
         exp_name = '_'.join([str(args.net), str(args.exp_id)])
-        path = os.path.join(MODEL_PATH, args.dataset, args.dir, exp_name)
+        path = os.path.join(MODEL_PATH, args.dir, exp_name)
         if train:
             if os.path.exists(path):
                 shutil.rmtree(path)
