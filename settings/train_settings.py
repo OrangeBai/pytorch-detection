@@ -47,7 +47,7 @@ class ArgParser:
                                  choices=['static', 'milestones', 'exp', 'linear', 'cyclic'])
         self.parser.add_argument('--optimizer', default='SGD', choices=['SGD', 'Adam'])
         self.parser.add_argument('--lr', default=0.1, type=float)
-        self.parser.add_argument('--warmup', default=2, type=float)
+        self.parser.add_argument('--warmup', default=1, type=float)
         # model type
         self.parser.add_argument('--model_type', default='net', choices=['dnn', 'mini', 'net'])
         self.parser.add_argument('--net', default='vgg16', type=str)
