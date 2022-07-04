@@ -35,9 +35,9 @@ class Trainer(AdvTrainer, CertTrainer):
 
     def validate_epoch(self, epoch):
         if self.args.val_mode in ['adv', 'cert']:
-            self.adv_validate_epoch(epoch)
+            return self.adv_validate_epoch(epoch)
         elif self.args.val_mode == 'normal':
-            self.normal_validate_epoch(epoch)
+            return self.normal_validate_epoch(epoch)
         # elif self.args.val_mode == 'prune':
         #     validate_epoch = self.prune_validate_epoch
         else:
