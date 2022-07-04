@@ -30,7 +30,7 @@ class CertTrainer(BaseTrainer):
         if self.args.eta_fixed != 0 or self.args.eta_float != 0:
             output_reg, output_noise = self.dual_net(images, n, 1 - self.trained_ratio)
         else:
-            output_reg = self.dual_net.dn_forward(images, 1 - self.trained_ratio)
+            output_reg = self.dual_net.dn_forward(images, 1)
             output_noise = None
 
         loss = self.set_loss(images, labels, output_reg, output_noise)

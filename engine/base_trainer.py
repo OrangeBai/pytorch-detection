@@ -148,12 +148,13 @@ class BaseTrainer:
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
             self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)))
-        self.model.train()
+        acc = self.metrics.top1.global_avg
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
-
         self.logger.info(msg)
         print(msg)
-        return self.metrics.top1.global_avg
+
+        self.model.train()
+        return acc
 
     def get_lr(self):
         return self.optimizer.param_groups[0]['lr']

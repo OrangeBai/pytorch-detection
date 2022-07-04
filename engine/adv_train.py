@@ -49,9 +49,10 @@ class AdvTrainer(BaseTrainer):
                 update_times = {name + 'top1': (top1, len(images)),
                                 name + 'top5': (top5, len(images))}
                 self.update_metric(**update_times)
+        acc = self.metrics.top1.global_avg
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
         print(msg)
 
         self.model.train()
-        return self.metrics.top1.global_avg
+        return acc
