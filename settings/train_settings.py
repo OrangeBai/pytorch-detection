@@ -53,7 +53,7 @@ class ArgParser:
         self.parser.add_argument('--net', default='vgg16', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
-        self.parser.add_argument('--print_every', default=50, type=int)
+        self.parser.add_argument('--print_every', default=400, type=int)
 
         #
         self.parser.add_argument('--config', default=None)

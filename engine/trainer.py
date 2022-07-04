@@ -8,9 +8,13 @@ class Trainer(AdvTrainer, CertTrainer):
 
     def train_model(self):
         self.warmup()
+        best_acc = 0
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
-            self.validate_epoch(epoch)
+            acc = self.validate_epoch(epoch)
+            if acc > best_acc:
+                best_acc = acc
+                self.model.save_model(self.args.model_dir, 'cur_best')
             self.record_result(epoch)
             self.model.train()
         self.normal_validate_epoch(-1)
@@ -38,7 +42,6 @@ class Trainer(AdvTrainer, CertTrainer):
         #     validate_epoch = self.prune_validate_epoch
         else:
             raise NameError
-        return
 
     def train_step(self, images, labels):
         if self.args.train_mode == 'cert':

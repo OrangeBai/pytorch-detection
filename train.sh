@@ -15,15 +15,18 @@ python train.py --net cxfy42 --train_mode cert --exp_id 002 --eta_dn 0.5
 opt=SGD
 act=GeLU
 id=0
-for opt in SGD Adam
+for batchSize in 128 256 512
 do
-  for act in ReLU LeakyReLU GeLU
+  for opt in SGD Adam
   do
-    for id in {0..4}
+    for act in ReLU LeakyReLU GeLU
     do
-      python train.py --net vgg16 --train_mode normal --val_mode normal  --optimizer ${opt} --act ${act} --dir 10run/${act}/${opt} --exp_id 0${id}
-      python train.py --net vgg16 --train_mode cert --eta_dn 0.25 --dn_rate 0.90 --balance 1 --val_mode normal  --optimizer ${opt} --act ${act} --dir 10run/${act}/${opt} --exp_id reg_0${id}
-      python train.py --net vgg16 --train_mode cert --eta_dn 0.1 --dn_rate 0.90 --balance 0 --val_mode normal  --optimizer ${opt} --act ${act} --dir 10run/${act}/${opt} --exp_id gen_0${id}
+      for id in 0 1 2
+      do
+        python train.py --net vgg16 --train_mode normal --val_mode normal  --optimizer ${opt} --act ${act} --batch_size $batchSize --dir 10run/${act}_${opt}_${batchSize} --exp_id 0${id}
+        python train.py --net vgg16 --train_mode cert --eta_dn 0.25 --dn_rate 0.95 --balance 1 --val_mode normal  --optimizer ${opt} --act ${act} --batch_size ${batchSize} --dir 10run/${act}_${opt}_${batchSize} --exp_id gen_1${id}
+        python train.py --net vgg16 --train_mode cert --eta_dn 0.1 --dn_rate 0.95 --balance 0 --val_mode normal  --optimizer ${opt} --act ${act} --batch_size ${batchSize} --dir 10run/${act}_${opt}_${batchSize} --exp_id gen_0${id}
+      done
     done
-  done
+done
 done

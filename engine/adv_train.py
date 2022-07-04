@@ -54,4 +54,4 @@ class AdvTrainer(BaseTrainer):
         print(msg)
 
         self.model.train()
-        return
+        return self.metrics.top1.global_avg

@@ -153,7 +153,7 @@ class BaseTrainer:
 
         self.logger.info(msg)
         print(msg)
-        return
+        return self.metrics.top1.global_avg
 
     def get_lr(self):
         return self.optimizer.param_groups[0]['lr']
