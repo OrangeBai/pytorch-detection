@@ -1,4 +1,4 @@
-from attack.attack import *
+from attack.base import Attack
 
 
 class VANILA(Attack):
@@ -11,5 +11,3 @@ class VANILA(Attack):
         """
 
         return images
-
-

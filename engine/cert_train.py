@@ -1,22 +1,16 @@
 from torch.nn.functional import one_hot
 
 from core.lip import *
-from core.utils import *
 from engine import *
-from models.blocks import FloatNet, DualNet
+from models.blocks import DualNet
 
 
-class CertTrainer(AdvTrainer):
+class CertTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
-        self.num_flt_est = args.num_flt_est
-        self.est_lip = 0
-        self.flt_net = FloatNet(self.model)
-        self.dual_net = DualNet(self.model, set_gamma(args.activation))
-        # self.attacks = self.set_attack
+        self.dual_net = DualNet(self.model, args)
 
     def cert_train_epoch(self, epoch):
-        self.est_lip = 0
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.cert_train_step(images, labels)
@@ -28,42 +22,66 @@ class CertTrainer(AdvTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        # n = images + torch.sign(torch.randn_like(images, device='cuda')) * 8/255
-        n = images + torch.randn_like(images, device='cuda') * 0.1
-        # n = self.attacks['FGSM'].attack(images, labels)
-        output_reg = self.model(n)
-        # output_reg, output_noise = self.dual_net.compute_float(n, images, -0.2 * self.trained_ratio, 0.1 * self.trained_ratio)
+        if self.args.noise_type == 'noise':
+            n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
+        else:
+            n = self.attacks['FGSM'].attack(images, labels)
 
-        # output_reg = self.model(images)
-        # output_reg = self.dual_net.over_fitting_forward(images)
-        # output_reg = self.dual_net.masked_forward(n, 1, 2)
+        if self.args.eta_fixed != 0 or self.args.eta_float != 0:
+            output_reg, output_noise = self.dual_net(images, n, 1 - self.trained_ratio)
+        else:
+            output_reg = self.dual_net.dn_forward(images, 1 - self.trained_ratio)
+            output_noise = None
 
-        # output_reg = self.dual_net.masked_forward(images, 1 - 0.00 * (1 - self.trained_ratio), 1)
-        # output_flt = self.dual_net.masked_forward(images, 1, 1 + 1 * (1 - self.trained_ratio))
-        # noise_output = self.dual_net.masked_forward(n, 1, 1 + 1 * (1 - self.trained_ratio))
-
-        loss_normal = self.loss_function(output_reg, labels)
-        # loss_float = (output_reg - output_noise)
-        # loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
-        # loss_float = loss_float.norm(p=2).mean()
-
-        # perturbation = self.lip.attack(images, labels)
-        # perturbation = torch.sign(torch.randn_like(images)) * self.args.eps * 2
-        # local_lip = (self.model(images + perturbation) - outputs) * 10000
-        # worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        # loss_lip = self.loss_function(outputs + worst_lip * self.trained_ratio, labels)
-
-        # loss = loss_normal
-        loss = loss_normal
+        loss = self.set_loss(images, labels, output_reg, output_noise)
         self.step(loss)
 
         top1, top5 = accuracy(output_reg, labels)
         self.update_metric(top1=(top1, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           mask=(self.flt_net.mask_ratio, 1),
                            # l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
                            # l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images))
                            )
         # if self.est_lip % self.args.fre_est_lip == 0:
         #     self.update_metric(ratio=(ratio.mean(), len(images)))
         # self.est_lip += 1
+
+    def set_loss_default(self, output_reg, output_noise, labels):
+        if self.args.cert_input == 'noise':
+            loss_normal = self.loss_function(output_noise, labels)
+        else:
+            loss_normal = self.loss_function(output_reg, labels)
+        return loss_normal
+
+    def set_float_loss(self, output_reg, output_noise, labels):
+        if self.args.loss_float != 0:
+            loss_float = (output_reg - output_noise)
+            loss_float = (1 - one_hot(labels, num_classes=loss_float.shape[1])).multiply(loss_float.abs())
+            loss_float = loss_float.norm(p=2).mean()
+            return loss_float
+        else:
+            return 0
+
+    def set_lip_loss(self, images, output_reg, labels):
+        perturbation = torch.randn_like(images)
+        if self.args.ord == 'l2':
+            perturbation = perturbation / perturbation.view(len(perturbation), -1).norm(p=2, dim=-1) / 100000
+        else:
+            perturbation = torch.sign(perturbation) / 100000
+        local_lip = (self.model(images + perturbation) - output_reg) * 100000
+        worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
+        loss_lip = self.loss_function(output_reg + worst_lip * self.trained_ratio * self.args.eps, labels)
+        return loss_lip
+
+    def set_loss(self, images, labels, output_reg, output_noise=None):
+        if output_noise is None:
+            loss_normal = self.loss_function(output_reg, labels)
+            float_loss = 0
+        else:
+            loss_normal = self.set_loss_default(output_reg, output_noise, labels)
+            float_loss = self.set_float_loss(output_reg, output_noise, labels)
+        if self.args.lip:
+            loss_lip = self.set_lip_loss(images, output_reg, labels) * self.trained_ratio
+            loss_normal = loss_normal * (1 - self.trained_ratio) + loss_lip * self.trained_ratio
+
+        return loss_normal + self.args.float_loss * float_loss

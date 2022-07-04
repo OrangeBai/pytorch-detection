@@ -1,7 +1,5 @@
 from torch.nn.functional import one_hot
-
-from attack.attack import *
-from core.utils import *
+from attack.base import *
 
 
 class LipAttack(Attack):

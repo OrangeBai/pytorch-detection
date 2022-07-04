@@ -1,6 +1,5 @@
-from attack.attack import *
-from torch.nn import functional as F
-
+from attack.base import *
+import torch.nn.functional as F
 
 class PGD(Attack):
     def __init__(self, model, device, *args, **kwargs):

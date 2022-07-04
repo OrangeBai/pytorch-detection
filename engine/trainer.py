@@ -1,23 +1,17 @@
-from core.BCP_utils import argparser
 from engine.cert_train import CertTrainer
-from core.BCP import evaluate_BCP
+from engine.adv_train import AdvTrainer
 
 
-class Trainer(CertTrainer):
+class Trainer(AdvTrainer, CertTrainer):
     def __init__(self, args):
         super().__init__(args)
 
     def train_model(self):
         self.warmup()
-        # rb = evaluate_BCP(self.test_loader, self.model, 1 / 255, -1, -1, -1, argparser(), None)
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             self.validate_epoch(epoch)
             self.record_result(epoch)
-            # evaluate_BCP(self.test_loader, self.model, 1/255, -1, -1, -1, argparser(), None)
-            # if rb_1 < rb:
-            #     self.model.save_model(self.args.model_dir)
-            #     rb = rb_1
             self.model.train()
         self.normal_validate_epoch(-1)
         self.model.save_model(self.args.model_dir)
@@ -36,8 +30,10 @@ class Trainer(CertTrainer):
             raise NameError
 
     def validate_epoch(self, epoch):
-        if self.args.val_mode in ['normal', 'adv', 'cert']:
+        if self.args.val_mode in ['adv', 'cert']:
             self.adv_validate_epoch(epoch)
+        elif self.args.val_mode == 'normal':
+            self.normal_validate_epoch(epoch)
         # elif self.args.val_mode == 'prune':
         #     validate_epoch = self.prune_validate_epoch
         else:

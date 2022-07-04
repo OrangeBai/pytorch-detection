@@ -1,6 +1,3 @@
-import numpy as np
-from attack import *
-from dataloader.base import *
 from models.blocks import *
 from core.utils import *
 

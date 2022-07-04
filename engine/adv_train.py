@@ -5,8 +5,6 @@ class AdvTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
 
-
-
     def adv_train_epoch(self, epoch):
 
         for step in range(self.args.epoch_step):

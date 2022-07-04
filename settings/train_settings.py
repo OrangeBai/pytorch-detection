@@ -62,6 +62,7 @@ class ArgParser:
         # dataset and experiments
         self.parser.add_argument('--dataset', default='cifar10', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
+        self.parser.add_argument('--dir', default='', type=str)
         # gpu settings
         self.parser.add_argument('--cuda', default=[0], type=list)
         # for debugging
@@ -186,7 +187,7 @@ class ArgParser:
         """
         args, _ = self.parser.parse_known_args(self.args)
         exp_name = '_'.join([args.dataset, str(args.net), str(args.exp_id)])
-        path = os.path.join(MODEL_PATH, args.dataset, exp_name)
+        path = os.path.join(MODEL_PATH, args.dir, args.dataset, exp_name)
         if train:
             if os.path.exists(path):
                 shutil.rmtree(path)
@@ -226,14 +227,19 @@ class ArgParser:
     def train_mode(self):
         args, _ = self.parser.parse_known_args(self.args)
         # Certifiable training
-        self.parser.add_argument('--fre_est_lip', default=50, type=int)
-        self.parser.add_argument('--num_flt_est', default=32, type=int)
-        self.parser.add_argument('--noise_eps', default=2 / 255, type=float)
-        self.parser.add_argument('--gamma_type', default='linear', type=str,
-                                 choices=['linear', 'half', 'milestone'])
-        self.parser.add_argument('--ord', default='inf', type=str)
+        self.parser.add_argument('--cert_input', default='normal', type=str)
+        self.parser.add_argument('--noise_sigma', default=0.1, type=float)
+        self.parser.add_argument('--eta_fixed', default=0, type=float)
+        self.parser.add_argument('--eta_float', default=0, type=float)
+        self.parser.add_argument('--eta_dn', default=0, type=float)
+        self.parser.add_argument('--dn_rate', default=0.90, type=float)
+        self.parser.add_argument('--lip', default=0, type=int)
+        self.parser.add_argument('--noise_type', default='noise', type=str)
+        self.parser.add_argument('--float_loss', default=0)
+        self.parser.add_argument('--balance', default=0)
 
         # Adversarial Training
+        self.parser.add_argument('--ord', default='inf', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
         self.parser.add_argument('--alpha', default=2 / 255, type=float)
         self.parser.add_argument('--eps', default=4 / 255, type=float)

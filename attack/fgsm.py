@@ -1,5 +1,4 @@
-from attack.attack import *
-from core.utils import *
+from attack.base import *
 
 
 class FGSM(Attack):

@@ -79,70 +79,95 @@ class FloatFC(nn.Module):
 
 
 class DualNet(nn.Module):
-    def __init__(self, net, gamma):
+    def __init__(self, net, args):
         super().__init__()
         self.net = net
-        self.gamma = gamma
+        self.eta_fixed = args.eta_fixed
+        self.eta_float = args.eta_float
+        self.eta_dn = args.eta_dn
+        self.dn_rate = args.dn_rate
+        self.gamma = set_gamma(args.activation)
+        self.balance = args.balance
         self.fixed_neurons = None
+        if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn ==0:
+            Warning('All etas equal to zero, use normal training!')
 
-    def compute_float(self, x_1, x_2, fixed_ratio, float_ratio):
+    def update_ratio(self, trained_ratio):
+        return self.eta_fixed * trained_ratio, self.eta_float * trained_ratio, self.eta_dn * trained_ratio
+
+    def forward(self, x_1, x_2=None, trained_ratio=0):
+        eta_fixed, eta_float, eta_dn = self.update_ratio(trained_ratio)
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
-                x_1 = self.x_mask(x_1, fixed_ratio, fix) + self.x_mask(x_1, float_ratio, ~fix)
-                x_2 = self.x_mask(x_2, fixed_ratio, fix) + self.x_mask(x_2, float_ratio, ~fix)
+                if eta_fixed != 0 or eta_float != 0:
+                    x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
+                    x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
+                if eta_dn != 0:
+                    x_1 = self.dn_block_forward(x_1, eta_dn)
+
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
         self.fixed_neurons = fixed_neurons
         return x_1, x_2
 
-    @staticmethod
-    def x_mask(x, ratio, mask):
-        return x * (1 + ratio) * mask - x.detach() * ratio * mask
+    def dn_forward(self, x, trained_ratio):
+        eta_dn = self.eta_dn * trained_ratio
+        for i, module in enumerate(self.net.layers.children()):
+            x = self.compute_pre_act(module, x)
+            if type(module) in [ConvBlock, LinearBlock]:
+                x = self.dn_block_forward(x, eta_dn)
+                x = module.Act(x)
+        return x
 
-    def masked_forward(self, x, fix_ratio=1, float_ratio=1):
+    @property
+    def mask_ratio(self):
+        mask_mean = []
+        if self.fixed_neurons is None:
+            return 0
+        for b_mask in self.fixed_neurons:
+            for l_mask in b_mask:
+                mask_mean += [l_mask.mean()]
+        return np.array(mask_mean).mean()
+
+    def x_mask(self, x, ratio, mask):
+        if self.balance:
+            return x * (1 + ratio) * mask - x.detach() * ratio * mask
+        else:
+            return x * (1 + ratio) * mask
+    @staticmethod
+    def compute_pre_act(module, x):
+        if type(module) == ConvBlock:
+            return module.BN(module.Conv(x))
+        elif type(module) == LinearBlock:
+            return module.BN(module.FC(x))
+        else:
+            return module(x)
+
+    def compute_fix(self, module, x_1, x_2):
+        x_1 = self.compute_pre_act(module, x_1)
+        x_2 = self.compute_pre_act(module, x_2)
+        if type(module) in [ConvBlock, LinearBlock]:
+            fixed = x_1 * x_2 > 0
+            return x_1, x_2, fixed.detach()
+        else:
+            return x_1, x_2, None
+
+    def masked_forward(self, x, fix_ratio=1, eta_float=1):
         for i, (mask, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             if type(module) == ConvBlock:
                 x = module.BN(module.Conv(x))
-                x = float_ratio * x * ~mask + fix_ratio * x * mask
+                x = eta_float * x * ~mask + fix_ratio * x * mask
                 x = module.Act(x)
             elif type(module) == LinearBlock:
                 x = module.BN(module.FC(x))
-                x = float_ratio * x * ~mask + fix_ratio * x * mask
+                x = eta_float * x * ~mask + fix_ratio * x * mask
                 x = module.Act(x)
             else:
                 x = module(x)
         return x
-
-    def compute_fix(self, module, x_1, x_2):
-        if type(module) == ConvBlock:
-            x_1 = module.Conv(x_1)
-            x_2 = module.Conv(x_2)
-
-            x_1 = module.BN(x_1)
-            # x_2 = self._batch_norm(module, x_2)
-            x_2 = module.BN(x_2)
-
-            fixed = x_1 * x_2 > 0
-
-            return x_1, x_2, fixed.detach()
-
-        elif type(module) == LinearBlock:
-            x_1 = module.FC(x_1)
-            x_2 = module.FC(x_2)
-
-            x_1 = module.BN(x_1)
-            # x_2 = self._batch_norm(module, x_2)
-            x_2 = module.BN(x_2)
-
-            fixed = x_1 * x_2 > 0
-
-            return x_1, x_2, fixed.detach()
-
-        else:
-            return module(x_1), module(x_2), None
 
     @staticmethod
     def _batch_norm(layer, x):
@@ -151,29 +176,32 @@ class DualNet(nn.Module):
         else:
             return x
 
-    def over_fitting_forward(self, x):
-        fixed_neurons = []
-        for i, module in enumerate(self.net.layers.children()):
-            if type(module) == ConvBlock:
-                x = module.BN(module.Conv(x))
-                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
-                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x_mean, x_var = x.mean().detach(), x.var().detach()
-                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
-                x = x * 1.2 * p + x * 1 * ~p
-                x = module.Act(x)
-            elif type(module) == LinearBlock:
-                x = module.BN(module.FC(x))
-                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
-                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x_mean, x_var = x.mean().detach(), x.var().detach()
-                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
-                x = x * 1.5 * p + x * 1 * ~p
-                x = module.Act(x)
-            else:
-                x = module(x)
+    def dn_block_forward(self, x, dn_ratio):
+        p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+        p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
+        p_same = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+        x = self.x_mask(x, (1 + dn_ratio), p_same) + x * ~p_same
+
+        # fixed_neurons = []
+        # for i, module in enumerate(self.net.layers.children()):
+        #     if type(module) == ConvBlock:
+        #         x = module.BN(module.Conv(x))
+        #         p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
+        #         p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
+        #
+        #         x_mean, x_var = x.mean().detach(), x.var().detach()
+        #         # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
+        #
+        #         x = module.Act(x)
+        #     elif type(module) == LinearBlock:
+        #         x = module.BN(module.FC(x))
+        #         p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+        #         x_mean, x_var = x.mean().detach(), x.var().detach()
+        #         # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
+        #         x = x * 1.5 * p + x * 1 * ~p
+        #         x = module.Act(x)
+        #     else:
+        #         x = module(x)
         return x
 
 

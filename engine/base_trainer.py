@@ -2,6 +2,7 @@ import datetime
 import logging
 from attack import set_attack
 from models import *
+from dataloader.base import *
 
 
 class BaseTrainer:
@@ -44,7 +45,6 @@ class BaseTrainer:
     def set_attack(self):
         return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
                 'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
-                # 'CW': set_attack(self.model, 'CW', self.args.devices[0], **self.attack_args)
                 }
 
     def save_result(self, path, name=None):
@@ -117,19 +117,7 @@ class BaseTrainer:
     @property
     def trained_ratio(self):
         train_ratio = self.lr_scheduler.last_epoch / self.args.total_step
-        if self.args.gamma_type == 'linear':
-            return train_ratio
-        elif self.args.gamma_type == 'half':
-            return train_ratio / 2
-        elif self.args.gamma_type == 'milestone':
-            if train_ratio < 0.3:
-                return 1 / 4
-            elif train_ratio < 0.6:
-                return 2 / 4
-            else:
-                return 3 / 4
-        elif self.args.gamma_type == 'static':
-            return 0.1
+        return train_ratio
 
     def warmup(self):
         if self.args.warmup_steps == 0:
