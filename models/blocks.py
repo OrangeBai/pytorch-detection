@@ -92,10 +92,10 @@ class DualNet(nn.Module):
         if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn == 0:
             Warning('All etas equal to zero, use normal training!')
 
-    def update_ratio(self, trained_ratio):
+    def update_ratio(self, trained_ratio=1):
         return self.eta_fixed * trained_ratio, self.eta_float * trained_ratio, self.eta_dn * trained_ratio
 
-    def forward(self, x_1, x_2=None, trained_ratio=0):
+    def forward(self, x_1, x_2=None, trained_ratio=1):
         eta_fixed, eta_float, eta_dn = self.update_ratio(trained_ratio)
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
@@ -113,7 +113,7 @@ class DualNet(nn.Module):
         self.fixed_neurons = fixed_neurons
         return x_1, x_2
 
-    def dn_forward(self, x, trained_ratio):
+    def dn_forward(self, x, trained_ratio=1):
         eta_dn = self.eta_dn * trained_ratio
         for i, module in enumerate(self.net.layers.children()):
             x = self.compute_pre_act(module, x)

@@ -28,9 +28,9 @@ class CertTrainer(BaseTrainer):
             n = self.attacks['FGSM'].attack(images, labels)
 
         if self.args.eta_fixed != 0 or self.args.eta_float != 0:
-            output_reg, output_noise = self.dual_net(images, n, 1 - self.trained_ratio)
+            output_reg, output_noise = self.dual_net(images, n)
         elif self.args.eta_dn != 0:
-            output_reg = self.dual_net.dn_forward(images, 1 - self.trained_ratio)
+            output_reg = self.dual_net.dn_forward(images)
             output_noise = None
         else:
             if self.args.cert_input != 'noise':
@@ -71,7 +71,7 @@ class CertTrainer(BaseTrainer):
         perturbation = self.lip.attack(images, labels)
         local_lip = (self.model(images + perturbation) - output_reg) * 10000
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(output_reg + worst_lip * self.args.eps, labels)
+        loss_lip = worst_lip.norm(p=2, dim=-1).mean()
         return loss_lip
 
     def set_loss(self, images, labels, output_reg, output_noise=None):
@@ -83,6 +83,7 @@ class CertTrainer(BaseTrainer):
             float_loss = self.set_float_loss(output_reg, output_noise, labels)
         if self.args.lip:
             loss_lip = self.set_lip_loss(images, output_reg, labels) * self.trained_ratio
-            loss_normal = loss_normal * (1 - self.trained_ratio) + loss_lip * self.trained_ratio
+        else:
+            loss_lip = 0
 
-        return loss_normal + self.args.float_loss * float_loss
+        return loss_normal + self.args.float_loss * float_loss + loss_lip * 0.01
