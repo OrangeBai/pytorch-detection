@@ -43,3 +43,13 @@ do
     done
   done
 done
+
+
+act=LeakyReLU
+python train.py --net vgg16 --train_mode std --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id bm --noise_sigma 0.1 --cert_input noise
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 00 --noise_sigma 0.1 --cert_input noise --eta_float 0.0 --float_loss 0.01
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 01 --noise_sigma 0.1 --cert_input noise --eta_float 0.1 --float_loss 0.01
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 02 --noise_sigma 0.1 --cert_input noise --eta_float 0.2 --float_loss 0.01
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 10 --noise_sigma 0.1 --cert_input noise --eta_float 0.0 --float_loss 0.01
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 11 --noise_sigma 0.1 --cert_input noise --eta_float 0.1 --float_loss 0.01
+python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 12 --noise_sigma 0.1 --cert_input noise --eta_float 0.2 --float_loss 0.01

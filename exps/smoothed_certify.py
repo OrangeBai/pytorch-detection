@@ -9,6 +9,8 @@ from dataloader.base import *
 
 
 def smooth_test(model, args):
+    model.load_model(args.model_dir)
+    model = model.eval()
     file_path = os.path.join(args.exp_dir, 'smooth')
     # mean, std = set_mean_sed(args)
     # model = nn.Sequential(*[Normalize(mean, std), model]).cuda()
