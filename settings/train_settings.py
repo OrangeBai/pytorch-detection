@@ -240,10 +240,10 @@ class ArgParser:
         self.parser.add_argument('--linear_decay', default=0, type=int)
 
         # Adversarial Training
-        self.parser.add_argument('--ord', default='inf', type=str)
+        self.parser.add_argument('--ord', default='l2', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
-        self.parser.add_argument('--alpha', default=2 / 255, type=float)
-        self.parser.add_argument('--eps', default=4 / 255, type=float)
+        self.parser.add_argument('--alpha', default=32 / 255, type=float)
+        self.parser.add_argument('--eps', default=128 / 255, type=float)
 
         # Prune Training
         self.parser.add_argument('--prune_rate', default=0.95, type=float)
