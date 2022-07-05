@@ -236,7 +236,8 @@ class ArgParser:
         self.parser.add_argument('--lip', default=0, type=int)
         self.parser.add_argument('--noise_type', default='noise', type=str)
         self.parser.add_argument('--float_loss', default=0, type=float)
-        self.parser.add_argument('--balance', default=0)
+        self.parser.add_argument('--balance', default=0, type=int)
+        self.parser.add_argument('--linear_decay', default=0, type=int)
 
         # Adversarial Training
         self.parser.add_argument('--ord', default='inf', type=str)

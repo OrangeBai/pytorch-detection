@@ -116,8 +116,10 @@ class BaseTrainer:
 
     @property
     def trained_ratio(self):
-        train_ratio = self.lr_scheduler.last_epoch / self.args.total_step
-        return train_ratio
+        if self.args.linear_decay:
+            return self.lr_scheduler.last_epoch / self.args.total_step
+        else:
+            return 0
 
     def warmup(self):
         if self.args.warmup_steps == 0:

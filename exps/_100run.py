@@ -9,7 +9,7 @@ def _single_test(activation, net, batch_size):
 
     gen_result = []
     for i in range(5):
-        exp_id = '_'.join(['gen', '1'+str(i)])
+        exp_id = '_'.join(['gen', '2'+str(i)])
         argv = ['--dir', base_dir, '--exp_id', exp_id, '--net', net, '--dataset', 'cifar10', '--activation', activation]
         args = set_up_testing(argv)
         model = build_model(args)
@@ -43,6 +43,7 @@ def _single_test(activation, net, batch_size):
 
 
 if __name__ == '__main__':
-    gen_acc, std_acc = _single_test('ReLU', 'cxfy42', 256)
+    gen_acc, std_acc = _single_test('LeakyReLU', 'cxfy42', 256)
     print('Gen Acc {0}, Var {1}'.format(gen_acc.mean(), gen_acc.var()))
     print('Std Acc {0}, Var {1}'.format(std_acc.mean(), std_acc.var()))
+    print(1)
