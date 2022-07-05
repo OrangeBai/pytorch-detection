@@ -14,7 +14,7 @@ class CertTrainer(BaseTrainer):
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.cert_train_step(images, labels)
-            if step % self.args.print_every == 0 and step !=0:
+            if step % self.args.print_every == 0 and step != 0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
 
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
@@ -65,7 +65,8 @@ class CertTrainer(BaseTrainer):
     def set_lip_loss(self, images, output_reg, labels):
         perturbation = torch.randn_like(images)
         if self.args.ord == 'l2':
-            perturbation = perturbation / perturbation.view(len(perturbation), -1).norm(p=2, dim=-1) / 100000
+            per_norm = perturbation.view(len(perturbation), -1).norm(p=2, dim=-1).view(len(perturbation), 1, 1, 1)
+            perturbation = perturbation / per_norm / 100000
         else:
             perturbation = torch.sign(perturbation) / 100000
         local_lip = (self.model(images + perturbation) - output_reg) * 100000
