@@ -62,15 +62,16 @@ class CertTrainer(BaseTrainer):
         else:
             return 0
 
-    def set_lip_loss(self, images, output_reg, labels):
+    def set_lip_loss(self, images, labels):
         perturbation = self.lip.attack(images, labels)
+        output = self.model(images)
         if self.args.ord == 'l2':
             p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
         else:
-            p_norm = perturbation.norm(p=1, dim=(1, 2, 3)).view(len(perturbation), 1)
-        local_lip = (self.model(images + perturbation) - self.model(images)) / p_norm
+            p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
+        local_lip = (self.model(images + perturbation) - output) / p_norm
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(output_reg + worst_lip * self.args.eps, labels)
+        loss_lip = self.loss_function(output + worst_lip * self.args.eps, labels)
         return loss_lip
 
     def set_loss(self, images, labels, output_reg, output_noise=None):
@@ -81,7 +82,7 @@ class CertTrainer(BaseTrainer):
             loss_normal = self.set_loss_default(output_reg, output_noise, labels)
             float_loss = self.set_float_loss(output_reg, output_noise, labels)
         if self.args.lip:
-            loss_lip = self.set_lip_loss(images, output_reg, labels) * self.trained_ratio
+            loss_lip = self.set_lip_loss(images, labels) * self.trained_ratio
             loss_normal = loss_normal * (1 - self.trained_ratio) + loss_lip * self.trained_ratio
 
         return loss_normal + self.args.float_loss * float_loss

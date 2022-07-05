@@ -238,7 +238,7 @@ class ArgParser:
         self.parser.add_argument('--float_loss', default=0, type=float)
 
         # Adversarial Training
-        self.parser.add_argument('--ord', default='l2', type=str)
+        self.parser.add_argument('--ord', default='inf', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
         self.parser.add_argument('--alpha', default=1 / 255, type=float)
         self.parser.add_argument('--eps', default=4 / 255, type=float)
