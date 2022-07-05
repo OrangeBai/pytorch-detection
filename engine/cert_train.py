@@ -29,8 +29,13 @@ class CertTrainer(BaseTrainer):
 
         if self.args.eta_fixed != 0 or self.args.eta_float != 0:
             output_reg, output_noise = self.dual_net(images, n, 1 - self.trained_ratio)
-        else:
+        elif self.args.eta_dn != 0:
             output_reg = self.dual_net.dn_forward(images, 1 - self.trained_ratio)
+            output_noise = None
+        else:
+            if self.args.cert_input != 'noise':
+                raise ArithmeticError('Not using AP training, set train_mode to normal')
+            output_reg = self.model(n)
             output_noise = None
 
         loss = self.set_loss(images, labels, output_reg, output_noise)
@@ -71,7 +76,7 @@ class CertTrainer(BaseTrainer):
             perturbation = torch.sign(perturbation) / 100000
         local_lip = (self.model(images + perturbation) - output_reg) * 100000
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(output_reg + worst_lip * self.trained_ratio * self.args.eps, labels)
+        loss_lip = self.loss_function(output_reg + worst_lip * self.args.eps, labels)
         return loss_lip
 
     def set_loss(self, images, labels, output_reg, output_noise=None):

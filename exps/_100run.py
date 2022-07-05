@@ -9,7 +9,7 @@ def _single_test(activation, net, batch_size):
 
     gen_result = []
     for i in range(5):
-        exp_id = '_'.join(['gen', '2'+str(i)])
+        exp_id = '_'.join(['gen', '0'+str(i)])
         argv = ['--dir', base_dir, '--exp_id', exp_id, '--net', net, '--dataset', 'cifar10', '--activation', activation]
         args = set_up_testing(argv)
         model = build_model(args)
