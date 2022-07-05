@@ -8,12 +8,12 @@ def _single_test(activation, net, batch_size):
     base_dir = os.path.join('100run', '_'.join([activation, str(batch_size)]))
 
     gen_result = []
-    for i in range(5):
+    for i in range(10):
         exp_id = '_'.join(['gen', '0'+str(i)])
         argv = ['--dir', base_dir, '--exp_id', exp_id, '--net', net, '--dataset', 'cifar10', '--activation', activation]
         args = set_up_testing(argv)
         model = build_model(args)
-        model.load_model(args.model_dir, 'cur_best')
+        model.load_model(args.model_dir)
         model.eval()
         _, test_loader = set_loader(args)
         metrics = MetricLogger()
@@ -25,12 +25,12 @@ def _single_test(activation, net, batch_size):
     print(1)
 
     std_result = []
-    for i in range(5):
+    for i in range(10):
         exp_id = '_'.join(['std', '0'+str(i)])
         argv = ['--dir', base_dir, '--exp_id', exp_id, '--net', net, '--dataset', 'cifar10', '--activation', activation]
         args = set_up_testing(argv)
         model = build_model(args)
-        model.load_model(args.model_dir, 'cur_best')
+        model.load_model(args.model_dir)
         model.eval()
         _, test_loader = set_loader(args)
         metrics = MetricLogger()
