@@ -1,8 +1,9 @@
 import datetime
 import logging
+
 from attack import set_attack
-from models import *
 from dataloader.base import *
+from models import *
 
 
 class BaseTrainer:
@@ -118,8 +119,8 @@ class BaseTrainer:
     def trained_ratio(self):
         return self.lr_scheduler.last_epoch / self.args.total_step
 
-
     def warmup(self):
+        self.inf_loader.reset()
         if self.args.warmup_steps == 0:
             return
         loader = InfiniteLoader(self.train_loader)
@@ -128,7 +129,7 @@ class BaseTrainer:
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
             self.normal_train_step(images, labels)
-            if cur_step % self.args.print_every == 0 and cur_step!=0:
+            if cur_step % self.args.print_every == 0 and cur_step != 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
             if cur_step >= self.args.warmup_steps:
@@ -137,7 +138,7 @@ class BaseTrainer:
         # self.validate_epoch(-1)
         self.optimizer = init_optimizer(self.args, self.model)
         self.lr_scheduler = init_scheduler(self.args, self.optimizer)
-        self.inf_loader.reset()
+
         return
 
     def normal_validate_epoch(self, epoch):
@@ -174,8 +175,15 @@ class BaseTrainer:
     def record_lip(self, images, labels, outputs):
         perturbation = self.lip.attack(images, labels)
         local_lip = (self.model(images + perturbation) - outputs) * 10000
-        self.update_metric(l1_lip=(local_lip.norm(p=1, dim=1).mean(), len(images)),
-                           l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images)))
+        if self.args.ord == 'inf':
+            li_lip = local_lip.norm(p=float('inf'), dim=1).mean()
+            l2_lip = (local_lip / (perturbation.norm(p=2, dim=(1, 2, 3)) * 10000).mean()).norm(p=2, dim=1).mean()
+        else:
+            per_max = perturbation.view(len(perturbation), -1).max(dim=1)[0]
+            li_lip = ((local_lip.norm(p=float('inf'), dim=1)) / (per_max * 10000)).mean()
+            l2_lip = local_lip.norm(p=2, dim=1).mean()
+        self.update_metric(li_lip=(li_lip, len(images)),
+                           l2_lip=(l2_lip, len(images)))
         return
 
     def step(self, loss):
@@ -189,13 +197,14 @@ class BaseTrainer:
         self.metrics.synchronize_between_processes()
 
     def normal_train_epoch(self, epoch, *args, **kwargs):
+        self.inf_loader.reset()
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.normal_train_step(images, labels)
-            if step % self.args.print_every == 0 and step!=0:
+            if step % self.args.print_every == 0 and step != 0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
-        self.inf_loader.reset()
+
         return
 
     def train_epoch(self, epoch):

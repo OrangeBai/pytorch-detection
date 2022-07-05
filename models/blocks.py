@@ -87,7 +87,6 @@ class DualNet(nn.Module):
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
-        self.balance = args.balance
         self.fixed_neurons = None
         if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn == 0:
             Warning('All etas equal to zero, use normal training!')
@@ -132,11 +131,9 @@ class DualNet(nn.Module):
                 mask_mean += [l_mask.mean()]
         return np.array(mask_mean).mean()
 
-    def x_mask(self, x, ratio, mask):
-        if self.balance:
-            return x * (1 + ratio) * mask - x.detach() * ratio * mask
-        else:
-            return x * (1 + ratio) * mask
+    @staticmethod
+    def x_mask(x, ratio, mask):
+        return x * (1 + ratio) * mask - x.detach() * ratio * mask
 
     @staticmethod
     def compute_pre_act(module, x):

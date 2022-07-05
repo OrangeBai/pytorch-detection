@@ -44,12 +44,7 @@ class CertTrainer(BaseTrainer):
         top1, top5 = accuracy(output_reg, labels)
         self.update_metric(top1=(top1, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           # l1_lip=(local_lip.norm(p=float('inf'), dim=1).mean(), len(images)),
-                           # l2_lip=(local_lip.norm(p=2, dim=1).mean(), len(images))
                            )
-        # if self.est_lip % self.args.fre_est_lip == 0:
-        #     self.update_metric(ratio=(ratio.mean(), len(images)))
-        # self.est_lip += 1
 
     def set_loss_default(self, output_reg, output_noise, labels):
         if self.args.cert_input == 'noise':
@@ -71,7 +66,7 @@ class CertTrainer(BaseTrainer):
         perturbation = self.lip.attack(images, labels)
         local_lip = (self.model(images + perturbation) - output_reg) * 10000
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = worst_lip.norm(p=2, dim=-1).mean()
+        loss_lip = self.loss_function(output_reg + worst_lip * self.args.eps, labels)
         return loss_lip
 
     def set_loss(self, images, labels, output_reg, output_noise=None):
@@ -82,8 +77,7 @@ class CertTrainer(BaseTrainer):
             loss_normal = self.set_loss_default(output_reg, output_noise, labels)
             float_loss = self.set_float_loss(output_reg, output_noise, labels)
         if self.args.lip:
-            loss_lip = self.set_lip_loss(images, output_reg, labels)
-        else:
-            loss_lip = 0
+            loss_lip = self.set_lip_loss(images, output_reg, labels) * self.trained_ratio
+            loss_normal = loss_normal * (1 - self.trained_ratio) + loss_lip * self.trained_ratio
 
-        return loss_normal + self.args.float_loss * float_loss + loss_lip * 0.01
+        return loss_normal + self.args.float_loss * float_loss

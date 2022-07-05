@@ -236,13 +236,12 @@ class ArgParser:
         self.parser.add_argument('--lip', default=0, type=int)
         self.parser.add_argument('--noise_type', default='noise', type=str)
         self.parser.add_argument('--float_loss', default=0, type=float)
-        self.parser.add_argument('--balance', default=0, type=int)
 
         # Adversarial Training
         self.parser.add_argument('--ord', default='l2', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
-        self.parser.add_argument('--alpha', default=32 / 255, type=float)
-        self.parser.add_argument('--eps', default=128 / 255, type=float)
+        self.parser.add_argument('--alpha', default=2 / 255, type=float)
+        self.parser.add_argument('--eps', default=8 / 255, type=float)
 
         # Prune Training
         self.parser.add_argument('--prune_rate', default=0.95, type=float)
