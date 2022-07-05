@@ -59,7 +59,7 @@ def set_mean_sed(args):
 
 
 class InfiniteLoader:
-    def __init__(self, iterable):
+    def  __init__(self, iterable):
         """
         Initializer
         @param iterable: An Dataset object
@@ -81,7 +81,6 @@ class InfiniteLoader:
         while True:
             try:
                 obj = next(self.data_loader)
-                self.metric.update(data_time=(time.time() - self.last_time, 1))
 
                 self.metric.synchronize_between_processes()
                 return obj

@@ -130,7 +130,7 @@ class BaseTrainer:
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
             self.normal_train_step(images, labels)
-            if cur_step % self.args.print_every == 0:
+            if cur_step % self.args.print_every == 0 and cur_step!=0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
             if cur_step >= self.args.warmup_steps:
@@ -149,7 +149,9 @@ class BaseTrainer:
             images, labels = to_device(self.args.devices[0], images, labels)
             pred = self.model(images)
             top1, top5 = accuracy(pred, labels)
-            self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)))
+            self.update_metric(top1=(top1, len(images)))
+            if self.args.record_lip:
+                self.record_lip(images, labels, pred)
         acc = self.metrics.top1.global_avg
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
         self.logger.info(msg)
@@ -170,8 +172,6 @@ class BaseTrainer:
         top1, top5 = accuracy(outputs, labels)
         self.update_metric(top1=(top1, len(images)), top5=(top5, len(images)),
                            loss=(loss, len(images)), lr=(self.get_lr(), 1))
-        # if self.args.record_lip:
-        #     self.record_lip(images, labels, outputs)
 
     def record_lip(self, images, labels, outputs):
         perturbation = self.lip.attack(images, labels)
@@ -194,7 +194,7 @@ class BaseTrainer:
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.normal_train_step(images, labels)
-            if step % self.args.print_every == 0:
+            if step % self.args.print_every == 0 and step!=0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
         self.inf_loader.reset()

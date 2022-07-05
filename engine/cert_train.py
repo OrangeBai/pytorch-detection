@@ -14,7 +14,7 @@ class CertTrainer(BaseTrainer):
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.cert_train_step(images, labels)
-            if step % self.args.print_every == 0:
+            if step % self.args.print_every == 0 and step !=0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
 
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
