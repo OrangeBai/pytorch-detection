@@ -64,7 +64,11 @@ class CertTrainer(BaseTrainer):
 
     def set_lip_loss(self, images, output_reg, labels):
         perturbation = self.lip.attack(images, labels)
-        local_lip = (self.model(images + perturbation) - output_reg) * 10000
+        if self.args.ord == 'l2':
+            p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        else:
+            p_norm = perturbation.norm(p=1, dim=(1, 2, 3)).view(len(perturbation), 1)
+        local_lip = (self.model(images + perturbation) - self.model(images)) / p_norm
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
         loss_lip = self.loss_function(output_reg + worst_lip * self.args.eps, labels)
         return loss_lip

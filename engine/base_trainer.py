@@ -174,16 +174,10 @@ class BaseTrainer:
 
     def record_lip(self, images, labels, outputs):
         perturbation = self.lip.attack(images, labels)
-        local_lip = (self.model(images + perturbation) - outputs) * 10000
-        if self.args.ord == 'inf':
-            li_lip = local_lip.norm(p=float('inf'), dim=1).mean()
-            l2_lip = (local_lip / (perturbation.norm(p=2, dim=(1, 2, 3)) * 10000).mean()).norm(p=2, dim=1).mean()
-        else:
-            per_max = perturbation.view(len(perturbation), -1).max(dim=1)[0]
-            li_lip = ((local_lip.norm(p=float('inf'), dim=1)) / (per_max * 10000)).mean()
-            l2_lip = local_lip.norm(p=2, dim=1).mean()
-        self.update_metric(li_lip=(li_lip, len(images)),
-                           l2_lip=(l2_lip, len(images)))
+        local_lip = (self.model(images + perturbation) - outputs)
+        lip_li = (local_lip.norm(p=float('inf'), dim=1) / perturbation.norm(p=float('inf'), dim=(1, 2, 3))).mean()
+        lip_l2 = (local_lip.norm(p=2, dim=1) / perturbation.norm(p=2, dim=(1,2,3))).mean()
+        self.update_metric(lip_li=(lip_li, len(images)), lip_l2=(lip_l2, len(images)))
         return
 
     def step(self, loss):
