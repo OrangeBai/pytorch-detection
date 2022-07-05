@@ -207,7 +207,7 @@ class ArgParser:
         return
 
     def save(self):
-        args = self.parser.parse_args(self.args)
+        args, _ = self.parser.parse_known_args(self.args)
         json_file = os.path.join(args.model_dir, 'args.yaml')
         args_dict = vars(args)
         with open(json_file, 'w') as f:
@@ -240,8 +240,8 @@ class ArgParser:
         # Adversarial Training
         self.parser.add_argument('--ord', default='inf', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
-        self.parser.add_argument('--alpha', default=2 / 255, type=float)
-        self.parser.add_argument('--eps', default=8 / 255, type=float)
+        self.parser.add_argument('--alpha', default=1 / 255, type=float)
+        self.parser.add_argument('--eps', default=4 / 255, type=float)
 
         # Prune Training
         self.parser.add_argument('--prune_rate', default=0.95, type=float)
