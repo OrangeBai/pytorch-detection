@@ -53,3 +53,40 @@ python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch
 python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 10 --noise_sigma 0.1 --cert_input noise --eta_float 0.0 --float_loss 0.01
 python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 11 --noise_sigma 0.1 --cert_input noise --eta_float 0.1 --float_loss 0.01
 python train.py --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_01 --exp_id 12 --noise_sigma 0.1 --cert_input noise --eta_float 0.2 --float_loss 0.01
+
+
+
+
+for act in LeakyReLU
+do
+	qsub pytorch-detection.sh --net vgg16 --train_mode std --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id std
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id bnm --noise_sigma 0.1 --cert_input noise
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id nof --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.0
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id lip --noise_sigma 0.1 --cert_input noise --eta_float 0.0  --lip 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id adv --noise_sigma 0.1 --cert_input images --noise_type FGSM
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 01 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 02 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_fixed 0.05
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 03 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05
+
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 11 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --lip 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 12 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_fixed 0.05 --lip 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 13 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05 --lip 1
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 21 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --balance 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 22 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_fixed 0.05 --balance 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 23 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05 --balance 1
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 31 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_float 0.1 --balance 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 32 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_fixed 0.05 --balance 1
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 33 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_float 0.1 ---eta_fixed 0.05 --balance 1
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 41 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --balance 1 --noise_type FGSM
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 42 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_fixed 0.05 --balance 1 --noise_type FGSM
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 43 --noise_sigma 0.1 --cert_input noise --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05 --balance 1 --noise_type FGSM
+
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 51 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_float 0.1 --balance 1 --noise_type FGSM
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 52 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_fixed 0.05 --balance 1 --noise_type FGSM
+	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 53 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05 --balance 1 --noise_type FGSM
+done

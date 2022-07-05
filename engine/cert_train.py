@@ -82,7 +82,7 @@ class CertTrainer(BaseTrainer):
             loss_normal = self.set_loss_default(output_reg, output_noise, labels)
             float_loss = self.set_float_loss(output_reg, output_noise, labels)
         if self.args.lip:
-            loss_lip = self.set_lip_loss(images, output_reg, labels) * self.trained_ratio
+            loss_lip = self.set_lip_loss(images, output_reg, labels)
         else:
             loss_lip = 0
 
