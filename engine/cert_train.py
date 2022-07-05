@@ -68,7 +68,6 @@ class CertTrainer(BaseTrainer):
             return 0
 
     def set_lip_loss(self, images, output_reg, labels):
-        perturbation = torch.randn_like(images)
         perturbation = self.lip.attack(images, labels)
         local_lip = (self.model(images + perturbation) - output_reg) * 10000
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
