@@ -1,5 +1,6 @@
-from settings.train_settings import *
 from engine import *
+from settings.train_settings import *
+
 if __name__ == '__main__':
     arg_parser = ArgParser(True)
     for file_path in arg_parser.files:
@@ -7,7 +8,3 @@ if __name__ == '__main__':
 
         trainer = Trainer(arg_parser.get_args())
         trainer.train_model()
-
-
-
-

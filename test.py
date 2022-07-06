@@ -1,8 +1,11 @@
+from exps.base import *
 from exps.non_returnable import *
 from settings.test_setting import *
-from exps.base import *
+
 if __name__ == '__main__':
-    argv = ['--exp_id', 'robust_exp', '--net', 'cxfy42', '--dataset', 'cifar10', '--data_bn', '0', '--batch_norm', '1']
+    argv = ['--dir', 'robust/benchmark_02', '--exp_id', '33', '--net', 'vgg16', '--dataset', 'cifar10',
+            '--batch_norm', '1',
+            '--test_name', 'test_acc']
     args = set_up_testing(argv)
     model = build_model(args)
     model.load_model(args.model_dir)

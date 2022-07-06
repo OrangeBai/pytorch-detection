@@ -1,5 +1,4 @@
 from settings.train_settings import *
-import argparse
 
 
 def set_up_testing(argv=None):
@@ -9,8 +8,8 @@ def set_up_testing(argv=None):
 
     parser.add_argument('--test_name', default='normal', type=str)
     test_name = parser.parse_known_args(args)[0].test_name
-    if test_name == 'normal':
-        pass
+    if test_name == 'test_acc':
+        parser = test_acc(parser)
     elif test_name.lower() == 'aplip':
         parser = ap_lip(parser)
     elif test_name.lower() == 'td':
@@ -54,4 +53,9 @@ def smoothed_certify(parser):
     parser.add_argument("--N0", type=int, default=100)
     parser.add_argument("--N", type=int, default=10000, help="number of samples to use")
     parser.add_argument("--smooth_alpha", type=float, default=0.001, help="failure probability")
+    return parser
+
+
+def test_acc(parser):
+    parser.set_defaults(ord='inf', alpha=2 / 255, eps=8 / 255)
     return parser
