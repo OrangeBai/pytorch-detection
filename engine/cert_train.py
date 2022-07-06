@@ -29,10 +29,10 @@ class CertTrainer(BaseTrainer):
         output_r, output_n = self.dual_net(images, n)
         loss = self.loss_function(output_n, labels)
 
-        # if self.args.float_loss != 0:
-        #     float_r = self.dual_net.masked_forward(images)
-        #     float_n = self.dual_net.masked_forward(n)
-        #     loss += self.args.float_loss * self.set_float_loss(float_r, float_n, labels)
+        if self.args.float_loss != 0:
+            float_r = self.dual_net.masked_forward(images)
+            float_n = self.dual_net.masked_forward(n)
+            loss += self.args.float_loss * self.set_float_loss(float_r, float_n, labels)
 
         self.step(loss)
 

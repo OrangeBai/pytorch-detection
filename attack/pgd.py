@@ -24,7 +24,7 @@ class PGD(Attack):
 
         if self.random_start:
             if self.ord == 'inf':
-                adv_images = adv_images + torch.randn(adv_images) * self.eps
+                adv_images = adv_images + torch.randn_like(adv_images) * self.eps
                 adv_images = torch.clamp(adv_images, min=0, max=1).detach()
             else:
                 delta = torch.randn_like(adv_images)

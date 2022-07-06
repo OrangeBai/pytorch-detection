@@ -99,8 +99,8 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
-                x_1 = self.x_mask(x_1, self.eta_fixed, fix) + self.x_mask(x_1, 1, ~fix)
-                x_2 = self.x_mask(x_2, self.eta_fixed, fix) + self.x_mask(x_2, 1, ~fix)
+                x_1 = self.x_mask(x_1, self.eta_fixed, fix, balance=False) + self.x_mask(x_1, 0, ~fix)
+                x_2 = self.x_mask(x_2, self.eta_fixed, fix, balance=False) + self.x_mask(x_2, 0, ~fix)
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
@@ -111,7 +111,10 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             x = self.compute_pre_act(module, x)
             if type(module) in [ConvBlock, LinearBlock]:
-                x = self.dn_block_forward(x)
+                p0 = (x < 0).sum(axis=0) > self.dn_rate * len(x)
+                p1 = (x > 0).sum(axis=0) > self.dn_rate * len(x)
+                p_same = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
+                x = self.x_mask(x, self.eta_dn, p_same, False) + x * ~p_same
                 x = module.Act(x)
         return x
 
@@ -154,7 +157,7 @@ class DualNet(nn.Module):
         for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             x = self.compute_pre_act(module, x)
             if type(module) in [ConvBlock, LinearBlock]:
-                x = self.x_mask(x, self.eta_float, ~fix, False) + self.x_mask(x, 1, fix, False)
+                x = self.x_mask(x, self.eta_float, ~fix, False) + self.x_mask(x, 0, fix, False)
                 x = module.Act(x)
         return x
 
@@ -191,10 +194,6 @@ class DualNet(nn.Module):
         return x
 
     def dn_block_forward(self, x):
-        p0 = (x < 0).sum(axis=0) > self.dn_rate * len(x)
-        p1 = (x > 0).sum(axis=0) > self.dn_rate * len(x)
-        p_same = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-        x = self.x_mask(x, self.eta_dn, p_same, False) + x * ~p_same
 
         # fixed_neurons = []
         # for i, module in enumerate(self.net.layers.children()):
