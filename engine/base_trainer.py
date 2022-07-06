@@ -191,7 +191,6 @@ class BaseTrainer:
         self.metrics.synchronize_between_processes()
 
     def normal_train_epoch(self, epoch, *args, **kwargs):
-        self.inf_loader.reset()
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
             self.normal_train_step(images, labels)

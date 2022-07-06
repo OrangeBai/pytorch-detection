@@ -89,3 +89,4 @@ class InfiniteLoader:
 
     def reset(self):
         self.metric = MetricLogger()
+        self.last_time = time.time()

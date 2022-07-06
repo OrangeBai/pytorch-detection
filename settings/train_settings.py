@@ -227,7 +227,6 @@ class ArgParser:
     def train_mode(self):
         args, _ = self.parser.parse_known_args(self.args)
         # Certifiable training
-        self.parser.add_argument('--cert_input', default='normal', type=str)
         self.parser.add_argument('--noise_sigma', default=0.1, type=float)
         self.parser.add_argument('--eta_fixed', default=0, type=float)
         self.parser.add_argument('--eta_float', default=0, type=float)

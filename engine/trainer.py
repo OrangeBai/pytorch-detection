@@ -1,8 +1,9 @@
 from engine.cert_train import CertTrainer
 from engine.adv_train import AdvTrainer
+from engine.gen_trainer import GenTrainer
 
 
-class Trainer(AdvTrainer, CertTrainer):
+class Trainer(AdvTrainer, CertTrainer, GenTrainer):
     def __init__(self, args):
         super().__init__(args)
 
@@ -22,12 +23,15 @@ class Trainer(AdvTrainer, CertTrainer):
         self.save_result(self.args.model_dir)
 
     def train_epoch(self, epoch):
+        self.inf_loader.reset()
         if self.args.train_mode == 'cer':
             self.cert_train_epoch(epoch)
         elif self.args.train_mode == 'std':
             self.normal_train_epoch(epoch)
         elif self.args.train_mode == 'adv':
             self.adv_train_epoch(epoch)
+        elif self.args.train_mode == 'gen':
+            self.gen_train_epoch(epoch)
         # elif self.args.train_mode == 'prune':
         #     train_epoch = self.prune_train_epoch
         else:

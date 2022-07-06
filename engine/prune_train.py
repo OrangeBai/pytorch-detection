@@ -24,7 +24,6 @@ class CertTrainer(AdvTrainer):
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
 
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
-        self.inf_loader.reset()
 
     def pruning_val(self, epoch, test_loader):
         self.model.eval()
