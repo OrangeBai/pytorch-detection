@@ -1,53 +1,60 @@
-from attack.base import *
+import torch
 import torch.nn.functional as F
+
+from attack.base import *
+
 
 class PGD(Attack):
     def __init__(self, model, device, *args, **kwargs):
         super(PGD, self).__init__(model, device, *args, **kwargs)
+        self.random_start = True
         self.eps = kwargs['eps'] if 'eps' in kwargs.keys() else 8 / 255
         self.alpha = kwargs['alpha'] if 'alpha' in kwargs.keys() else 2 / 255
-        self.steps = kwargs['steps'] if 'steps' in kwargs.keys() else 7
+        self.steps = kwargs['steps'] if 'steps' in kwargs.keys() else 10
         self.restarts = kwargs['restarts'] if 'restarts' in kwargs.keys() else 1
 
     def attack(self, images, labels):
+
         images = to_device(self.device, images.clone().detach())[0]
         labels = to_device(self.device, labels.clone().detach())[0]
         images = self._reverse_norm(images)
         loss_fn = nn.CrossEntropyLoss()
 
-        max_loss = torch.zeros(labels.shape[0]).cuda()
-        max_delta = torch.zeros_like(images).cuda()
+        adv_images = images.clone().detach()
 
-        for zz in range(self.restarts):
-            delta = torch.zeros_like(images).cuda()
-            delta.uniform_(-self.eps, self.eps)
-            delta.data = torch.clamp(delta, min=-self.eps, max=self.eps)
-            delta.requires_grad = True
-            for i in range(self.steps):
-                outputs = self.model(images + delta)
-                cost = loss_fn(outputs, labels)
-                grad = torch.autograd.grad(cost, delta, retain_graph=False, create_graph=False)[0]
-                d = delta
-                g = grad
-                if self.ord == 'inf':
-                    d = torch.clamp(d + self.alpha * torch.sign(g), -self.eps, self.eps)  # bounds from epsilon  # bounds from image
-                else:
-                    grad_norm = grad.view(grad.shape[0], -1).norm(2, dim=-1, keepdim=True)
-                    grad_norm = grad_norm.view(grad_norm.shape[0], grad_norm.shape[1], 1, 1)
-                    d = d + self.alpha * grad / (grad_norm + 1e-8)
-                    mask = d.view(d.shape[0], -1).norm(2, dim=1) <= self.eps
-                    #
-                    scaling_factor = d.view(d.shape[0], -1).norm(2, dim=-1) + 1e-8
-                    scaling_factor[mask] = self.eps
-                    #
-                    d = d * self.eps / (scaling_factor.view(-1, 1, 1, 1))
+        if self.random_start:
+            if self.ord == 'inf':
+                adv_images = adv_images + torch.randn(adv_images) * self.eps
+                adv_images = torch.clamp(adv_images, min=0, max=1).detach()
+            else:
+                delta = torch.randn_like(adv_images)
+                delta_norm = delta.view(delta.shape[0], -1).norm(p=2, dim=-1).view(delta.shape[0], 1, 1, 1)
+                delta = delta / delta_norm * torch.rand(1).cuda()
+                adv_images = adv_images + delta
 
-                d = torch.clamp(d, 0 - images, 1 - images)
-                delta.data = d
+        for _ in range(self.steps):
+            adv_images.requires_grad = True
+            outputs = self.model(adv_images)
 
-            all_loss = F.cross_entropy(self.model(images + delta), labels, reduction='none').detach()
-            max_delta[all_loss >= max_loss] = delta.detach()[all_loss >= max_loss]
-            max_loss = torch.max(max_loss, all_loss)
+            cost = loss_fn(outputs, labels)
 
-        adv_image = self._norm(images + max_delta)
-        return adv_image
+            # Update adversarial images
+            grad = torch.autograd.grad(cost, adv_images,
+                                       retain_graph=False, create_graph=False)[0]
+
+            if self.ord == 'inf':
+                adv_images = adv_images.detach() + self.alpha * grad.sign()
+                delta = torch.clamp(adv_images - images, min=-self.eps, max=self.eps)
+            else:
+                grad_norm = grad.view(grad.shape[0], -1).norm(2, dim=-1, keepdim=True)
+                grad = grad / grad_norm.view(grad_norm.shape[0], grad_norm.shape[1], 1, 1)
+                adv_images = adv_images.detach() + self.alpha * grad
+
+                delta = adv_images - images
+                mask = delta.view(delta.shape[0], -1).norm(2, dim=1) <= self.eps
+                scaling_factor = delta.view(delta.shape[0], -1).norm(2, dim=-1) + 1e-8
+                scaling_factor[mask] = self.eps
+                delta = delta * self.eps / (scaling_factor.view(-1, 1, 1, 1))
+                adv_images = torch.clamp(images + delta, min=0, max=1).detach()
+        adv_images = self._norm(adv_images)
+        return adv_images
