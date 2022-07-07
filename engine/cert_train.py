@@ -27,7 +27,7 @@ class CertTrainer(BaseTrainer):
             n = self.attacks['FGSM'].attack(images, labels)
 
         output_r, output_n = self.dual_net(images, n)
-        loss = self.loss_function(output_n)
+        loss = self.loss_function(output_n, labels)
 
         if self.args.float_loss != 0:
             flt_r = self.dual_net.masked_forward(images)
