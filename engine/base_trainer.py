@@ -45,9 +45,7 @@ class BaseTrainer:
 
     def set_attack(self):
         return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
-                'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
-                'FFGSM': set_attack(self.model, 'FFGSM', self.args.devices[0], **self.attack_args)
-                }
+                'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args)}
 
     def save_result(self, path, name=None):
         if not name:
