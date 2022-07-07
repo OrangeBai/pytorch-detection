@@ -50,10 +50,12 @@ class GenTrainer(BaseTrainer):
             net_same_all = compute_mean(net_same_all, find_dead_neuron(unpacked, [0]))
         ap_hook.remove()
         num_dn = self.gen_weight(net_same_all)
-        print('Gen validation finished, found {0} dead neurons'.format(num_dn))
+
+        self.logger.info()
 
         acc = self.metrics.top1.global_avg
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
+        msg += '\tGen validation finished, found {0} dead neurons'.format(num_dn)
         self.logger.info(msg)
         print(msg)
 

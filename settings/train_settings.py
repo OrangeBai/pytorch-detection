@@ -246,7 +246,7 @@ class ArgParser:
         # Prune Training
         self.parser.add_argument('--conv_dn_rate', default=0.95)
         self.parser.add_argument('--linear_dn_rate', default=0.99)
-        self.parser.add_argument('--prune_every', default=5, type=float)
+        self.parser.add_argument('--prune_every', default=20, type=float)
 
 
         # other settings
