@@ -30,9 +30,9 @@ class CertTrainer(BaseTrainer):
 
         output_r, output_n = self.dual_net(images, n)
         if self.args.lip == 1:
-            loss = self.loss_function(output_n + output_r / 2, labels)
+            loss = self.loss_function((output_n + output_r)/2, labels)
         else:
-            loss = self.loss_function(output_n)
+            loss = self.loss_function(output_n, labels)
 
         self.step(loss)
 

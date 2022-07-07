@@ -7,7 +7,7 @@ class FFGSM(Attack):
         self.eps = kwargs['eps'] if 'eps' in kwargs.keys() else 8 / 255
         self.alpha = 10/255
 
-    def forward(self, images, labels):
+    def attack(self, images, labels):
         r"""
         Overridden.
         """
