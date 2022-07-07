@@ -32,7 +32,7 @@ class CertTrainer(BaseTrainer):
         if self.args.float_loss != 0:
             flt_r = self.dual_net.masked_forward(images)
             flt_n = self.dual_net.masked_forward(n)
-            loss += self.set_float_loss(flt_r, flt_n, labels)
+            loss += self.set_float_loss(flt_r, flt_n, labels) * self.args.float_loss
 
         self.step(loss)
 
