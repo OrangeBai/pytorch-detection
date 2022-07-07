@@ -99,8 +99,10 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
-                x_1 = self.x_mask(x_1, self.eta_fixed, fix, self.balance) + self.x_mask(x_1, self.eta_float, ~fix)
-                x_2 = self.x_mask(x_2, self.eta_fixed, fix, self.balance) + self.x_mask(x_2, self.eta_float, ~fix)
+                x_1 = self.x_mask(x_1, self.eta_fixed, fix, self.balance) + \
+                    self.x_mask(x_1, self.eta_float, ~fix, self.balance)
+                x_2 = self.x_mask(x_2, self.eta_fixed, fix, self.balance) + \
+                    self.x_mask(x_2, self.eta_float, ~fix, self.balance)
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]

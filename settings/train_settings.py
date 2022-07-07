@@ -244,8 +244,8 @@ class ArgParser:
         self.parser.add_argument('--eps', default=8 / 255, type=float)
 
         # Prune Training
-        self.parser.add_argument('--conv_dn_rate', default=0.50, type=float)
-        self.parser.add_argument('--linear_dn_rate', default=0.50, type=float)
+        self.parser.add_argument('--conv_dn_rate', default=0.95, type=float)
+        self.parser.add_argument('--linear_dn_rate', default=0.90, type=float)
         self.parser.add_argument('--prune_every', default=20, type=float)
 
 
