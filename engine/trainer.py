@@ -1,15 +1,17 @@
-from engine.cert_train import CertTrainer
-from engine.adv_train import AdvTrainer
-from engine.gen_trainer import GenTrainer
+from engine.cert_train import *
+from engine.adv_train import *
+from engine.gen_trainer import *
+from engine.prune_train import *
 
 
-class Trainer(AdvTrainer, CertTrainer, GenTrainer):
+class Trainer(AdvTrainer, CertTrainer, GenTrainer, PruTrainer):
     def __init__(self, args):
         super().__init__(args)
 
     def train_model(self):
         self.warmup()
         best_acc = 0
+        # self.validate_epoch(-1)
         for epoch in range(self.args.num_epoch):
             self.train_epoch(epoch)
             acc = self.validate_epoch(epoch)
@@ -27,13 +29,13 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer):
         if self.args.train_mode == 'cer':
             self.cert_train_epoch(epoch)
         elif self.args.train_mode == 'std':
-            self.normal_train_epoch(epoch)
+            self.std_train_epoch(epoch)
         elif self.args.train_mode == 'adv':
             self.adv_train_epoch(epoch)
         elif self.args.train_mode == 'gen':
             self.gen_train_epoch(epoch)
-        # elif self.args.train_mode == 'prune':
-        #     train_epoch = self.prune_train_epoch
+        elif self.args.train_mode == 'pru':
+            self.std_train_epoch(epoch)
         else:
             raise NameError
 
@@ -42,8 +44,8 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer):
             return self.adv_validate_epoch(epoch)
         elif self.args.val_mode == 'std':
             return self.normal_validate_epoch(epoch)
-        # elif self.args.val_mode == 'prune':
-        #     validate_epoch = self.prune_validate_epoch
+        elif self.args.val_mode == 'pru':
+            return self.prune_validate_epoch(epoch)
         else:
             raise NameError
 
@@ -51,10 +53,10 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer):
         if self.args.train_mode == 'cer':
             self.cert_train_step(images, labels)
         elif self.args.train_mode == 'std':
-            self.normal_train_step(images, labels)
+            self.std_train_step(images, labels)
         elif self.args.train_mode == 'adv':
             self.adv_train_step(images, labels)
-        # elif self.args.train_mode == 'prune':
-        #     train_epoch = self.prune_train_epoch
+        elif self.args.train_mode == 'prune':
+            self.std_train_step(images, labels)
         else:
             raise NameError

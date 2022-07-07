@@ -1,6 +1,5 @@
 from functools import reduce
 from core.pattern import *
-from attack import *
 from models.blocks import LinearBlock, ConvBlock
 
 

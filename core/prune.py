@@ -7,11 +7,10 @@ def find_dead_neuron(storage, Gamma):
     for block in storage:
         layer_same = []
         for layer in block:
-            a = to_numpy(torch.concat(layer))
-            pattern = get_pattern(a, Gamma)
+            pattern = get_pattern(layer, Gamma)
             neuron_ps = get_similarity(pattern, Gamma)
-            if len(a.shape) > 1:
-                sum_axis = tuple(range(1, len(a.shape) - 1))
+            if len(layer.shape) > 1:
+                sum_axis = tuple(range(1, len(layer.shape) - 1))
                 layer_ps = neuron_ps.max(axis=0).mean(axis=sum_axis)
             else:
                 layer_ps = neuron_ps

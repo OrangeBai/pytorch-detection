@@ -291,3 +291,23 @@ def check_activation(layer):
 
 def to_numpy(tensor):
     return tensor.cpu().detach().numpy()
+
+
+def set_gamma(activation):
+    if activation.lower() in ['relu', 'prelu', 'gelu', 'leakyrelu']:
+        return [0]
+    elif activation.lower() == 'sigmoid':
+        return [-0.5, 0.5]
+
+
+def set_lb_ub(activation):
+    if activation.lower() == 'relu':
+        return (0, 0), (1, 1)
+    elif activation.lower() == 'prelu':
+        return (0.1, 0.1), (1, 1)
+    elif activation.lower() == 'gelu':
+        return (0.1, 0.1), (1, 1)
+    elif activation.lower() == 'leakyrelu':
+        return (0.1, 0.1), (1, 1)
+    elif activation.lower() == 'sigmoid':
+        return (0, 0.2), (0.2, 0.5), (0, 0.2)

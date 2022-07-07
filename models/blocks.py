@@ -1,6 +1,4 @@
 from torch.nn import functional as F
-
-from core.pattern import *
 from core.utils import *
 
 
@@ -99,8 +97,8 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
-                x_1 = self.x_mask(x_1, self.eta_fixed, fix, balance=False) + self.x_mask(x_1, 0, ~fix)
-                x_2 = self.x_mask(x_2, self.eta_fixed, fix, balance=False) + self.x_mask(x_2, 0, ~fix)
+                x_1 = self.x_mask(x_1, self.eta_fixed, fix) + self.x_mask(x_1, self.eta_float, ~fix)
+                x_2 = self.x_mask(x_2, self.eta_fixed, fix) + self.x_mask(x_2, self.eta_float, ~fix)
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
@@ -129,7 +127,7 @@ class DualNet(nn.Module):
         return np.array(mask_mean).mean()
 
     @staticmethod
-    def x_mask(x, ratio, mask, balance=True):
+    def x_mask(x, ratio, mask, balance=False):
         if balance:
             return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
         else:

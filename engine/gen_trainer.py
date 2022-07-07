@@ -1,7 +1,7 @@
 from torch.nn.functional import one_hot
 
 from core.lip import *
-from engine import *
+from engine import BaseTrainer
 from models.blocks import DualNet
 
 

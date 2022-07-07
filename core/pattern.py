@@ -1,5 +1,4 @@
 from models.blocks import *
-from core.utils import *
 
 
 class ModelHook:
@@ -201,26 +200,6 @@ def list_all(data, storage=None):
             list_all(v, storage)
     else:
         storage.append(data)
-
-
-def set_gamma(activation):
-    if activation.lower() in ['relu', 'prelu', 'gelu', 'leakyrelu']:
-        return [0]
-    elif activation.lower() == 'sigmoid':
-        return [-0.5, 0.5]
-
-
-def set_lb_ub(activation):
-    if activation.lower() == 'relu':
-        return (0, 0), (1, 1)
-    elif activation.lower() == 'prelu':
-        return (0.1, 0.1), (1, 1)
-    elif activation.lower() == 'gelu':
-        return (0.1, 0.1), (1, 1)
-    elif activation.lower() == 'leakyrelu':
-        return (0.1, 0.1), (1, 1)
-    elif activation.lower() == 'sigmoid':
-        return (0, 0.2), (0.2, 0.5), (0, 0.2)
 
 # def reformat_pattern(pattern):
 #     r"""

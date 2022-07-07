@@ -1,47 +1,32 @@
-from torch.nn.functional import one_hot
-from core.pattern import *
+from core.prune import *
+from models.blocks import *
 from core.lip import *
 from core.utils import *
-from engine import *
-from models.blocks import FloatNet, DualNet
+from engine.base_trainer import BaseTrainer
 
 
-class CertTrainer(AdvTrainer):
+class PruTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
-        self.num_flt_est = args.num_flt_est
-        self.est_lip = 0
-        self.flt_net = FloatNet(self.model)
-        self.dual_net = DualNet(self.model, set_gamma(args.activation))
-        # self.attacks = self.set_attack
+        self.conv_prune_rate = args.conv_prune_rate
+        self.linear_prune_rate = args.linear_prune_rate
 
-    def cert_train_epoch(self, epoch):
-        self.est_lip = 0
-        for step in range(self.args.epoch_step):
-            images, labels = next(self.inf_loader)
-            self.normal_train_step(images, labels)
-            if step % self.args.print_every == 0:
-                self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
-
-        self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)
-
-    def pruning_val(self, epoch, test_loader):
+    def prune_validate_epoch(self, epoch):
         self.model.eval()
-        ap_hook = ModelHook(self.model, retrieve_input_hook)
+        ap_hook = ModelHook(self.model, set_input_hook)
         metric = MetricLogger()
-        storage = []
-        net_same_all = []
-        for idx, (images, labels) in enumerate(test_loader):
+        batch_ps = []
+        for idx, (images, labels) in enumerate(self.test_loader):
             images, labels = to_device(self.args.devices[0], images, labels)
             pre_ori = self.model(images)
             top1, top5 = accuracy(pre_ori, labels)
-            unpacked = ap_hook.retrieve_res(unpack2)
             metric.update(top1_avd=(top1, self.args.batch_size), top5_adv=(top5, self.args.batch_size))
-            if idx == 0:
-                net_same_all = find_dead_neuron(unpacked, [0])
-            else:
-                net_same_all = compute_mean(net_same_all, find_dead_neuron(unpacked, [0]), idx)
 
+            unpacked = ap_hook.retrieve_res(unpack)
+            batch_ps += [find_dead_neuron(unpacked, [0])]
+
+        net_same_all = compute_mean(batch_ps, idx)
+        unpacked = ap_hook.retrieve_res(unpack)
         net_same_all.insert(0, [])
         self.model = self.model.cpu()
         block_counter = 1
@@ -59,8 +44,7 @@ class CertTrainer(AdvTrainer):
                 new_size += ['M']
         wt = self.model.state_dict()
         self.args.config = new_size
-        self.model = build_model(self.args)
-        self.load_weights(wt)
+        self.model.load_weights(wt)
 
         self.model.train()
         self.model = self.model.cuda()

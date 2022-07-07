@@ -29,10 +29,8 @@ class CertTrainer(BaseTrainer):
         output_r, output_n = self.dual_net(images, n)
         loss = self.loss_function(output_n, labels)
 
-        if self.args.float_loss != 0:
-            float_r = self.dual_net.masked_forward(images)
-            float_n = self.dual_net.masked_forward(n)
-            loss += self.args.float_loss * self.set_float_loss(float_r, float_n, labels)
+        if self.args.lip != 0:
+            loss += self.set_lip_loss(images, labels)
 
         self.step(loss)
 
@@ -49,15 +47,16 @@ class CertTrainer(BaseTrainer):
         return loss_float
 
     def set_lip_loss(self, images, labels):
-        perturbation = torch.randn_like(images)
-        perturbation = perturbation / 10000
-        p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        # perturbation = torch.randn_like(images)
+        # perturbation = perturbation / 10000
+        # p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
         output = self.model(images)
-        # if self.args.ord == 'l2':
-        #     p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
-        # else:
-        #     p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
+        perturbation = self.lip.attack(images, labels)
+        if self.args.ord == 'l2':
+            p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        else:
+            p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
         local_lip = (self.model(images + perturbation) - output) / p_norm
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(output + 2 * self.args.eps * worst_lip, labels)
-        return loss_lip
+        loss_lip = self.loss_function(output + self.trained_ratio * self.args.eps * worst_lip, labels)
+        return loss_lip * self.trained_ratio

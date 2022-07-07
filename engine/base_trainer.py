@@ -128,7 +128,7 @@ class BaseTrainer:
         for cur_step in range(self.args.warmup_steps):
             images, labels = next(loader)
             images, labels = to_device(self.args.devices[0], images, labels)
-            self.normal_train_step(images, labels)
+            self.std_train_step(images, labels)
             if cur_step % self.args.print_every == 0 and cur_step != 0:
                 self.step_logging(cur_step, self.args.warmup_steps, -1, self.args.num_epoch, loader.metric)
 
@@ -162,7 +162,7 @@ class BaseTrainer:
     def get_lr(self):
         return self.optimizer.param_groups[0]['lr']
 
-    def normal_train_step(self, images, labels):
+    def std_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
         outputs = self.model(images)
         loss = self.loss_function(outputs, labels)
@@ -190,10 +190,10 @@ class BaseTrainer:
         self.metrics.update(**kwargs)
         self.metrics.synchronize_between_processes()
 
-    def normal_train_epoch(self, epoch, *args, **kwargs):
+    def std_train_epoch(self, epoch, *args, **kwargs):
         for step in range(self.args.epoch_step):
             images, labels = next(self.inf_loader)
-            self.normal_train_step(images, labels)
+            self.std_train_step(images, labels)
             if step % self.args.print_every == 0 and step != 0:
                 self.step_logging(step, self.args.epoch_step, epoch, self.args.num_epoch, self.inf_loader.metric)
         self.train_logging(epoch, self.args.num_epoch, time_metrics=self.inf_loader.metric)

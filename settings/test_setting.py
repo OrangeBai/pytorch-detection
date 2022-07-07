@@ -6,7 +6,7 @@ def set_up_testing(argv=None):
     parser = arg_parser.parser
     args = arg_parser.args
 
-    parser.add_argument('--test_name', default='normal', type=str)
+    parser.add_argument('--test_name', default='test_acc', type=str)
     test_name = parser.parse_known_args(args)[0].test_name
     if test_name == 'test_acc':
         parser = test_acc(parser)
