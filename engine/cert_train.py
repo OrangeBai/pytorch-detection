@@ -23,16 +23,16 @@ class CertTrainer(BaseTrainer):
         images, labels = to_device(self.args.devices[0], images, labels)
         if self.args.noise_type == 'noise':
             n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
-        elif self.args.noise_type == 'FGSM':
-            n = self.attacks['FGSM'].attack(images, labels)
         else:
-            n = self.attacks['FFGSM'].attack(images, labels)
+            n = self.attacks['FGSM'].attack(images, labels)
 
         output_r, output_n = self.dual_net(images, n)
-        if self.args.lip == 1:
-            loss = self.loss_function((output_n + output_r)/2, labels)
-        else:
-            loss = self.loss_function(output_n, labels)
+        loss = self.loss_function(output_n)
+
+        if self.args.float_loss != 0:
+            flt_r = self.dual_net.masked_forward(images)
+            flt_n = self.dual_net.masked_forward(n)
+            loss += self.set_float_loss(flt_r, flt_n, labels)
 
         self.step(loss)
 
@@ -41,3 +41,23 @@ class CertTrainer(BaseTrainer):
                            loss=(loss, len(images)), lr=(self.get_lr(), 1),
                            )
 
+    @staticmethod
+    def set_float_loss(output_reg, output_noise, labels):
+        loss_float = (output_reg - output_noise)
+        loss_float = loss_float.norm(p=2).mean()
+        return loss_float
+
+    def set_lip_loss(self, images, labels):
+        # perturbation = torch.randn_like(images)
+        # perturbation = perturbation / 10000
+        # p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        output = self.model(images)
+        perturbation = self.lip.attack(images, labels)
+        if self.args.ord == 'l2':
+            p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        else:
+            p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
+        local_lip = (self.model(images + perturbation) - output) / p_norm
+        worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
+        loss_lip = self.loss_function(output + self.trained_ratio * self.args.eps * worst_lip, labels)
+        return loss_lip * self.trained_ratio
