@@ -44,6 +44,7 @@ class CertTrainer(BaseTrainer):
     @staticmethod
     def set_float_loss(output_reg, output_noise, labels):
         loss_float = (output_reg - output_noise)
+        loss_float = (1 - one_hot(labels, num_classes=output_noise.shape[1])).multiply(loss_float.abs())
         loss_float = loss_float.norm(p=2).mean()
         return loss_float
 
