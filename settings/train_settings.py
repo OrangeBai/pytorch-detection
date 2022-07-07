@@ -57,8 +57,7 @@ class ArgParser:
 
         #
         self.parser.add_argument('--config', default=None)
-        self.parser.add_argument('--conv_prune_rate', default=0.95)
-        self.parser.add_argument('--linear_prune_rate', default=0.99)
+
 
         # dataset and experiments
         self.parser.add_argument('--dataset', default='cifar10', type=str)
@@ -244,8 +243,10 @@ class ArgParser:
         self.parser.add_argument('--eps', default=8 / 255, type=float)
 
         # Prune Training
-        self.parser.add_argument('--prune_rate', default=0.95, type=float)
-        self.parser.add_argument('--prune_every', default=20, type=float)
+        self.parser.add_argument('--conv_prune_rate', default=0.95)
+        self.parser.add_argument('--linear_prune_rate', default=0.99)
+        self.parser.add_argument('--prune_every', default=5, type=float)
+
 
         # other settings
         self.parser.add_argument('--record_lip', default=1, type=float)

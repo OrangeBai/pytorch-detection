@@ -127,7 +127,7 @@ class DualNet(nn.Module):
         return np.array(mask_mean).mean()
 
     @staticmethod
-    def x_mask(x, ratio, mask, balance=False):
+    def x_mask(x, ratio, mask, balance=True):
         if balance:
             return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
         else:

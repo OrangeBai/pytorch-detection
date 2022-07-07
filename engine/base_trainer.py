@@ -46,6 +46,7 @@ class BaseTrainer:
     def set_attack(self):
         return {'FGSM': set_attack(self.model, 'FGSM', self.args.devices[0], **self.attack_args),
                 'PGD': set_attack(self.model, 'PGD', self.args.devices[0], **self.attack_args),
+                'FFGSM': set_attack(self.model, 'FFGSM', self.args.devices[0], **self.attack_args)
                 }
 
     def save_result(self, path, name=None):
@@ -141,7 +142,7 @@ class BaseTrainer:
 
         return
 
-    def normal_validate_epoch(self, epoch):
+    def std_validate_epoch(self, epoch):
         start = time.time()
         self.model.eval()
         for images, labels in self.test_loader:

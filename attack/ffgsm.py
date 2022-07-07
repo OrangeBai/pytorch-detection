@@ -2,10 +2,10 @@ from attack.base import *
 
 
 class FFGSM(Attack):
-    def __init__(self, model, mean, std, eps=8 / 255, alpha=10 / 255):
-        super(FFGSM, self).__init__("FFGSM", model, mean, std)
-        self.eps = eps
-        self.alpha = alpha
+    def __init__(self, model,device, *args, **kwargs):
+        super(FFGSM, self).__init__(model, device, *args, **kwargs)
+        self.eps = kwargs['eps'] if 'eps' in kwargs.keys() else 8 / 255
+        self.alpha = 10/255
 
     def forward(self, images, labels):
         r"""
@@ -17,20 +17,20 @@ class FFGSM(Attack):
 
         loss = nn.CrossEntropyLoss()
 
-        delta = torch.zeros_like(images).cuda()
-        delta.uniform_(-self.eps, self.eps)
-        delta.data = torch.clamp(delta, 0 - images, 1 - images)
-        delta.requires_grad = True
+        adv_images = images + torch.randn_like(images).uniform_(-self.eps, self.eps)
+        adv_images = torch.clamp(adv_images, min=0, max=1).detach()
+        adv_images.requires_grad = True
 
-        outputs = self.model(images + delta)
-        cost = -loss(outputs, labels)
+        outputs = self.model(adv_images)
+        cost = loss(outputs, labels)
 
-        cost.backward()
-        grad = delta.grad.detach()
-        delta.data = torch.clamp(delta - self.alpha * torch.sign(grad), -self.eps, self.eps)
-        delta.data = torch.clamp(delta, 0 - images, 1-images)
-        delta = delta.detach()
+
+        # Update adversarial images
+        grad = torch.autograd.grad(cost, adv_images,
+                                   retain_graph=False, create_graph=False)[0]
+
+        adv_images = adv_images + self.alpha*grad.sign()
+        delta = torch.clamp(adv_images - images, min=-self.eps, max=self.eps)
         adv_images = torch.clamp(images + delta, min=0, max=1).detach()
-
         adv_images = self._norm(adv_images)
         return adv_images

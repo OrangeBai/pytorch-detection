@@ -201,25 +201,3 @@ def list_all(data, storage=None):
     else:
         storage.append(data)
 
-# def reformat_pattern(pattern):
-#     r"""
-#     Reformat the activation pattern. forward hook to instance-wise
-#     @param pattern: Activation pattern recorded from forward hook function, format as:
-#             {layer_1: [[batch_1, neurons], [batch_2, neurons], ... [batch_n, neurons]]}
-#     @return: instance-wise activation pattern, format as:
-#             {instance_1: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
-#             instance_2: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}],
-#             ...,
-#             instance_n: [{layer_1: pattern}, {layer_2: pattern}, ..., {layer_n:pattern}]}
-#     """
-#     for name, layer in pattern.items():
-#         pattern[name] = np.row_stack(layer)
-#     num_of_instance = len(pattern[list(pattern.keys())[0]])
-#     for name, layer in pattern.items():
-#         assert len(layer) == num_of_instance
-#
-#     reformatted_pattern = dict.fromkeys(range(num_of_instance), {})
-#     for name, layer in pattern.items():
-#         for idx, instance in enumerate(layer):
-#             reformatted_pattern[idx][name] = instance
-#     return reformatted_pattern

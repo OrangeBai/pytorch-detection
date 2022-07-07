@@ -20,7 +20,7 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer, PruTrainer):
                 self.model.save_model(self.args.model_dir, 'cur_best')
             self.record_result(epoch)
             self.model.train()
-        self.normal_validate_epoch(-1)
+        self.std_validate_epoch(-1)
         self.model.save_model(self.args.model_dir)
         self.save_result(self.args.model_dir)
 
@@ -43,9 +43,17 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer, PruTrainer):
         if self.args.val_mode in ['adv', 'cer']:
             return self.adv_validate_epoch(epoch)
         elif self.args.val_mode == 'std':
-            return self.normal_validate_epoch(epoch)
+            return self.std_validate_epoch(epoch)
+        elif self.args.val_mode == 'gen':
+            if epoch % self.args.prune_every == 0:
+                return self.gen_validate_epoch(epoch)
+            else:
+                return self.std_validate_epoch(epoch)
         elif self.args.val_mode == 'pru':
-            return self.prune_validate_epoch(epoch)
+            if epoch % self.args.prune_every == 0:
+                return self.prune_validate_epoch(epoch)
+            else:
+                return self.std_validate_epoch(epoch)
         else:
             raise NameError
 

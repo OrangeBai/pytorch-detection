@@ -8,7 +8,7 @@ def find_dead_neuron(storage, Gamma):
         layer_same = []
         for layer in block:
             pattern = get_pattern(layer, Gamma)
-            neuron_ps = get_similarity(pattern, Gamma)
+            neuron_ps = get_similarity(pattern, Gamma) * len(layer)
             if len(layer.shape) > 1:
                 sum_axis = tuple(range(1, len(layer.shape) - 1))
                 layer_ps = neuron_ps.max(axis=0).mean(axis=sum_axis)
@@ -19,14 +19,14 @@ def find_dead_neuron(storage, Gamma):
     return block_same
 
 
-def prune_block(m, cur_block_ps, pre_ps, ratio=0.95):
+def prune_block(m, cur_block_ps, pre_ps, conv_ratio=0.95, linear_ratio=0.98):
     if type(m) == ConvBlock:
-        activate_filters = cur_block_ps[0] <= ratio
+        activate_filters = cur_block_ps[0] <= conv_ratio
         m.Conv.weight.data = m.Conv.weight.data[activate_filters]
         m.Conv.bias.data = m.Conv.bias.data[activate_filters]
 
         if len(pre_ps) != 0:
-            pre_activate_filters = pre_ps[0] <= ratio
+            pre_activate_filters = pre_ps[0] <= conv_ratio
             m.Conv.weight.data = m.Conv.weight.data[:, pre_activate_filters]
 
         m.BN.weight.data = m.BN.weight.data[activate_filters]
@@ -38,7 +38,7 @@ def prune_block(m, cur_block_ps, pre_ps, ratio=0.95):
         if len(cur_block_ps) == 0:
             c = None
         else:
-            activate_filters = cur_block_ps[0] <= ratio
+            activate_filters = cur_block_ps[0] <= linear_ratio
             m.FC.weight.data = m.FC.weight.data[activate_filters]
             m.FC.bias.data = m.FC.bias.data[activate_filters]
             m.BN.weight.data = m.BN.weight.data[activate_filters]
@@ -47,7 +47,7 @@ def prune_block(m, cur_block_ps, pre_ps, ratio=0.95):
             m.BN.running_var = m.BN.running_var[activate_filters]
             c = activate_filters.sum()
 
-        pre_activate_filters = np.where(pre_ps[0] <= ratio)
+        pre_activate_filters = np.where(pre_ps[0] <= linear_ratio)
         m.FC.weight.data = m.FC.weight.data.T[pre_activate_filters].T
 
     else:
@@ -56,8 +56,11 @@ def prune_block(m, cur_block_ps, pre_ps, ratio=0.95):
     return m, c
 
 
-def compute_mean(net_mean_all, net_mean, idx):
-    for i, (block_all, block) in enumerate(zip(net_mean_all, net_mean)):
-        for j, (layer_all, layer) in enumerate(zip(block_all, block)):
-            net_mean_all[i][j] = (layer_all * idx + layer) / (idx + 1)
+def compute_mean(net_mean_all, net_mean):
+    if net_mean_all is None:
+        return net_mean
+    else:
+        for i, (block_all, block) in enumerate(zip(net_mean_all, net_mean)):
+            for j, (layer_all, layer) in enumerate(zip(block_all, block)):
+                net_mean_all[i][j] = (layer_all + layer)
     return net_mean_all
