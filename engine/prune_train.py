@@ -10,8 +10,8 @@ import time
 class PruTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
-        self.conv_prune_rate = args.conv_prune_rate
-        self.linear_prune_rate = args.linear_prune_rate
+        self.conv_dn_rate = args.conv_dn_rate
+        self.linear_dn_rate = args.linear_dn_rate
 
     def prune_validate_epoch(self, epoch):
         self.model.eval()

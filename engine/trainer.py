@@ -1,5 +1,5 @@
-from engine.cert_train import *
 from engine.adv_train import *
+from engine.cert_train import *
 from engine.gen_trainer import *
 from engine.prune_train import *
 
@@ -45,12 +45,12 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer, PruTrainer):
         elif self.args.val_mode == 'std':
             return self.std_validate_epoch(epoch)
         elif self.args.val_mode == 'gen':
-            if epoch % self.args.prune_every == 0:
+            if epoch % self.args.prune_every == 0 and epoch != 0:
                 return self.gen_validate_epoch(epoch)
             else:
                 return self.std_validate_epoch(epoch)
         elif self.args.val_mode == 'pru':
-            if epoch % self.args.prune_every == 0:
+            if epoch % self.args.prune_every == 0 and epoch != 0:
                 return self.prune_validate_epoch(epoch)
             else:
                 return self.std_validate_epoch(epoch)

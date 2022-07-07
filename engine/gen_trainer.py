@@ -1,6 +1,7 @@
 import time
 
-from core.lip import *
+import torch
+
 from core.prune import *
 from engine import BaseTrainer
 from models.blocks import DualNet
@@ -10,6 +11,8 @@ class GenTrainer(BaseTrainer):
     def __init__(self, args):
         super().__init__(args)
         self.dual_net = DualNet(self.model, args)
+        self.conv_dn_rate = args.conv_dn_rate
+        self.linear_dn_rate = args.linear_dn_rate
 
     def gen_train_epoch(self, epoch):
         for step in range(self.args.epoch_step):
@@ -45,7 +48,9 @@ class GenTrainer(BaseTrainer):
 
             unpacked = ap_hook.retrieve_res(unpack)
             net_same_all = compute_mean(net_same_all, find_dead_neuron(unpacked, [0]))
-        self.gen_weight(net_same_all)
+        ap_hook.remove()
+        num_dn = self.gen_weight(net_same_all)
+        print('Gen validation finished, found {0} dead neurons'.format(num_dn))
 
         acc = self.metrics.top1.global_avg
         msg = self.val_logging(epoch) + '\ttime:{0:.4f}'.format(time.time() - start)
@@ -57,18 +62,24 @@ class GenTrainer(BaseTrainer):
 
     def gen_weight(self, net_same_all):
         block_idx = 0
+        num_dn = 0
         for m in self.model.layers.children():
-            if m in [LinearBlock, ConvBlock]:
-                self.reset_weight(m, net_same_all[block_idx])
+            if type(m) in [LinearBlock, ConvBlock]:
+                num_dn += self.reset_weight(m, net_same_all[block_idx])
                 block_idx += 1
-        return
+        return num_dn
 
     def reset_weight(self, m, block_same):
         if type(m) == ConvBlock:
-            n = m.Conv.kernel_size[0] * m.Conv.kernel_size[1] * m.Conv.out_channels
-            dead_ids = block_same[0] > len(self.test_loader.dataset) * 0.98
-            m.Conv.weight[dead_ids] = m.Conv.weight[dead_ids].data.normal_(0, math.sqrt(2. / n))
+            dead_ids = block_same[0] > len(self.test_loader.dataset) * self.args.conv_dn_rate
+            weight = m.Conv.weight.data
+            new_weight = nn.init.xavier_uniform_(torch.empty_like(weight))
+            weight[dead_ids] = new_weight[dead_ids]
         elif type(m) == LinearBlock:
-            dead_ids = block_same[0] > len(self.test_loader.dataset) * 0.98
-            m.FC.weight[dead_ids] = m.FC.weight[dead_ids].data_normal_(0, math.sqrt(2 / m.FC.out_channels))
-        return
+            dead_ids = block_same[0] > len(self.test_loader.dataset) * self.args.linear_dn_rate
+            weight = m.FC.weight.data
+            new_weight = nn.init.xavier_uniform_(torch.empty_like(weight))
+            weight[dead_ids] = new_weight[dead_ids]
+        else:
+            raise NotImplementedError
+        return dead_ids.sum()
