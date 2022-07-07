@@ -53,7 +53,7 @@ class ArgParser:
         self.parser.add_argument('--net', default='vgg16', type=str)
         # training settings
         self.parser.add_argument('--num_workers', default=1, type=int)
-        self.parser.add_argument('--print_every', default=400, type=int)
+        self.parser.add_argument('--print_every', default=100, type=int)
 
         #
         self.parser.add_argument('--config', default=None)
@@ -116,8 +116,8 @@ class ArgParser:
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':
             self.parser.add_argument('--base_lr', default=0.001 * args.lr)
-            self.parser.add_argument('--up_ratio', default=1 / 40)
-            self.parser.add_argument('--down_ratio', default=2 / 40)
+            self.parser.add_argument('--up_ratio', default=1 / 3)
+            self.parser.add_argument('--down_ratio', default=2 / 3)
         else:
             raise NameError('Scheduler {} not found'.format(args.lr_scheduler))
         return
