@@ -48,7 +48,7 @@ class Trainer(AdvTrainer, CertTrainer, GenTrainer, PruTrainer):
             if epoch % self.args.prune_every == 0 and epoch != 0:
                 return self.gen_validate_epoch(epoch)
             else:
-                return self.std_validate_epoch(epoch)
+                return self.adv_validate_epoch(epoch)
         elif self.args.val_mode == 'pru':
             if epoch % self.args.prune_every == 0 and epoch != 0:
                 return self.prune_validate_epoch(epoch)

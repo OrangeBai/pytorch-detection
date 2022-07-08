@@ -72,17 +72,11 @@ class GenTrainer(BaseTrainer):
         if type(m) == ConvBlock:
             dead_ids = block_same[0] > len(self.test_loader.dataset) * self.args.conv_dn_rate
             weight = m.Conv.weight.data
-            new_weight = nn.init.xavier_uniform_(torch.empty_like(weight))
-            weight[dead_ids] = new_weight[dead_ids]
-
-            m.Conv.bias.data[dead_ids] = 0
+            weight[dead_ids] = weight[dead_ids] + torch.randn_like(weight[dead_ids]) * 2 * weight[dead_ids].var()
         elif type(m) == LinearBlock:
             dead_ids = block_same[0] > len(self.test_loader.dataset) * self.args.linear_dn_rate
             weight = m.FC.weight.data
-            new_weight = nn.init.xavier_uniform_(torch.empty_like(weight))
-            weight[dead_ids] = new_weight[dead_ids]
-
-            m.FC.bias.data[dead_ids] = 0
+            weight[dead_ids] = weight[dead_ids] + torch.randn_like(weight[dead_ids]) * 2 * weight[dead_ids].var()
 
         else:
             raise NotImplementedError
