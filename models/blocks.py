@@ -100,9 +100,9 @@ class DualNet(nn.Module):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
                 x_1 = self.x_mask(x_1, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_1, 0, ~fix, self.balance)
+                    self.x_mask(x_1, -1, ~fix, self.balance)
                 x_2 = self.x_mask(x_2, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_2, 0, ~fix, self.balance)
+                    self.x_mask(x_2, -1, ~fix, self.balance)
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
@@ -159,7 +159,7 @@ class DualNet(nn.Module):
         for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             x = self.compute_pre_act(module, x)
             if type(module) in [ConvBlock, LinearBlock]:
-                x = self.x_mask(x, self.eta_float, ~fix, False) + self.x_mask(x, 0, fix, False)
+                x = self.x_mask(x, self.eta_float, ~fix, False) + self.x_mask(x, -1, fix, True)
                 x = module.Act(x)
         return x
 
@@ -169,31 +169,6 @@ class DualNet(nn.Module):
             return F.batch_norm(x, layer.running_mean, layer.running_var, layer.weight, layer.bias)
         else:
             return x
-
-    def over_fitting_forward(self, x):
-        fixed_neurons = []
-        for i, module in enumerate(self.net.layers.children()):
-            if type(module) == ConvBlock:
-                x = module.BN(module.Conv(x))
-                p0 = (x < 0).sum(axis=0) > self.dn_rate * len(x)
-                p1 = (x > 0).sum(axis=0) > self.dn_rate * len(x)
-                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x_mean, x_var = x.mean().detach(), x.var().detach()
-                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
-                x = x * 1.2 * p + x * 1 * ~p
-                x = module.Act(x)
-            elif type(module) == LinearBlock:
-                x = module.BN(module.FC(x))
-                p0 = (x < 0).sum(axis=0) > 0.9 * len(x)
-                p1 = (x > 0).sum(axis=0) > 0.9 * len(x)
-                p = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x_mean, x_var = x.mean().detach(), x.var().detach()
-                # x = (x + (torch.randn_like(x) + x_mean) * x_var) * p + x * 1 * ~p
-                x = x * 1.5 * p + x * 1 * ~p
-                x = module.Act(x)
-            else:
-                x = module(x)
-        return x
 
 
 class FloatNet(nn.Module):
