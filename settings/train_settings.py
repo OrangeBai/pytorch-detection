@@ -113,9 +113,9 @@ class ArgParser:
             self.parser.add_argument('--gamma', default=0.2, type=float)
             self.parser.add_argument('--milestones', default=[0.3, 0.6, 0.8], nargs='+', type=float)  # for milestone
         elif args.lr_scheduler in ['exp', 'linear']:
-            self.parser.add_argument('--base_lr', default=0.001 * args.lr)  # for linear
+            self.parser.add_argument('--base_lr', default=0.0001 * args.lr)  # for linear
         elif args.lr_scheduler == 'cyclic':
-            self.parser.add_argument('--base_lr', default=0.001 * args.lr)
+            self.parser.add_argument('--base_lr', default=0.0001 * args.lr)
             self.parser.add_argument('--up_ratio', default=1 / 3)
             self.parser.add_argument('--down_ratio', default=2 / 3)
         else:

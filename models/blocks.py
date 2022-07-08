@@ -100,9 +100,9 @@ class DualNet(nn.Module):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
                 x_1 = self.x_mask(x_1, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_1, self.eta_float, ~fix, self.balance)
+                    self.x_mask(x_1, 0, ~fix, self.balance)
                 x_2 = self.x_mask(x_2, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_2, self.eta_float, ~fix, self.balance)
+                    self.x_mask(x_2, 0, ~fix, self.balance)
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
@@ -116,7 +116,7 @@ class DualNet(nn.Module):
                 p0 = (x < 0).sum(axis=0) > self.dn_rate * len(x)
                 p1 = (x > 0).sum(axis=0) > self.dn_rate * len(x)
                 p_same = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = self.x_mask(x, self.eta_dn, p_same, False) + x * ~p_same
+                x = self.x_mask(x, self.eta_dn, p_same, self.balance) + x * ~p_same
                 x = module.Act(x)
         return x
 
