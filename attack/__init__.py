@@ -20,6 +20,8 @@ def set_attack(model, name, device, *args, **kwargs):
         attack = LipAttack(model, device, *args, **kwargs)
     elif name.upper() == 'CW':
         attack = CW(model, device, *args, **kwargs)
+    elif name.upper() == 'NOISE':
+        attack = Noise(model, device, *args, **kwargs)
     #     elif name == 'BIM':
     #         attack = BIM(model, mean, std, eps=8 / 255, alpha=2 / 255, steps=7)
     #     elif name == 'CW':

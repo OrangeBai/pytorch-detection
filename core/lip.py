@@ -25,6 +25,21 @@ def record_blocks(model):
     return blocks, block_types
 
 
+def list_blocks(model):
+    """
+    Record all the weights of given model
+    @param model: DNN or CNN model
+    @return: model weights
+    """
+
+    blocks = []
+    block_types = []
+    for name, module in model.named_modules():
+        if type(module) in [LinearBlock, ConvBlock]:
+            blocks.append(module)
+    return blocks
+
+
 def record_linear_weights(block):
     """
     Record Weights of Linear Blocks
@@ -65,20 +80,21 @@ def compute_jac(temp_pt, block_weights, block_types, batch_size):
     return [reduce(np.matmul, instance_w) for instance_w in all_w.values()]
 
 
-def amplify_ratio(local_lb, local_ub, block_weight, block_type):
-    if block_type == 'linear':
-        return linear_amplify(local_lb, local_ub, block_weight)
-    elif block_type == 'conv':
-        return conv_amplify(local_lb, local_ub, block_weight)
+def amplify_ratio(block_flt, block_ub, block, block_input):
+    if type(block) == LinearBlock:
+        return linear_amplify(block_flt, block_ub, block, block_input)
+    elif type(block) == ConvBlock:
+        return conv_amplify(block_flt, block_ub, block, block_input)
 
 
 def linear_amplify(local_lb, local_ub, weight):
-    float_neuron = local_lb[0] != local_ub[0]
-    weight_2__norm = np.linalg.norm(weight[0], ord=2, axis=1)
-    batch_float = np.array(local_ub[0]) * float_neuron
-    batch_fixed = np.array(local_ub[0]) * (1 - float_neuron)
-    batch_float_norm = np.linalg.norm(batch_float * weight_2__norm, ord=2, axis=1)
-    batch_fixed_norm = np.linalg.norm(batch_fixed * weight_2__norm, ord=2, axis=1)
+
+    # float_neuron = local_lb[0] != local_ub[0]
+    # weight_2__norm = np.linalg.norm(weight[0], ord=2, axis=1)
+    # batch_float = np.array(local_ub[0]) * float_neuron
+    # batch_fixed = np.array(local_ub[0]) * (1 - float_neuron)
+    # batch_float_norm = np.linalg.norm(batch_float * weight_2__norm, ord=2, axis=1)
+    # batch_fixed_norm = np.linalg.norm(batch_fixed * weight_2__norm, ord=2, axis=1)
     return 1 + batch_float_norm / batch_fixed_norm
 
     # diag1 = np.apply_along_axis(np.diag, 1, np.array(float_neuron[0]) * np.array(local_pattern[0]))
@@ -87,16 +103,63 @@ def linear_amplify(local_lb, local_ub, weight):
     # r += [1 + svd(float_matrix)[1][0] / svd(fixed_matrix)[1][0]]
 
 
-def conv_amplify(local_pattern, local_ub, weight):
-    if len(weight) > 1:
-        single_integral = np.matmul(np.array(local_pattern[0] + local_ub[0]).sum(axis=(2, 3)) / 2, np.diag(weight[1])).sum(
-            axis=1)
-        region_integral = np.matmul(np.array(local_ub[0]).sum(axis=(2, 3)), np.diag(weight[1])).sum(axis=1)
-    else:
-        single_integral = (np.array(local_pattern[0] + local_ub[0]).sum(axis=(2, 3)) / 2).sum(axis=1)
-        region_integral = np.array(local_ub[0]).sum(axis=(2, 3)).sum(axis=1)
+def conv_amplify(block_flt, block_ub, weight, block_input):
+    weight = torch.tensor(weight[0] * weight[1].reshape(len(weight[0]), 1, 1, 1), dtype=torch.float).cuda()
+
+    EPS = 1e-24
+    output_padding = 0
+    u = torch.randn(block_ub[0].shape).cuda()
+    for i in range(1000):
+        u1 = _conv2d(u, weight, None)
+        u1 = u1 * block_ub[0]
+        u1_norm = u1.norm(2)
+        v = u1 / (u1_norm + EPS)
+        u_tmp = u
+
+        v1 = _conv_trans2d(v, weight, padding=1)
+        #  When the output size of conv_trans differs from the expected one.
+        if v1.shape != u.shape:
+            output_padding = 1
+            v1 = _conv_trans2d(v, weight, padding=1, output_padding=output_padding)
+        v1_norm = v1.norm(2)
+        u = v1 / (v1_norm + EPS)
     return region_integral / single_integral
 
+def _conv2d(x, w, b, stride=1, padding=0):
+    return F.conv2d(x, w, bias=b, stride=(1,1), padding=(1,1))
+def _conv_trans2d(x, w, stride=1, padding=0, output_padding=0):
+    return F.conv_transpose2d(x, w, stride=stride, padding=padding, output_padding=output_padding)
+
+def power_iteration_conv_evl(mu, layer, num_simulations, u=None):
+    EPS = 1e-24
+    output_padding = 0
+    if u is None:
+        u = torch.randn((1, *mu.size()[1:])).cuda()
+
+    W = layer.weight
+    if layer.bias is not None:
+        b = torch.zeros_like(layer.bias)
+    else:
+        b = None
+    for i in range(num_simulations):
+        u1 = _conv2d(u, W, b, stride=layer.stride, padding=layer.padding)
+        u1_norm = u1.norm(2)
+        v = u1 / (u1_norm + EPS)
+        u_tmp = u
+
+        v1 = _conv_trans2d(v, W, stride=layer.stride, padding=layer.padding, output_padding=output_padding)
+        #  When the output size of conv_trans differs from the expected one.
+        if v1.shape != u.shape:
+            output_padding = 1
+            v1 = _conv_trans2d(v, W, stride=layer.stride, padding=layer.padding, output_padding=output_padding)
+        v1_norm = v1.norm(2)
+        u = v1 / (v1_norm + EPS)
+
+        if (u - u_tmp).norm(2) < 1e-5 or (i + 1) == num_simulations:
+            break
+
+    out = (v * (_conv2d(u, W, b, stride=layer.stride, padding=layer.padding))).view(v.size()[0], -1).sum(1)[0]
+    return out, u
 
 # def estimate_lip(args, model, images, sample_size):
 #     model.eval()
@@ -123,15 +186,6 @@ def conv_amplify(local_pattern, local_ub, weight):
 #         for cur_layer, noise_layer in zip(cur_block, noise_block):
 #             diff = (cur_layer - noise_layer) * eps
 
-
-def pattern_to_bound(bound, *args):
-    res = []
-    for arg in args:
-        float_p = np.array(arg, dtype=float)
-        for i in range(len(bound)):
-            float_p[float_p == i] = bound[i]
-        res += [float_p]
-    return res
 
 
 

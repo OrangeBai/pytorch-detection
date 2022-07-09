@@ -10,7 +10,7 @@ def set_up_testing(argv=None):
     test_name = parser.parse_known_args(args)[0].test_name
     if test_name == 'test_acc':
         parser = test_acc(parser)
-    elif test_name.lower() == 'aplip':
+    elif test_name.lower() == 'ap_lip':
         parser = ap_lip(parser)
     elif test_name.lower() == 'td':
         parser = td(parser)

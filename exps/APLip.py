@@ -1,6 +1,36 @@
-from settings.test_setting import set_up_testing
-from models.base_model import *
+from attack import set_attack
 from core.lip import *
+from dataloader.base import *
+from models.base_model import *
+from settings.test_setting import set_up_testing
+
+
+def ap_lip(model, args):
+    eps = 4 / 255
+    mean, std = set_mean_sed(args)
+    noise_attack = set_attack(model, 'noise', device=args.devices[0], eps=eps, mean=mean, std=std)
+    _, test_data_set = set_loader(args)
+    for x, y in test_data_set:
+        noise_images = noise_attack.attack(x, y, batch_size=500)
+        float_hook = ModelHook(model, hook=set_pattern_hook, Gamma=set_gamma(args.activation))
+        model(noise_images)
+        lb, ub = float_hook.retrieve_res(retrieve_lb_ub, reset=False, grad_bound=[(0, 0), (1, 1)])
+        net_flt = float_hook.retrieve_res(retrieve_float_neurons, reset=True)
+        float_hook.remove()
+        x = x.cuda()
+        model=model.cuda()
+        x.requires_grad =True
+        model.eval()
+        g = torch.autograd.grad(model(x).norm(2), x.cuda())[0]
+        g /= g.norm(p=2)
+        ratio = 1
+        for i, block in enumerate(model.layers.children()):
+            if type(block) not in [ConvBlock, LinearBlock]:
+                ratio *= amplify_ratio(net_flt[i], ub[i], block, g)
+                else
+
+
+
 
 if __name__ == '__main__':
     argv = ['--exp_id', 'l_0.00_b_0.1_e_0.8', '--batch_size', '1', '--net', 'vgg16', '--dataset', 'cifar100']
@@ -24,7 +54,7 @@ if __name__ == '__main__':
         noise_img.require_grad = True
 
         a = model.model(noise_img)
-        cur_lb_ub = float_hook.retrieve_res(retrieve_lb_ub, reset=False, grad_bound=[(0,0), (1,1)], sample_size=64)
+        cur_lb_ub = float_hook.retrieve_res(retrieve_lb_ub, reset=False, grad_bound=[(0, 0), (1, 1)], sample_size=64)
         cur_float = float_hook.retrieve_res(retrieve_float_neurons, reset=True, sample_size=64)
         if args.net == 'dnn':
             loc_jac = compute_jac(cur_lb_ub, block_weights, block_types, batch_size=args.batch_size)

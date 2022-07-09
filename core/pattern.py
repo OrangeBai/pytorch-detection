@@ -78,6 +78,7 @@ def set_bound_hook(stored_values, bound=1e-1, device='cpu'):
 
     return hook
 
+
 def set_output_hook(stored_values):
     """
     record input values of the module
@@ -120,10 +121,11 @@ def set_pattern_hook(stored_values, Gamma):
 def get_pattern(input_var, Gamma):
     pattern = np.zeros(input_var.shape)
     num_of_pattern = len(Gamma)
+
     pattern[input_var < Gamma[0]] = 0
     pattern[input_var > Gamma[-1]] = num_of_pattern
     for i in range(1, num_of_pattern):
-        valid = np.all([pattern > Gamma[i], pattern < Gamma[i + 1]], axis=0)
+        valid = pattern > Gamma[i] * pattern < Gamma[i + 1]
         pattern[valid] = i
     return pattern
 
@@ -149,7 +151,7 @@ def unpack(stored_values):
     return unpacked
 
 
-def retrieve_float_neurons(stored_values, sample_size):
+def retrieve_float_neurons(stored_values):
     """
     calculate the float neurons of given pattern
     @param stored_values: stored value from ModelHook
@@ -157,11 +159,11 @@ def retrieve_float_neurons(stored_values, sample_size):
     @return:
     """
     unpacked = unpack(stored_values)
-    return [[[np.all(layer[i: i + sample_size], axis=0) for i in range(0, len(layer), sample_size)] for layer in block]
+    return [[np.all(layer, axis=0) for layer in block]
             for block in unpacked]
 
 
-def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
+def retrieve_lb_ub(stored_values, grad_bound):
     r"""
     Compute the upper and lower derivative bound for the pattern
     @param stored_values: recorder
@@ -180,15 +182,33 @@ def retrieve_lb_ub(stored_values, grad_bound, sample_size=1):
 
     unpacked = unpack(stored_values)
 
-    max_lambda = np.vectorize(lambda x: grad_bound[x][1])
-    min_lambda = np.vectorize(lambda x: grad_bound[x][0])
+    # max_lambda = np.vectorize(lambda x: grad_bound[x][1])
+    # min_lambda = np.vectorize(lambda x: grad_bound[x][0])
+    #
+    # lb = [[[min_max_pattern(layer[i: i + sample_size], 'min')
+    #         for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
+    #
+    # ub = [[[min_max_pattern(layer[i: i + sample_size], 'max')
+    #         for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
 
-    lb = [[[min_max_pattern(layer[i: i + sample_size], 'min')
-            for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
+    net_lb, net_ub = [], []
 
-    ub = [[[min_max_pattern(layer[i: i + sample_size], 'max')
-            for i in range(0, len(layer), sample_size)] for layer in block] for block in unpacked]
-    return lb, ub
+    for block in unpacked:
+        block_lb = []
+        block_ub = []
+        for layer in block:
+            layer_lb = np.zeros(layer.shape[1:])
+            layer_ub = np.zeros(layer.shape[1:])
+            min_pattern = min_max_pattern(layer, 'min')
+            max_pattern = min_max_pattern(layer, 'max')
+            for j, (lb, ub) in enumerate(grad_bound):
+                layer_lb[min_pattern == j] = lb
+                layer_ub[max_pattern == j] = ub
+            block_lb.append(layer_lb)
+            block_ub.append(layer_ub)
+        net_lb.append(block_lb)
+        net_ub.append(block_ub)
+    return net_lb, net_ub
 
 
 def list_all(data, storage=None):
@@ -200,4 +220,3 @@ def list_all(data, storage=None):
             list_all(v, storage)
     else:
         storage.append(data)
-

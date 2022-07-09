@@ -66,48 +66,40 @@ class FloatConv(nn.Module):
         return x
 
 
-class FloatFC(nn.Module):
-    def __init__(self, fc):
-        super().__init__()
-        self.fc = fc
-
-    def forward(self, x, mask):
-        x = self.fc(x)
-        x[mask] = 0
-        return x
-
-
 class DualNet(nn.Module):
     def __init__(self, net, args):
         super().__init__()
         self.net = net
-        self.eta_fixed = args.eta_fixed
-        self.eta_float = args.eta_float
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
-        self.balance = args.balance
         self.gamma = set_gamma(args.activation)
+        self.num_layers = 2
+        self.net_len = len(list(net.layers.children()))
         self.fixed_neurons = None
-        if self.eta_float == 0 and self.eta_fixed == 0 and self.eta_dn == 0:
-            Warning('All etas equal to zero, use normal training!')
 
-    def update_ratio(self, trained_ratio=1):
-        return self.eta_fixed * trained_ratio, self.eta_float * trained_ratio, self.eta_dn * trained_ratio
-
-    def forward(self, x_1, x_2):
+    def forward(self, x_1, x_2, rate=0):
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
-                x_1 = self.x_mask(x_1, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_1, -1, ~fix, self.balance)
-                x_2 = self.x_mask(x_2, self.eta_fixed, fix, self.balance) + \
-                    self.x_mask(x_2, -1, ~fix, self.balance)
+                if i >= self.net_len - self.num_layers:
+                    x_1 = self.x_mask(x_1, 0, fix) + self.x_mask(x_1, rate, ~fix)
+                    x_2 = self.x_mask(x_2, 0, fix) + self.x_mask(x_2, rate, ~fix)
+
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
             fixed_neurons += [fix]
         self.fixed_neurons = fixed_neurons
         return x_1, x_2
+
+    def masked_forward(self, x):
+        for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+            x = self.compute_pre_act(module, x)
+            if type(module) in [ConvBlock, LinearBlock]:
+                if i >= self.net_len - self.num_layers:
+                    x = self.x_mask(x, 1, ~fix) + self.x_mask(x, 0, fix)
+                x = module.Act(x)
+        return x
 
     def dn_forward(self, x):
         for i, module in enumerate(self.net.layers.children()):
@@ -116,7 +108,7 @@ class DualNet(nn.Module):
                 p0 = (x < 0).sum(axis=0) > self.dn_rate * len(x)
                 p1 = (x > 0).sum(axis=0) > self.dn_rate * len(x)
                 p_same = torch.all(torch.stack([p0, p1]), dim=0).unsqueeze(dim=0)
-                x = self.x_mask(x, self.eta_dn, p_same, self.balance) + x * ~p_same
+                x = self.x_mask(x, self.eta_dn, p_same) + x * ~p_same
                 x = module.Act(x)
         return x
 
@@ -126,16 +118,13 @@ class DualNet(nn.Module):
         if self.fixed_neurons is None:
             return 0
         for b_mask in self.fixed_neurons:
-            for l_mask in b_mask:
-                mask_mean += [l_mask.mean()]
+            if b_mask is not None:
+                mask_mean += [to_numpy(b_mask).mean()]
         return np.array(mask_mean).mean()
 
     @staticmethod
-    def x_mask(x, ratio, mask, balance=False):
-        if balance:
-            return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
-        else:
-            return x * (1 + ratio) * mask
+    def x_mask(x, ratio, mask):
+        return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
 
     @staticmethod
     def compute_pre_act(module, x):
@@ -155,107 +144,12 @@ class DualNet(nn.Module):
         else:
             return x_1, x_2, None
 
-    def masked_forward(self, x):
-        for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-            x = self.compute_pre_act(module, x)
-            if type(module) in [ConvBlock, LinearBlock]:
-                x = self.x_mask(x, self.eta_float, ~fix, False) + self.x_mask(x, -1, fix, True)
-                x = module.Act(x)
-        return x
-
     @staticmethod
     def _batch_norm(layer, x):
         if type(layer) in [nn.BatchNorm2d, nn.BatchNorm1d]:
             return F.batch_norm(x, layer.running_mean, layer.running_var, layer.weight, layer.bias)
         else:
             return x
-
-
-class FloatNet(nn.Module):
-    def __init__(self, net):
-        super().__init__()
-        self.net = net
-
-        self.masks = None
-        self.cur_block = -1
-
-    def forward(self, x, bound=0.01, compute_type='fix', skip=4):
-        self.net.eval()
-        masks = []
-        self.cur_block = -1
-        for module in self.net.layers.children():
-            x = self.block_forward(x, module)
-            if type(module) in [ConvBlock, LinearBlock]:
-                mask = self.compute_mask(x, bound, compute_type)
-                masks += [mask]
-                if self.cur_block >= skip:
-                    x[~torch.tensor(mask).cuda()] = 0
-        self.masks = masks
-        self.net.train()
-        return x
-
-    def mask_forward(self, x, inverse=False, skip=4):
-        self.net.eval()
-        self.cur_block = -1
-        for module in self.net.layers.children():
-            x = self.block_forward(x, module)
-            if type(module) in [ConvBlock, LinearBlock]:
-                if self.cur_block >= skip:
-                    if inverse:
-                        x[torch.tensor(self.masks[self.cur_block]).cuda()] = 0
-                    else:
-                        x[~torch.tensor(self.masks[self.cur_block]).cuda()] = 0
-        self.net.train()
-        return x
-
-    def block_forward(self, x, module):
-        if type(module) == ConvBlock:
-            x = self._conv_block(x, module)
-            self.cur_block += 1
-        elif type(module) == LinearBlock:
-            x = self._linear_block(x, module)
-            self.cur_block += 1
-        else:
-            x = module(x)
-        return x
-
-    @property
-    def mask_ratio(self):
-        mask_mean = []
-        if self.masks is None:
-            return 0
-        for b_mask in self.masks:
-            for l_mask in b_mask:
-                mask_mean += [l_mask.mean()]
-        return np.array(mask_mean).mean()
-
-    @staticmethod
-    def compute_mask(x, bound, compute_type):
-        if compute_type == 'fix':
-            mask = x.abs() > bound
-        else:
-            mask = x.abs() < bound
-        return to_numpy(mask)
-
-    def _conv_block(self, x, module):
-        x = self._conv2d(x, module.Conv.weight, module.Conv.bias, module.Conv.stride, padding=module.Conv.padding)
-        x = module.BN(x)
-        x = module.Act(x)
-        return x
-
-    def _linear_block(self, x, module):
-        x = self._linear(x, module.FC.weight, module.FC.bias)
-        x = module.BN(x)
-        x = module.Act(x)
-        return x
-
-    @staticmethod
-    def _conv2d(x, w, b, stride=1, padding=0):
-        return F.conv2d(x, w, bias=b, stride=stride, padding=padding)
-
-    @staticmethod
-    def _linear(x, w, b):
-        return F.linear(x, w, b)
 
 
 class BasicBlock(nn.Module):

@@ -26,7 +26,7 @@ class CertTrainer(BaseTrainer):
         else:
             n = self.attacks['FGSM'].attack(images, labels)
 
-        output_r, output_n = self.dual_net(images, n)
+        output_r, output_n = self.dual_net(images, n, rate=self.args.eta_float * (1-self.trained_ratio))
         loss = self.loss_function(output_n, labels)
 
         if self.args.float_loss != 0:
@@ -37,9 +37,8 @@ class CertTrainer(BaseTrainer):
         self.step(loss)
 
         top1, top5 = accuracy(output_r, labels)
-        self.update_metric(top1=(top1, len(images)),
-                           loss=(loss, len(images)), lr=(self.get_lr(), 1),
-                           )
+        self.update_metric(top1=(top1, len(images)), loss=(loss, len(images)),
+                           lr=(self.get_lr(), 1),  mask=(self.dual_net.mask_ratio, len(images)))
 
     @staticmethod
     def set_float_loss(output_reg, output_noise, labels):
@@ -49,16 +48,16 @@ class CertTrainer(BaseTrainer):
         return loss_float
 
     def set_lip_loss(self, images, labels):
-        # perturbation = torch.randn_like(images)
-        # perturbation = perturbation / 10000
-        # p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        perturbation = torch.randn_like(images)
+        perturbation = perturbation / 10000
+        p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
         output = self.model(images)
-        perturbation = self.lip.attack(images, labels)
-        if self.args.ord == 'l2':
-            p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
-        else:
-            p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
+        # perturbation = self.lip.attack(images, labels)
+        # if self.args.ord == 'l2':
+        #     p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
+        # else:
+        #     p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
         local_lip = (self.model(images + perturbation) - output) / p_norm
         worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
         loss_lip = self.loss_function(output + self.trained_ratio * self.args.eps * worst_lip, labels)
-        return loss_lip * self.trained_ratio
+        return loss_lip
