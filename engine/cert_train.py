@@ -26,7 +26,9 @@ class CertTrainer(BaseTrainer):
         else:
             n = self.attacks['FGSM'].attack(images, labels)
 
-        output_r, output_n = self.dual_net(images, n, rate=self.args.eta_float * (1-self.trained_ratio))
+        eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
+        eta_float = self.args.eta_float * (1 - self.trained_ratio)
+        output_r, output_n = self.dual_net(images, n, eta_fixed, eta_float)
         loss = self.loss_function(output_n, labels)
 
         if self.args.float_loss != 0:

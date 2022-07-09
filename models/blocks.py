@@ -77,14 +77,14 @@ class DualNet(nn.Module):
         self.net_len = len(list(net.layers.children()))
         self.fixed_neurons = None
 
-    def forward(self, x_1, x_2, rate=0):
+    def forward(self, x_1, x_2, eta_fixed=0, eta_float=0):
         fixed_neurons = []
         for i, module in enumerate(self.net.layers.children()):
             x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
             if fix is not None:
                 if i >= self.net_len - self.num_layers:
-                    x_1 = self.x_mask(x_1, 0, fix) + self.x_mask(x_1, rate, ~fix)
-                    x_2 = self.x_mask(x_2, 0, fix) + self.x_mask(x_2, rate, ~fix)
+                    x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
+                    x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
 
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
