@@ -53,13 +53,13 @@ class CertTrainer(BaseTrainer):
         perturbation = torch.randn_like(images)
         perturbation = perturbation / 10000
         p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
-        output = self.model(images)
+        output_r = self.dual_net.masked_forward(images)
+        output_l = self.dual_net.masked_forward(images+ perturbation)
         # perturbation = self.lip.attack(images, labels)
         # if self.args.ord == 'l2':
         #     p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
         # else:
         #     p_norm = perturbation.norm(p=float('inf'), dim=(1, 2, 3)).view(len(perturbation), 1)
-        local_lip = (self.model(images + perturbation) - output) / p_norm
-        worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs())
-        loss_lip = self.loss_function(output + self.trained_ratio * self.args.eps * worst_lip, labels)
-        return loss_lip
+        local_lip = (output_l - output_r) / p_norm
+        worst_lip = (1 - one_hot(labels, num_classes=local_lip.shape[1])).multiply(local_lip.abs()).norm(p=2).mean()
+        return worst_lip
