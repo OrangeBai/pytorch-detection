@@ -73,7 +73,7 @@ class DualNet(nn.Module):
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
-        self.num_layers = 2
+        self.num_layers = 3
         self.net_len = len(list(net.layers.children()))
         self.fixed_neurons = None
 

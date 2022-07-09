@@ -27,7 +27,8 @@ def ap_lip(model, args):
         for i, block in enumerate(model.layers.children()):
             if type(block) not in [ConvBlock, LinearBlock]:
                 ratio *= amplify_ratio(net_flt[i], ub[i], block, g)
-                else
+            else:
+                g = block(g)
 
 
 
