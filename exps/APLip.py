@@ -6,7 +6,7 @@ from settings.test_setting import set_up_testing
 
 
 def ap_lip(model, args):
-    eps = 4 / 255
+    eps = 0.5 / 255
     mean, std = set_mean_sed(args)
     noise_attack = set_attack(model, 'noise', device=args.devices[0], eps=eps, mean=mean, std=std)
     _, test_data_set = set_loader(args)
@@ -18,19 +18,20 @@ def ap_lip(model, args):
         net_flt = float_hook.retrieve_res(retrieve_float_neurons, reset=True)
         float_hook.remove()
         x = x.cuda()
-        model=model.cuda()
-        x.requires_grad =True
+        model = model.cuda()
+        x.requires_grad = True
         model.eval()
         g = torch.autograd.grad(model(x).norm(2), x.cuda())[0]
-        g /= g.norm(p=2)
+        g = g / g.norm(p=2) / 1e4
         ratio = 1
+        block_counter = 0
         for i, block in enumerate(model.layers.children()):
-            if type(block) not in [ConvBlock, LinearBlock]:
-                ratio *= amplify_ratio(net_flt[i], ub[i], block, g)
-            else:
-                g = block(g)
-
-
+            if type(block) in [ConvBlock, LinearBlock]:
+                ratio *= amplify_ratio(net_flt[block_counter], ub[block_counter], block, x, g)
+                block_counter += 1
+            x_new = block(x)
+            g = block(x + g) - block(x)
+            x = x_new
 
 
 if __name__ == '__main__':

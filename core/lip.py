@@ -80,11 +80,11 @@ def compute_jac(temp_pt, block_weights, block_types, batch_size):
     return [reduce(np.matmul, instance_w) for instance_w in all_w.values()]
 
 
-def amplify_ratio(block_flt, block_ub, block, block_input):
+def amplify_ratio(block_flt, block_ub, block, block_input, g):
     if type(block) == LinearBlock:
-        return linear_amplify(block_flt, block_ub, block, block_input)
+        return linear_amplify(block_flt, block_ub, block, block_input, g)
     elif type(block) == ConvBlock:
-        return conv_amplify(block_flt, block_ub, block, block_input)
+        return conv_amplify(block_flt, block_ub, block, block_input, g)
 
 
 def linear_amplify(local_lb, local_ub, weight):
@@ -103,32 +103,45 @@ def linear_amplify(local_lb, local_ub, weight):
     # r += [1 + svd(float_matrix)[1][0] / svd(fixed_matrix)[1][0]]
 
 
-def conv_amplify(block_flt, block_ub, weight, block_input):
-    weight = torch.tensor(weight[0] * weight[1].reshape(len(weight[0]), 1, 1, 1), dtype=torch.float).cuda()
-
+def conv_amplify(block_flt, block_ub, block, block_input, g):
+    fixed_norm = (block(block_input) - block(block_input + g)).norm(p=2) * 1e4
+    running_mean = block.BN.weight / torch.sqrt(block.BN.running_var)
+    weight = block.Conv.weight
+    weight = weight * running_mean.view(len(running_mean), 1, 1, 1)
+    # power_iteration_conv_evl(block_input, block.Conv, 1000, None)
+    ub = torch.tensor(block_ub[0], dtype=weight.dtype).cuda() * (1-torch.tensor(block_flt[0], dtype=weight.dtype).cuda())
     EPS = 1e-24
-    output_padding = 0
-    u = torch.randn(block_ub[0].shape).cuda()
+    u = torch.randn((1, *block_input.size()[1:])).cuda()
+    v = u / (u + EPS)
+
     for i in range(1000):
-        u1 = _conv2d(u, weight, None)
-        u1 = u1 * block_ub[0]
+        u1 = _conv2d(u, weight, None, stride=block.Conv.stride, padding=block.Conv.padding)
+        u1 = u1 * ub
         u1_norm = u1.norm(2)
         v = u1 / (u1_norm + EPS)
         u_tmp = u
 
-        v1 = _conv_trans2d(v, weight, padding=1)
+        v1 = _conv_trans2d(v, weight, stride=block.Conv.stride, padding=block.Conv.padding, output_padding=0)
         #  When the output size of conv_trans differs from the expected one.
         if v1.shape != u.shape:
-            output_padding = 1
-            v1 = _conv_trans2d(v, weight, padding=1, output_padding=output_padding)
+            v1 = _conv_trans2d(v, weight, stride=block.Conv.stride, padding=block.Conv.padding, output_padding=1)
         v1_norm = v1.norm(2)
         u = v1 / (v1_norm + EPS)
-    return region_integral / single_integral
+
+        if (u - u_tmp).norm(2) < 1e-5:
+            break
+
+    out = (v * _conv2d(u, weight, None, stride=block.Conv.stride, padding=block.Conv.padding)).view(v.size()[0], -1).sum(1)[0]
+    return 1 + out / fixed_norm
+
 
 def _conv2d(x, w, b, stride=1, padding=0):
     return F.conv2d(x, w, bias=b, stride=(1,1), padding=(1,1))
+
+
 def _conv_trans2d(x, w, stride=1, padding=0, output_padding=0):
     return F.conv_transpose2d(x, w, stride=stride, padding=padding, output_padding=output_padding)
+
 
 def power_iteration_conv_evl(mu, layer, num_simulations, u=None):
     EPS = 1e-24
