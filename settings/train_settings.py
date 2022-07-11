@@ -58,7 +58,6 @@ class ArgParser:
         #
         self.parser.add_argument('--config', default=None)
 
-
         # dataset and experiments
         self.parser.add_argument('--dataset', default='cifar10', type=str)
         self.parser.add_argument('--exp_id', default=0, type=str)
@@ -235,6 +234,8 @@ class ArgParser:
         self.parser.add_argument('--lip', default=0, type=int)
         self.parser.add_argument('--noise_type', default='noise', type=str)
         self.parser.add_argument('--float_loss', default=0, type=float)
+        self.parser.add_argument('--eta_layers', default=1, type=float)
+        self.parser.add_argument('--lip_loss', default=0.00, type=float)
 
         # Adversarial Training
         self.parser.add_argument('--ord', default='inf', type=str)
@@ -246,7 +247,6 @@ class ArgParser:
         self.parser.add_argument('--conv_dn_rate', default=0.95, type=float)
         self.parser.add_argument('--linear_dn_rate', default=0.90, type=float)
         self.parser.add_argument('--prune_every', default=30, type=float)
-
 
         # other settings
         self.parser.add_argument('--record_lip', default=1, type=float)

@@ -47,7 +47,7 @@ def cxfy42_cifar10_large(**kwargs):
         LinearBlock(64 * 8 * 8, 512, **kwargs),
 
         LinearBlock(512, 512, **kwargs),
-        nn.Linear(512, 10)
+        LinearBlock(512, 10, batch_norm=0, activation=None),
     )
     for m in model.modules():
         if isinstance(m, nn.Conv2d):

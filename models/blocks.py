@@ -74,34 +74,54 @@ class DualNet(nn.Module):
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
-        self.num_layers = 3
-        self.net_len = len(list(net.layers.children()))
-        self.fixed_neurons = None
+        self.num_layers = args.eta_layers
+        self.block_len = self.count_block_len
+        self.fixed_neurons = []
+
+    @property
+    def count_block_len(self):
+        counter = 0
+        for module in self.net.layers.children():
+            if type(module) in [ConvBlock, LinearBlock]:
+                counter += 1
+        return counter
 
     def forward(self, x_1, x_2, eta_fixed=0, eta_float=0):
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
+        counter = 0
         for i, module in enumerate(self.net.layers.children()):
-            x_1, x_2, fix = self.compute_fix(module, x_1, x_2)
-            if fix is not None:
-                df += ((x_1 - x_2) * ~fix).abs().mean()
-                x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
-                x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
-
+            x_1 = self.compute_pre_act(module, x_1)
+            x_2 = self.compute_pre_act(module, x_2)
+            if self.check_block(module):
+                if counter >= self.block_len - self.num_layers:
+                    fix = self.compute_fix(x_1, x_2)
+                    df += ((x_1 - x_2) * ~fix).abs().mean()
+                    x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
+                    x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
+                    fixed_neurons += [fix]
+                    df += ((x_1 - x_2) * fix).view(len(x_1), -1).norm(p=2, dim=-1).mean()
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
-            fixed_neurons += [fix]
+
+                counter += 1
         self.fixed_neurons = fixed_neurons
-        return x_1, x_2
+        return x_1, x_2, df
 
     def masked_forward(self, x):
         for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             x = self.compute_pre_act(module, x)
             if type(module) in [ConvBlock, LinearBlock]:
-                if i >= self.net_len - self.num_layers:
-                    x = self.x_mask(x, -1, ~fix) + self.x_mask(x, 0, fix)
+                x = self.x_mask(x, -1, ~fix) + self.x_mask(x, 0, fix)
                 x = module.Act(x)
         return x
+
+    @staticmethod
+    def check_block(module):
+        if type(module) in [ConvBlock, LinearBlock]:
+            return 1
+        else:
+            return 0
 
     def dn_forward(self, x):
         for i, module in enumerate(self.net.layers.children()):
@@ -117,12 +137,12 @@ class DualNet(nn.Module):
     @property
     def mask_ratio(self):
         mask_mean = []
-        if self.fixed_neurons is None:
+        if len(self.fixed_neurons) == 0:
             return 0
         for b_mask in self.fixed_neurons:
             if b_mask is not None:
                 mask_mean += [to_numpy(b_mask).mean()]
-        return np.array(mask_mean).mean()
+            return np.array(mask_mean).mean()
 
     @staticmethod
     def x_mask(x, ratio, mask):
@@ -137,14 +157,10 @@ class DualNet(nn.Module):
         else:
             return module(x)
 
-    def compute_fix(self, module, x_1, x_2):
-        x_1 = self.compute_pre_act(module, x_1)
-        x_2 = self.compute_pre_act(module, x_2)
-        if type(module) in [ConvBlock, LinearBlock]:
-            fixed = x_1 * x_2 > 0
-            return x_1, x_2, fixed.detach()
-        else:
-            return x_1, x_2, None
+    @staticmethod
+    def compute_fix(x_1, x_2):
+        fixed = x_1 * x_2 > 0
+        return fixed.detach()
 
     @staticmethod
     def _batch_norm(layer, x):

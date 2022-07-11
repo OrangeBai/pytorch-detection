@@ -28,14 +28,18 @@ class CertTrainer(BaseTrainer):
 
         eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
         eta_float = self.args.eta_float * (1 - self.trained_ratio)
-        output_r, output_n = self.dual_net(images, n, eta_fixed, eta_float)
-        loss = self.loss_function(output_n, labels)
 
-        if self.args.float_loss != 0:
-            flt_r = self.dual_net.masked_forward(images)
-            flt_n = self.dual_net.masked_forward(n)
-            loss += self.set_float_loss(flt_r, flt_n, labels) * self.args.float_loss
-
+        output_r, output_n, df = self.dual_net(images, n, eta_fixed, eta_float)
+        if self.args.noise_type == 'image':
+            loss = self.loss_function(output_r, labels)
+        else:
+            loss = self.loss_function(output_n, labels)
+        # if self.args.float_loss != 0:
+        #     flt_r = self.dual_net.masked_forward(images)
+        #     flt_n = self.dual_net.masked_forward(n)
+        #     loss += self.set_float_loss(flt_r, flt_n, labels) * self.args.float_loss
+        if self.args.lip_loss != 0:
+            loss += torch.log(df) * self.args.lip_loss
         self.step(loss)
 
         top1, top5 = accuracy(output_r, labels)
