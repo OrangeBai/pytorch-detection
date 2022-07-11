@@ -84,7 +84,7 @@ class DualNet(nn.Module):
         for module in self.net.layers.children():
             if type(module) in [ConvBlock, LinearBlock]:
                 counter += 1
-        return counter
+        return counter - 1
 
     def forward(self, x_1, x_2, eta_fixed=0, eta_float=0):
         fixed_neurons = []
@@ -94,7 +94,7 @@ class DualNet(nn.Module):
             x_1 = self.compute_pre_act(module, x_1)
             x_2 = self.compute_pre_act(module, x_2)
             if self.check_block(module):
-                if counter >= self.block_len - self.num_layers:
+                if counter >= self.block_len - self.num_layers and counter != self.block_len:
                     fix = self.compute_fix(x_1, x_2)
                     df += ((x_1 - x_2) * ~fix).abs().mean()
                     x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
