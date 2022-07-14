@@ -1,10 +1,14 @@
 import os
-from matplotlib.colors import LogNorm
 import numpy as np
 import torch
+from settings.test_setting import *
 
 
 def plot(args):
+    argv = ['--dir', '', '--exp_id', 'st', '--net', 'vgg16', '--dataset', 'cifar10',
+            '--batch_norm', '1', '--batch_size', '1',
+            '--test_name', 'ap_lip']
+    exp_args = set_up_testing()
     data_cg = torch.load(os.path.join(args.exp_path, 'data_cg'))
     data_points = torch.load(os.path.join(args.exp_path, 'data_points'))
     dd = np.argmax(np.any(data_cg[:, :, 1] != 0, axis=1), axis=1)
