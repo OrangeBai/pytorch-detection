@@ -235,6 +235,8 @@ class ArgParser:
         self.parser.add_argument('--noise_type', default='noise', type=str)
         self.parser.add_argument('--float_loss', default=0, type=float)
         self.parser.add_argument('--eta_layers', default=1, type=float)
+        self.parser.add_argument('--eta_inverse', default=1, type=float)
+        self.parser.add_argument('--lip_layers', default=0, type=float)
         self.parser.add_argument('--lip_loss', default=0.00, type=float)
 
         # Adversarial Training

@@ -40,11 +40,13 @@ class CertTrainer(BaseTrainer):
         #     loss += self.set_float_loss(flt_r, flt_n, labels) * self.args.float_loss
         if self.args.lip_loss != 0:
             loss += torch.log(df) * self.args.lip_loss
+        t = time.time()
         self.step(loss)
+        print('back_ward time:{0}'.format(time.time() - t))
 
         top1, top5 = accuracy(output_r, labels)
         self.update_metric(top1=(top1, len(images)), loss=(loss, len(images)),
-                           lr=(self.get_lr(), 1),  mask=(self.dual_net.mask_ratio, len(images)))
+                           lr=(self.get_lr(), 1), mask=(self.dual_net.mask_ratio, len(images)))
 
     @staticmethod
     def set_float_loss(output_reg, output_noise, labels):
@@ -58,7 +60,7 @@ class CertTrainer(BaseTrainer):
         perturbation = perturbation / 10000
         p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)
         output_r = self.dual_net.masked_forward(images)
-        output_l = self.dual_net.masked_forward(images+ perturbation)
+        output_l = self.dual_net.masked_forward(images + perturbation)
         # perturbation = self.lip.attack(images, labels)
         # if self.args.ord == 'l2':
         #     p_norm = perturbation.norm(p=2, dim=(1, 2, 3)).view(len(perturbation), 1)

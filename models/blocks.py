@@ -1,8 +1,7 @@
-import torch
 from torch.nn import functional as F
 
 from core.utils import *
-
+import time
 
 def set_activation(activation):
     if activation is None:
@@ -75,6 +74,8 @@ class DualNet(nn.Module):
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
         self.num_layers = args.eta_layers
+        self.lip_layers = args.lip_layers
+        self.eta_inverse = args.eta_inverse
         self.block_len = self.count_block_len
         self.fixed_neurons = []
 
@@ -90,17 +91,24 @@ class DualNet(nn.Module):
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
         counter = 0
+        t_compute = 0
+        t_forward = 0
         for i, module in enumerate(self.net.layers.children()):
             x_1 = self.compute_pre_act(module, x_1)
             x_2 = self.compute_pre_act(module, x_2)
             if self.check_block(module):
-                if counter >= self.block_len - self.num_layers and counter != self.block_len:
-                    fix = self.compute_fix(x_1, x_2)
-                    df += ((x_1 - x_2) * ~fix).abs().mean()
-                    x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
-                    x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
-                    fixed_neurons += [fix]
-                    df += ((x_1 - x_2) * fix).view(len(x_1), -1).norm(p=2, dim=-1).mean()
+                fix = self.compute_fix(x_1, x_2)
+                fixed_neurons += [fix]
+                if self.eta_inverse:
+                    if counter >= self.block_len - self.num_layers and counter != self.block_len:
+                        x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
+                        x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
+                else:
+                    if counter < self.num_layers:
+                        fix = self.compute_fix(x_1, x_2)
+                        x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
+                        x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
+                        fixed_neurons += [fix]
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
 
