@@ -74,9 +74,8 @@ class DualNet(nn.Module):
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
-        self.num_layers = args.eta_layers
+
         self.lip_layers = args.lip_layers
-        self.eta_inverse = args.eta_inverse
         self.block_len = self.count_block_len
         self.fixed_neurons = []
 
@@ -111,7 +110,7 @@ class DualNet(nn.Module):
         for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             x = self.compute_pre_act(module, x)
             if self.check_block(module) and i != len(self.net.layers) - 1:
-                h = self.set_hook(fixed, eta_float, eta_fixed)
+                h = self.set_hook(fixed, eta_fixed, eta_float)
                 x.register_hook(h)
                 x = module.Act(x)
         return x
@@ -119,6 +118,7 @@ class DualNet(nn.Module):
     @staticmethod
     def set_hook(fixed, eta_float, eta_fixed):
         def grad_hook(grad):
+            # grad.stop // using error to stop the backward and debug
             return (1 + eta_fixed) * grad * fixed + (1 + eta_float) * grad * ~fixed
 
         return grad_hook

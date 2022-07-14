@@ -234,16 +234,15 @@ class ArgParser:
         self.parser.add_argument('--lip', default=0, type=int)
         self.parser.add_argument('--noise_type', default='noise', type=str)
         self.parser.add_argument('--float_loss', default=0, type=float)
-        self.parser.add_argument('--eta_layers', default=1, type=float)
-        self.parser.add_argument('--eta_inverse', default=1, type=float)
+
         self.parser.add_argument('--lip_layers', default=0, type=float)
         self.parser.add_argument('--lip_loss', default=0.00, type=float)
 
         # Adversarial Training
         self.parser.add_argument('--ord', default='inf', type=str)
         self.parser.add_argument('--attack', default='FGSM', type=str)
-        self.parser.add_argument('--alpha', default=1 / 255, type=float)
-        self.parser.add_argument('--eps', default=4 / 255, type=float)
+        self.parser.add_argument('--alpha', default=2 / 255, type=float)
+        self.parser.add_argument('--eps', default=8 / 255, type=float)
 
         # Prune Training
         self.parser.add_argument('--conv_dn_rate', default=0.95, type=float)
