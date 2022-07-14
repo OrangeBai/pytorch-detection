@@ -1,7 +1,7 @@
 from torch.nn import functional as F
 
 from core.utils import *
-import time
+
 
 def set_activation(activation):
     if activation is None:
@@ -70,6 +70,7 @@ class DualNet(nn.Module):
     def __init__(self, net, args):
         super().__init__()
         self.net = net
+        self.counter = 0
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
@@ -87,42 +88,40 @@ class DualNet(nn.Module):
                 counter += 1
         return counter - 1
 
-    def forward(self, x_1, x_2, eta_fixed=0, eta_float=0):
+    def lip_forward(self, x_1, x_2):
+        self.counter = -1
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
-        counter = 0
-        t_compute = 0
-        t_forward = 0
         for i, module in enumerate(self.net.layers.children()):
             x_1 = self.compute_pre_act(module, x_1)
             x_2 = self.compute_pre_act(module, x_2)
-            if self.check_block(module):
+            if self.check_block(module) and i != len(self.net.layers)- 1:
                 fix = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fix]
-                if self.eta_inverse:
-                    if counter >= self.block_len - self.num_layers and counter != self.block_len:
-                        x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
-                        x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
-                else:
-                    if counter < self.num_layers:
-                        fix = self.compute_fix(x_1, x_2)
-                        x_1 = self.x_mask(x_1, eta_fixed, fix) + self.x_mask(x_1, eta_float, ~fix)
-                        x_2 = self.x_mask(x_2, eta_fixed, fix) + self.x_mask(x_2, eta_float, ~fix)
-                        fixed_neurons += [fix]
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
+            else:
+                fixed_neurons += [None]
 
-                counter += 1
         self.fixed_neurons = fixed_neurons
         return x_1, x_2, df
 
-    def masked_forward(self, x):
-        for i, (fix, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+    def forward(self, x, eta_fixed, eta_float):
+        self.counter = 0
+        for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
             x = self.compute_pre_act(module, x)
-            if type(module) in [ConvBlock, LinearBlock]:
-                x = self.x_mask(x, -1, ~fix) + self.x_mask(x, 0, fix)
+            if self.check_block(module) and i != len(self.net.layers) - 1:
+                h = self.set_hook(fixed, eta_float, eta_fixed)
+                x.register_hook(h)
                 x = module.Act(x)
         return x
+
+    @staticmethod
+    def set_hook(fixed, eta_float, eta_fixed):
+        def grad_hook(grad):
+            return (1 + eta_fixed) * grad * fixed + (1 + eta_float) * grad * ~fixed
+
+        return grad_hook
 
     @staticmethod
     def check_block(module):
