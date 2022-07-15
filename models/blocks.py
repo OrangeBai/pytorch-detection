@@ -88,7 +88,7 @@ class DualNet(nn.Module):
                 counter += 1
         return counter - 1
 
-    def lip_forward(self, x_1, x_2):
+    def forward(self, x_1, x_2, eta_fixed, eta_float):
         self.counter = -1
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
@@ -96,37 +96,42 @@ class DualNet(nn.Module):
             x_1 = self.compute_pre_act(module, x_1)
             x_2 = self.compute_pre_act(module, x_2)
             if self.check_block(module) and i != len(self.net.layers) - 1:
-                fix = self.compute_fix(x_1, x_2)
-                fixed_neurons += [fix]
-                x_1 = module.Act(x_1)
+                fixed = self.compute_fix(x_1, x_2)
+                fixed_neurons += [fixed]
+
                 x_2 = module.Act(x_2)
+                h = self.set_hook(fixed, eta_fixed, eta_float)
+                self.handles += [module.Act.register_forward_pre_hook(h)]
+
+                x_1 = module.Act(x_1)
             else:
                 fixed_neurons += [None]
 
         self.fixed_neurons = fixed_neurons
+        self.remove_handles()
         return x_1, x_2, df
 
-    def forward(self, x, eta_fixed, eta_float):
-        self.counter = 0
-        for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-            x = self.compute_pre_act(module, x)
-            if self.check_block(module) and i != len(self.net.layers) - 1:
-                h = self.set_hook(fixed, eta_fixed, eta_float)
-                self.handles += [module.Act.register_forward_pre_hook(h)]
-                x = module.Act(x)
-        self.remove_handles()
-        return x
+    # def forward(self, x, eta_fixed, eta_float):
+    #     self.counter = 0
+    #     for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+    #         x = self.compute_pre_act(module, x)
+    #         if self.check_block(module) and i != len(self.net.layers) - 1:
+    #             h = self.set_hook(fixed, eta_fixed, eta_float)
+    #             self.handles += [module.Act.register_forward_pre_hook(h)]
+    #             x = module.Act(x)
+    #     self.remove_handles()
+    #     return x
 
     def remove_handles(self):
         for h in self.handles:
             h.remove()
+        self.handles.clear()
         return
 
     def set_hook(self, fixed, eta_fixed, eta_float):
         def forward_pre_hook(m, inputs):
             x = inputs[0]
             return self.x_mask(x, eta_fixed, fixed) + self.x_mask(x, eta_float, ~fixed)
-
         return forward_pre_hook
 
     @staticmethod

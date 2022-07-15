@@ -21,23 +21,20 @@ class CertTrainer(BaseTrainer):
 
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
-        n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
 
         eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
         eta_float = self.args.eta_float * (1 - self.trained_ratio)
 
-        output_s, output_r, df = self.dual_net.lip_forward(images, n)
-        if self.args.noise_type == 'images':
-            output_m = self.dual_net(images, eta_fixed, eta_float)
-        elif self.args.noise_type == 'noise':
-            output_m = self.dual_net(n, eta_fixed, eta_float)
+        if self.args.noise_type == 'noise':
+            n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
         elif self.args.noise_type == 'FGSM':
             n = self.attacks['FGSM'].attack(images, labels)
-            output_m = self.dual_net(n, eta_fixed, eta_float)
         else:
             raise NameError
 
-        loss = self.loss_function(output_m, labels)
+        output_s, output_r, df = self.dual_net(n, images, eta_fixed, eta_float)
+
+        loss = self.loss_function(output_s, labels)
         if self.args.lip_loss != 0:
             loss += torch.log(df) * self.args.lip_loss
         self.step(loss)
@@ -52,4 +49,3 @@ class CertTrainer(BaseTrainer):
         loss_float = (1 - one_hot(labels, num_classes=output_noise.shape[1])).multiply(loss_float.abs())
         loss_float = loss_float.norm(p=2).mean()
         return loss_float
-
