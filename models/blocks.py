@@ -78,6 +78,7 @@ class DualNet(nn.Module):
         self.lip_layers = args.lip_layers
         self.block_len = self.count_block_len
         self.fixed_neurons = []
+        self.handles = []
 
     @property
     def count_block_len(self):
@@ -111,17 +112,22 @@ class DualNet(nn.Module):
             x = self.compute_pre_act(module, x)
             if self.check_block(module) and i != len(self.net.layers) - 1:
                 h = self.set_hook(fixed, eta_fixed, eta_float)
-                x.register_hook(h)
+                self.handles += [module.Act.register_forward_pre_hook(h)]
                 x = module.Act(x)
+        self.remove_handles()
         return x
 
-    @staticmethod
-    def set_hook(fixed, eta_fixed, eta_float):
-        def grad_hook(grad):
-            grad.stop  # // using error to stop the backward and debug
-            return (1 + eta_fixed) * grad * fixed + (1 + eta_float) * grad * ~fixed
+    def remove_handles(self):
+        for h in self.handles:
+            h.remove()
+        return
 
-        return grad_hook
+    def set_hook(self, fixed, eta_fixed, eta_float):
+        def forward_pre_hook(m, inputs):
+            x = inputs[0]
+            return self.x_mask(x, eta_fixed, fixed) + self.x_mask(x, eta_float, ~fixed)
+
+        return forward_pre_hook
 
     @staticmethod
     def check_block(module):
