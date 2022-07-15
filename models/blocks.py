@@ -108,6 +108,8 @@ class DualNet(nn.Module):
             else:
                 fixed_neurons += [None]
 
+
+
         self.fixed_neurons = fixed_neurons
         self.remove_handles()
         return x_1, x_2, df
