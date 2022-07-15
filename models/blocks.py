@@ -94,7 +94,7 @@ class DualNet(nn.Module):
         for i, module in enumerate(self.net.layers.children()):
             x_1 = self.compute_pre_act(module, x_1)
             x_2 = self.compute_pre_act(module, x_2)
-            if self.check_block(module) and i != len(self.net.layers)- 1:
+            if self.check_block(module) and i != len(self.net.layers) - 1:
                 fix = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fix]
                 x_1 = module.Act(x_1)
@@ -116,9 +116,9 @@ class DualNet(nn.Module):
         return x
 
     @staticmethod
-    def set_hook(fixed, eta_float, eta_fixed):
+    def set_hook(fixed, eta_fixed, eta_float):
         def grad_hook(grad):
-            # grad.stop // using error to stop the backward and debug
+            grad.stop  # // using error to stop the backward and debug
             return (1 + eta_fixed) * grad * fixed + (1 + eta_float) * grad * ~fixed
 
         return grad_hook
