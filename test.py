@@ -3,9 +3,9 @@ from exps.non_returnable import *
 from settings.test_setting import *
 
 if __name__ == '__main__':
-    argv = ['--dir', '', '--exp_id', 'st', '--net', 'vgg16', '--dataset', 'cifar10',
+    argv = ['--dir', 'robust/noise_test3', '--exp_id', 'cer_0', '--net', 'cxfy42', '--dataset', 'cifar10',
             '--batch_norm', '1', '--batch_size', '1',
-            '--test_name', 'ap_lip']
+            '--test_name', 'smooth']
     args = set_up_testing(argv)
     model = build_model(args)
     model.load_model(args.model_dir)

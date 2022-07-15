@@ -70,13 +70,15 @@ class DualNet(nn.Module):
     def __init__(self, net, args):
         super().__init__()
         self.net = net
-        self.counter = 0
         self.eta_dn = args.eta_dn
         self.dn_rate = args.dn_rate
         self.gamma = set_gamma(args.activation)
 
+        self.lip_inverse = args.lip_inverse
         self.lip_layers = args.lip_layers
         self.block_len = self.count_block_len
+        self.counter = -1
+
         self.fixed_neurons = []
         self.handles = []
 
@@ -98,6 +100,8 @@ class DualNet(nn.Module):
             if self.check_block(module) and i != len(self.net.layers) - 1:
                 fixed = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fixed]
+                if self.check_lip():
+                    df += ((x_1 - x_2) * fixed).abs().mean()
 
                 # x_1 = self.x_mask(x_1, eta_fixed, fixed) + self.x_mask(x_1, eta_float, ~fixed)
                 # x_2 = self.x_mask(x_2, eta_fixed, fixed) + self.x_mask(x_2, eta_float, ~fixed)
@@ -108,12 +112,22 @@ class DualNet(nn.Module):
             else:
                 fixed_neurons += [None]
 
-
-
         self.fixed_neurons = fixed_neurons
         self.remove_handles()
         return x_1, x_2, df
 
+    def check_lip(self):
+        if self.lip_inverse:
+            if self.counter >= self.block_len - self.lip_layers:
+                return 1
+            else:
+                return 0
+
+        else:
+            if self.counter < self.lip_layers:
+                return 1
+            else:
+                return 0
     # def forward(self, x, eta_fixed, eta_float):
     #     self.counter = 0
     #     for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
@@ -137,9 +151,9 @@ class DualNet(nn.Module):
             return self.x_mask(x, eta_fixed, fixed) + self.x_mask(x, eta_float, ~fixed)
         return forward_pre_hook
 
-    @staticmethod
-    def check_block(module):
+    def check_block(self, module):
         if type(module) in [ConvBlock, LinearBlock]:
+            self.counter += 1
             return 1
         else:
             return 0

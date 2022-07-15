@@ -90,3 +90,8 @@ do
 	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 52 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_fixed 0.05 --balance 1 --noise_type FGSM
 	qsub pytorch-detection.sh --net vgg16 --train_mode cer --val_mode adv --act ${act} --batch_size $batchSize --dir robust/benchmark_02 --exp_id 53 --noise_sigma 0.1 --cert_input images --float_loss 0.05 --eta_float 0.1 --eta_fixed 0.05 --balance 1 --noise_type FGSM
 done
+
+
+python train.py --net cxfy42 --val_mode adv --act LeakyReLU --batch_size 128 --dir robust/fgsm_test --lr_scheduler cyclic --num_epoch 15 --warmup 0 --train_mode cer --exp_id cer_0 --attack FGSM --noise_type FGSM --eta_float -0.2 --lip_layers 1 --lip_loss 0.01
+python train.py --net cxfy42 --val_mode adv --act LeakyReLU --batch_size 128 --dir robust/fgsm_test --lr_scheduler cyclic --num_epoch 15 --warmup 0 --train_mode cer --exp_id cer_0 --attack FGSM --noise_type FGSM --eta_fixed -0.1 --lip_layers 1 --lip_loss 0.05 --lip_inverse 1
+python train.py --net cxfy42 --val_mode adv --act LeakyReLU --batch_size 128 --dir robust/fgsm_test --lr_scheduler cyclic --num_epoch 15 --warmup 0 --train_mode adv --exp_id adv_0
