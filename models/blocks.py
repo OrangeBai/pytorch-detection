@@ -99,11 +99,12 @@ class DualNet(nn.Module):
                 fixed = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fixed]
 
-                x_2 = module.Act(x_2)
-                h = self.set_hook(fixed, eta_fixed, eta_float)
-                self.handles += [module.Act.register_forward_pre_hook(h)]
-
+                x_1 = self.x_mask(x_1, eta_fixed, fixed) + self.x_mask(x_1, eta_float, ~fixed)
+                x_2 = self.x_mask(x_2, eta_fixed, fixed) + self.x_mask(x_2, eta_float, ~fixed)
+                # h = self.set_hook(fixed, eta_fixed, eta_float)
+                # self.handles += [module.Act.register_forward_pre_hook(h)]
                 x_1 = module.Act(x_1)
+                x_2 = module.Act(x_2)
             else:
                 fixed_neurons += [None]
 
