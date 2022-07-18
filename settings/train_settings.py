@@ -225,19 +225,21 @@ class ArgParser:
 
     def train_mode(self):
         args, _ = self.parser.parse_known_args(self.args)
+        # Prune training
+        self.parser.add_argument('--eta_dn', default=0, type=float)
+        self.parser.add_argument('--dn_rate', default=0.90, type=float)
+
         # Certifiable training
         self.parser.add_argument('--noise_sigma', default=0.1, type=float)
         self.parser.add_argument('--eta_fixed', default=0, type=float)
         self.parser.add_argument('--eta_float', default=0, type=float)
-        self.parser.add_argument('--eta_dn', default=0, type=float)
-        self.parser.add_argument('--dn_rate', default=0.90, type=float)
-        self.parser.add_argument('--lip', default=0, type=int)
         self.parser.add_argument('--noise_type', default='noise', type=str)
-        self.parser.add_argument('--float_loss', default=0, type=float)
+        self.parser.add_argument('--noise_eps', default=0.03, type=float)
+        self.parser.add_argument('--num_noise', default=1, type=int)
 
         self.parser.add_argument('--lip_inverse', default=0, type=int)
         self.parser.add_argument('--lip_layers', default=2, type=float)
-        self.parser.add_argument('--lip_loss', default=0.1, type=float)
+        self.parser.add_argument('--lip_loss', default=0.01, type=float)
 
         # Adversarial Training
         self.parser.add_argument('--ord', default='inf', type=str)

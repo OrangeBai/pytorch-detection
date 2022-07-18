@@ -24,22 +24,38 @@ class CertTrainer(BaseTrainer):
 
         eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
         eta_float = self.args.eta_float * (1 - self.trained_ratio)
-
         if self.args.noise_type == 'noise':
             n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
         elif self.args.noise_type == 'FGSM':
             n = self.attacks['FGSM'].attack(images, labels)
+        elif self.args.nosie_type == 'images':
+            n = images
         else:
             raise NameError
 
-        output_s, output_r, df = self.dual_net(n, images, eta_fixed, eta_float)
+        if self.args.num_noise != 0:
+            x_n = [n]
+            for i in range(self.args.num_noise):
+                if self.args.ord == 'l2':
+                    noise = torch.randn_like(images)
+                    noise_norm = noise.view(len(noise), -1).norm(p=2, dim=-1) * self.args.noise_eps
+                    x_n += [(images + noise / noise_norm).detach()]
+                else:
+                    noise = torch.sign(torch.randn_like(images)) * self.args.noise_eps
+                    x_n += [(images + noise).detach()]
+            x_n = torch.concat(x_n)
+            output, df = self.dual_net(x_n, len(images), eta_fixed, eta_float)
+        else:
+            output = self.model(n)
+            df = torch.tensor(1, dtype=torch.float).cuda()
 
-        loss = self.loss_function(output_s, labels)
+        loss = self.loss_function(output, labels)
+
         if self.args.lip_loss != 0:
             loss += torch.log(df) * self.args.lip_loss
         self.step(loss)
 
-        top1, top5 = accuracy(output_r, labels)
+        top1, top5 = accuracy(output, labels)
         self.update_metric(top1=(top1, len(images)), loss=(loss, len(images)),
                            lr=(self.get_lr(), 1), mask=(self.dual_net.mask_ratio, len(images)))
 
