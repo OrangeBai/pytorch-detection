@@ -22,8 +22,6 @@ class CertTrainer(BaseTrainer):
     def cert_train_step(self, images, labels):
         images, labels = to_device(self.args.devices[0], images, labels)
 
-        eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
-        eta_float = self.args.eta_float * (1 - self.trained_ratio)
         if self.args.noise_type == 'noise':
             n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
         elif self.args.noise_type == 'FGSM':
@@ -33,28 +31,26 @@ class CertTrainer(BaseTrainer):
         else:
             raise NameError
 
-        if self.args.num_noise != 0:
-            x_n = [n]
-            for i in range(self.args.num_noise):
-                if self.args.ord == 'l2':
-                    noise = torch.randn_like(images)
-                    noise_norm = noise.view(len(noise), -1).norm(p=2, dim=-1) * self.args.noise_eps
-                    x_n += [(images + noise / noise_norm).detach()]
-                else:
-                    noise = torch.sign(torch.randn_like(images)) * self.args.noise_eps
-                    x_n += [(images + noise).detach()]
-            x_n = torch.concat(x_n)
-            output, df = self.dual_net(x_n, len(images), eta_fixed, eta_float)
+        if self.args.ord == 'l2':
+            noise = torch.randn_like(images)
+            noise_norm = noise.view(len(noise), -1).norm(p=2, dim=-1) * self.args.noise_eps
+            x_2 = (images + noise / noise_norm).detach()
+        else:
+            noise = torch.sign(torch.randn_like(images)) * self.args.noise_eps
+            x_2 = (images + noise).detach()
+
+        if self.args.eta_fixed != 0 or self.args.eta_float != 0:
+            eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
+            eta_float = self.args.eta_float * (1 - self.trained_ratio)
+            output, output_n, df = self.dual_net(n, x_2, eta_fixed, eta_float)
+            loss = self.loss_function(output, labels)
+            if self.args.lip_loss != 0:
+                loss += torch.log(df) * self.args.lip_loss
         else:
             output = self.model(n)
-            df = torch.tensor(1, dtype=torch.float).cuda()
+            loss = self.loss_function(output, labels)
 
-        loss = self.loss_function(output, labels)
-
-        if self.args.lip_loss != 0:
-            loss += torch.log(df) * self.args.lip_loss
         self.step(loss)
-
         top1, top5 = accuracy(output, labels)
         self.update_metric(top1=(top1, len(images)), loss=(loss, len(images)),
                            lr=(self.get_lr(), 1), mask=(self.dual_net.mask_ratio, len(images)))

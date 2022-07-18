@@ -1,3 +1,4 @@
+import torch
 from torch.nn import functional as F
 
 from core.utils import *
@@ -90,32 +91,29 @@ class DualNet(nn.Module):
                 counter += 1
         return counter - 1
 
-    def forward(self, x_n, batch_size, eta_fixed, eta_float):
+    def forward(self, x_1, x_2, eta_fixed, eta_float):
         self.counter = -1
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
         for i, module in enumerate(self.net.layers.children()):
-            x_n = self.compute_pre_act(module, x_n)
+            x_1 = self.compute_pre_act(module, x_1)
+            x_2 = self.compute_pre_act(module, x_2)
             if self.check_block(module) and i != len(self.net.layers) - 1:
-                fixed = self.compute_fix(x_n, batch_size)
+                fixed = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fixed]
-                if self.check_lip():
-                    df_list = [x_n[j:j + batch_size] for j in range(0, len(x_n), batch_size)]
-                    df_list = [(d - df_list[0]) * fixed for d in df_list]
-                    df += torch.stack(df_list).abs().mean()
+                # if self.check_lip():
+                #     df += torch.stack(df_list).abs().mean()
 
-                # x_1 = self.x_mask(x_1, eta_fixed, fixed) + self.x_mask(x_1, eta_float, ~fixed)
-                # x_2 = self.x_mask(x_2, eta_fixed, fixed) + self.x_mask(x_2, eta_float, ~fixed)
-                batch_fixed = torch.concat([fixed] * (len(x_n) // batch_size))
-                h = self.set_hook(batch_fixed, eta_fixed, eta_float)
+                h = self.set_hook(fixed, eta_fixed, eta_float)
                 self.handles += [module.Act.register_forward_pre_hook(h)]
-                x_n = module.Act(x_n)
+                x_1 = module.Act(x_1)
+                x_2 = module.Act(x_2)
             else:
                 fixed_neurons += [None]
 
         self.fixed_neurons = fixed_neurons
         self.remove_handles()
-        return x_n[:batch_size], df
+        return x_1, x_2, df
 
     def check_lip(self):
         if self.lip_inverse:
@@ -130,16 +128,16 @@ class DualNet(nn.Module):
             else:
                 return 0
 
-    # def forward(self, x, eta_fixed, eta_float):
-    #     self.counter = 0
-    #     for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-    #         x = self.compute_pre_act(module, x)
-    #         if self.check_block(module) and i != len(self.net.layers) - 1:
-    #             h = self.set_hook(fixed, eta_fixed, eta_float)
-    #             self.handles += [module.Act.register_forward_pre_hook(h)]
-    #             x = module.Act(x)
-    #     self.remove_handles()
-    #     return x
+    def forward(self, x, eta_fixed, eta_float):
+        self.counter = 0
+        for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+            x = self.compute_pre_act(module, x)
+            if self.check_block(module) and i != len(self.net.layers) - 1:
+                h = self.set_hook(fixed, eta_fixed, eta_float)
+                self.handles += [module.Act.register_forward_pre_hook(h)]
+                x = module.Act(x)
+        self.remove_handles()
+        return x
 
     def remove_handles(self):
         for h in self.handles:
@@ -184,7 +182,10 @@ class DualNet(nn.Module):
 
     @staticmethod
     def x_mask(x, ratio, mask):
-        return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
+        if ratio == 0:
+            return x * mask
+        else:
+            return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
 
     @staticmethod
     def compute_pre_act(module, x):
@@ -195,14 +196,12 @@ class DualNet(nn.Module):
         else:
             return module(x)
 
-    def compute_fix(self, x_n, batch_size):
-        x_p = torch.stack([x_n[i:i + batch_size].detach() for i in range(0, len(x_n), batch_size)])
-
-        x_fixed = [torch.all(x_p < self.gamma[0], dim=0), torch.all(x_p > self.gamma[-1], dim=0)]
-        for i, g in enumerate(self.gamma[:-1]):
-            x_fixed += [torch.all(torch.concat([x_p > g, x_p < self.gamma[i + 1]]), dim=0)]
-
-        return torch.any(torch.stack(x_fixed), dim=0)
+    def compute_fix(self, x_1, x_2):
+        if len(self.gamma) == 0:
+            return (x_1 - self.gamma[0]) * (x_2 - self.gamma[0]) > 0
+        else:
+            stacked = torch.stack([(x_1 - g) * (x_2 - g) > 0 for g in self.gamma])
+            return torch.all(stacked, dim=0)
 
     @staticmethod
     def _batch_norm(layer, x):
