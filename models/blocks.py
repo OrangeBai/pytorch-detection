@@ -99,8 +99,10 @@ class DualNet(nn.Module):
             if self.check_block(module) and i != len(self.net.layers) - 1:
                 fixed = self.compute_fix(x_n, batch_size)
                 fixed_neurons += [fixed]
-                # if self.check_lip():
-                #     df += ((x_1 - x_2) * fixed).abs().mean()
+                if self.check_lip():
+                    df_list = [x_n[j:j + batch_size] for j in range(0, len(x_n), batch_size)]
+                    df_list = [(d - df_list[0]) * fixed for d in df_list]
+                    df += torch.stack(df_list).abs().mean()
 
                 # x_1 = self.x_mask(x_1, eta_fixed, fixed) + self.x_mask(x_1, eta_float, ~fixed)
                 # x_2 = self.x_mask(x_2, eta_fixed, fixed) + self.x_mask(x_2, eta_float, ~fixed)
