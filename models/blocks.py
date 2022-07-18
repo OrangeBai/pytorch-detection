@@ -128,16 +128,16 @@ class DualNet(nn.Module):
             else:
                 return 0
 
-    def forward(self, x, eta_fixed, eta_float):
-        self.counter = 0
-        for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-            x = self.compute_pre_act(module, x)
-            if self.check_block(module) and i != len(self.net.layers) - 1:
-                h = self.set_hook(fixed, eta_fixed, eta_float)
-                self.handles += [module.Act.register_forward_pre_hook(h)]
-                x = module.Act(x)
-        self.remove_handles()
-        return x
+    # def forward(self, x, eta_fixed, eta_float):
+    #     self.counter = 0
+    #     for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+    #         x = self.compute_pre_act(module, x)
+    #         if self.check_block(module) and i != len(self.net.layers) - 1:
+    #             h = self.set_hook(fixed, eta_fixed, eta_float)
+    #             self.handles += [module.Act.register_forward_pre_hook(h)]
+    #             x = module.Act(x)
+    #     self.remove_handles()
+    #     return x
 
     def remove_handles(self):
         for h in self.handles:
