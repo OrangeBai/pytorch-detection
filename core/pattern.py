@@ -170,7 +170,6 @@ def retrieve_lb_ub(stored_values, grad_bound):
     @param grad_bound: A set of gradient bounds for each activation region with length #\Gamma + 1. For instance,
                         if activation is ReLU with Gamma=[0]
                             the grad bound should be [(0,0), (1,1)]
-    @param sample_size: number of samples with noise
     @return: the bound for each neuron, shape as:
                 [
                     [[grad_lower_bound], [grad_upper_bound]], (instance_1),
@@ -197,18 +196,23 @@ def retrieve_lb_ub(stored_values, grad_bound):
         block_lb = []
         block_ub = []
         for layer in block:
-            layer_lb = np.zeros(layer.shape[1:])
-            layer_ub = np.zeros(layer.shape[1:])
-            min_pattern = min_max_pattern(layer, 'min')
-            max_pattern = min_max_pattern(layer, 'max')
-            for j, (lb, ub) in enumerate(grad_bound):
-                layer_lb[min_pattern == j] = lb
-                layer_ub[max_pattern == j] = ub
+            layer_lb, layer_ub = layer_lb_ub(layer, grad_bound)
             block_lb.append(layer_lb)
             block_ub.append(layer_ub)
         net_lb.append(block_lb)
         net_ub.append(block_ub)
     return net_lb, net_ub
+
+
+def layer_lb_ub(layer, grad_bound):
+    layer_lb = np.zeros(layer.shape[1:])
+    layer_ub = np.zeros(layer.shape[1:])
+    min_pattern = min_max_pattern(layer, 'min')
+    max_pattern = min_max_pattern(layer, 'max')
+    for j, (lb, ub) in enumerate(grad_bound):
+        layer_lb[min_pattern == j] = lb
+        layer_ub[max_pattern == j] = ub
+    return layer_lb, layer_ub
 
 
 def list_all(data, storage=None):
