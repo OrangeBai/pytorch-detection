@@ -290,7 +290,10 @@ def check_activation(layer):
 
 
 def to_numpy(tensor):
-    return tensor.cpu().detach().numpy()
+    if type(tensor) == np.ndarray:
+        return tensor
+    else:
+        return tensor.cpu().detach().numpy()
 
 
 def set_gamma(activation):

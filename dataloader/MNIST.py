@@ -6,7 +6,7 @@ MNIST_MEAN_STD = (0.1307,), (0.3081,)
 
 
 def get_loaders(args):
-    mean, std = MNIST_MEAN_STD
+    mean, std = MNIST_MEAN_STD if args.data_bn else ((0,), (1,))
     data_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
@@ -66,7 +66,7 @@ def get_single_sets(args, *labels):
 
 
 def get_dataset(args):
-    mean, std = MNIST_MEAN_STD
+    mean, std = MNIST_MEAN_STD if args.data_bn else (0,), (1,)
     data_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean, std)

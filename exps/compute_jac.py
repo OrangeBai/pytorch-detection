@@ -16,10 +16,11 @@ def compute_jac_cnn(net, img, activation='ReLU'):
     batch_x = torch.stack(batch_x)
     net.eval()
     x = img.detach()
+    jacobian_x = []
     for module in net.children():
         if type(module) == LinearBlock:
             x = module.BN(module.FC(x))
-            pattern = get_pattern(x, Gamma=set_gamma(activation))
+            pattern = get_pattern(to_numpy(x), Gamma=set_gamma(activation))
             _, ub = layer_lb_ub(pattern, grad_bound=set_lb_ub(activation))
             x = module.Act(x)
 
@@ -27,16 +28,18 @@ def compute_jac_cnn(net, img, activation='ReLU'):
             batch_x = batch_norm(batch_x, module.BN)
             if type(module.Act) != nn.Identity:
                 batch_x = act_pattern(batch_x, ub)
+            jacobian_x += [batch_x.detach()]
         elif type(module) == ConvBlock:
             x = module.BN(module.Conv(x))
-            pattern = get_pattern(x, Gamma=set_gamma(activation))
-            _, ub = layer_lb_ub(pattern, grad_bound=[(0, 0), (1, 1)])
+            pattern = get_pattern(to_numpy(x), Gamma=set_gamma(activation))
+            _, ub = layer_lb_ub(pattern, grad_bound=set_lb_ub(activation))
             x = module.Act(x)
 
             batch_x = conv(batch_x, module.Conv)
             batch_x = batch_norm(batch_x, module.BN)
             if type(module.Act) != nn.Identity:
                 batch_x = act_pattern(batch_x, ub)
+            jacobian_x += [batch_x.detach()]
         elif type(module) == nn.MaxPool2d:
             x2, indices = F.max_pool2d(x, module.kernel_size, module.stride, return_indices=True)
 
@@ -52,17 +55,11 @@ def compute_jac_cnn(net, img, activation='ReLU'):
     t2 = time.time()
     print(t2 - t1)
     img.requires_grad = True
-    y = net(img)[0]
-    g = []
-    for i in range(len(y)):
-        g += [torch.autograd.grad(y[i], img, retain_graph=True)[0]]
-
-    g = torch.concat(g)
-    j = torch.autograd.functional.jacobian(net, images)
+    j = torch.autograd.functional.jacobian(net, img)
     print(time.time() - t2)
-    permuted = j.squeeze().permute(1, 2, 3, 0)
-    diff = permuted - batch_x.view(3, 32, 32, -1)
-    return batch_x
+    permuted = j.squeeze().view(batch_x.shape[1], -1).permute(1, 0).view(c, h, w, -1)
+    diff = permuted - batch_x.view(c, h, w, -1)
+    return jacobian_x, diff
 
 
 def fc(x, fc_layer):
@@ -70,7 +67,7 @@ def fc(x, fc_layer):
 
 
 def act_pattern(x, ub):
-    ub = torch.tensor(ub, dtype=torch.float).unsqueeze(dim=0)
+    ub = torch.tensor(ub, dtype=torch.float).unsqueeze(dim=0).cuda()
     return x * ub
 
 
@@ -85,34 +82,33 @@ def batch_norm(x, bn_layer):
 def conv(x, conv_layer):
     return F.conv2d(x, conv_layer.weight.data, bias=None, stride=conv_layer.stride, padding=conv_layer.padding)
 
-
-if __name__ == '__main__':
-    kwargs = {'activation': 'ReLU', 'batch_norm': 1}
-    layers = [
-        ConvBlock(3, 32, 3, batch_norm=1, padding=1, stride=2, activation='ReLU'),
-        ConvBlock(32, 32, 3, padding=1, stride=1, activation='ReLU', batch_norm=1),
-        #
-        # ConvBlock(16, 16, batch_norm=True, padding=1, stride=2, activation='ReLU'),
-        nn.MaxPool2d(kernel_size=2, stride=2),
-        nn.Flatten(),
-        LinearBlock(2048, 10, batch_norm=0, activation=None)
-    ]
-    model = nn.Sequential(*layers)
-    # model = nn.Sequential(
-    #     ConvBlock(3, 32, 3, padding=1, **kwargs),
-    #     ConvBlock(32, 32, 3, padding=1, stride=2, **kwargs),
-    #     # nn.MaxPool2d(2, 2),
-    #     ConvBlock(32, 64, 3, padding=1, **kwargs),
-    #     ConvBlock(64, 64, 3, padding=1, stride=2, **kwargs),
-    #     # nn.MaxPool2d(2, 2),
-    #     nn.Flatten(),
-    #     LinearBlock(64 * 8 * 8, 512, **kwargs),
-    #
-    #     LinearBlock(512, 512, **kwargs),
-    #     LinearBlock(512, 10, batch_norm=1, activation=None),
-    # )
-
-    # net = nn.Sequential(*layers)
-    images = torch.randn((1, 3, 32, 32))
-    # images = torch.randn(1, 1, 1, 4096)
-    compute_jac_cnn(model, images)
+# if __name__ == '__main__':
+#     kwargs = {'activation': 'ReLU', 'batch_norm': 1}
+#     layers = [
+#         ConvBlock(3, 32, 3, batch_norm=1, padding=1, stride=2, activation='ReLU'),
+#         ConvBlock(32, 32, 3, padding=1, stride=1, activation='ReLU', batch_norm=1),
+#         #
+#         # ConvBlock(16, 16, batch_norm=True, padding=1, stride=2, activation='ReLU'),
+#         nn.MaxPool2d(kernel_size=2, stride=2),
+#         nn.Flatten(),
+#         LinearBlock(2048, 10, batch_norm=0, activation=None)
+#     ]
+#     model = nn.Sequential(*layers)
+#     # model = nn.Sequential(
+#     #     ConvBlock(3, 32, 3, padding=1, **kwargs),
+#     #     ConvBlock(32, 32, 3, padding=1, stride=2, **kwargs),
+#     #     # nn.MaxPool2d(2, 2),
+#     #     ConvBlock(32, 64, 3, padding=1, **kwargs),
+#     #     ConvBlock(64, 64, 3, padding=1, stride=2, **kwargs),
+#     #     # nn.MaxPool2d(2, 2),
+#     #     nn.Flatten(),
+#     #     LinearBlock(64 * 8 * 8, 512, **kwargs),
+#     #
+#     #     LinearBlock(512, 512, **kwargs),
+#     #     LinearBlock(512, 10, batch_norm=1, activation=None),
+#     # )
+#
+#     # net = nn.Sequential(*layers)
+#     images = torch.randn((1, 3, 32, 32))
+#     # images = torch.randn(1, 1, 1, 4096)
+#     compute_jac_cnn(model, images)

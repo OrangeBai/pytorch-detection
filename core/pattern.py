@@ -122,11 +122,11 @@ def get_pattern(input_var, Gamma):
     pattern = np.zeros(input_var.shape)
     num_of_pattern = len(Gamma)
 
-    pattern[input_var < Gamma[0]] = 0
-    pattern[input_var > Gamma[-1]] = num_of_pattern
+    pattern[to_numpy(input_var < Gamma[0])] = 0
+    pattern[to_numpy(input_var > Gamma[-1])] = num_of_pattern
     for i in range(1, num_of_pattern):
         valid = pattern > Gamma[i] * pattern < Gamma[i + 1]
-        pattern[valid] = i
+        pattern[to_numpy(valid)] = i
     return pattern
 
 

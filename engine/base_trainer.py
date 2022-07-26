@@ -27,10 +27,10 @@ class BaseTrainer:
             format='[%(asctime)s] - %(message)s',
             datefmt='%Y/%m/%d %H:%M:%S',
             level=logging.INFO,
-            filename=os.path.join(args.model_dir, 'logger_' + args.exp_id))
+            filename=os.path.join(args.model_dir, 'logger_' + str(args.exp_id)))
         self.logger.info(args)
 
-        self.lip = set_attack(self.model, 'Lip', args.devices[0], ord=args.ord)
+        self.lip = set_attack(self.model, 'Lip', args.devices[0], ord=args.ord, mean=self.mean, std=self.std)
 
         self.attack_args = {
             'mean': self.mean,
