@@ -6,10 +6,10 @@ if __name__ == '__main__':
 
     labels = ['100', '200', '400', '800']
     ax.set_xticklabels(labels)
-    for depth in ['2', '3', '4', '5', '6', '7', '8', '9', '10']:
+    for depth in ['2', '3', '5', '9', '17']:
         li_min = []
         l2_min = []
-        for width in ['100', '200', '300', '400', '500', '600', '700', '800', '900', '1000']:
+        for width in ['100', '200', '400', '800', '1600']:
             arg_var = ['--dir', 'distance/dnn_bn', '--net', 'dnn', '--dataset', 'mnist',
                        '--exp_id', '_'.join([depth, width])]
             args = set_up_testing(arg_var)

@@ -234,7 +234,7 @@ class ArgParser:
         self.parser.add_argument('--eta_fixed', default=0, type=float)
         self.parser.add_argument('--eta_float', default=0, type=float)
         self.parser.add_argument('--noise_type', default='noise', type=str)
-        self.parser.add_argument('--noise_eps', default=0.03, type=float)
+        self.parser.add_argument('--noise_eps', default=0.06, type=float)
 
         self.parser.add_argument('--lip_inverse', default=0, type=int)
         self.parser.add_argument('--lip_layers', default=2, type=float)

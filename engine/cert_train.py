@@ -40,11 +40,12 @@ class CertTrainer(BaseTrainer):
             x_2 = (images + noise).detach()
 
         if self.args.eta_fixed != 0 or self.args.eta_float != 0:
-            eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
-            eta_float = self.args.eta_float * (1 - self.trained_ratio)
+            eta_fixed = -self.args.eta_fixed + 2 * self.args.eta_fixed * (1 - self.trained_ratio)
+            eta_float = -self.args.eta_float + 2 * self.args.eta_float * (1 - self.trained_ratio)
             output, output_n, df = self.dual_net(n, x_2, eta_fixed, eta_float)
             loss = self.loss_function(output, labels)
             if self.args.lip_loss != 0:
+                # rate = loss.detach() / torch.log(df).detach() * self.args.lip_loss
                 loss += torch.log(df) * self.args.lip_loss
         else:
             output = self.model(n)

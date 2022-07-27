@@ -101,8 +101,8 @@ class DualNet(nn.Module):
             if self.check_block(module) and i != len(self.net.layers) - 1:
                 fixed = self.compute_fix(x_1, x_2)
                 fixed_neurons += [fixed]
-                # if self.check_lip():
-                #     df += torch.stack(df_list).abs().mean()
+                if self.check_lip():
+                    df += (x_1 * fixed).abs().mean()
 
                 h = self.set_hook(fixed, eta_fixed, eta_float)
                 self.handles += [module.Act.register_forward_pre_hook(h)]
