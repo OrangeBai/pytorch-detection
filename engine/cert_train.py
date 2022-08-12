@@ -26,7 +26,7 @@ class CertTrainer(BaseTrainer):
             n = images + torch.randn_like(images, device='cuda') * self.args.noise_sigma
         elif self.args.noise_type == 'FGSM':
             n = self.attacks['FGSM'].attack(images, labels)
-        elif self.args.nosie_type == 'images':
+        elif self.args.noise_type == 'images':
             n = images
         else:
             raise NameError
@@ -40,13 +40,21 @@ class CertTrainer(BaseTrainer):
             x_2 = (images + noise).detach()
 
         if self.args.eta_fixed != 0 or self.args.eta_float != 0:
-            eta_fixed = -self.args.eta_fixed + 2 * self.args.eta_fixed * (1 - self.trained_ratio)
-            eta_float = -self.args.eta_float + 2 * self.args.eta_float * (1 - self.trained_ratio)
+            eta_fixed = self.args.eta_fixed * (1 - self.trained_ratio)
+            eta_float = self.args.eta_float * (1 - self.trained_ratio)
             output, output_n, df = self.dual_net(n, x_2, eta_fixed, eta_float)
             loss = self.loss_function(output, labels)
+
             if self.args.lip_loss != 0:
-                # rate = loss.detach() / torch.log(df).detach() * self.args.lip_loss
-                loss += torch.log(df) * self.args.lip_loss
+                lip = self.lip.attack(n, labels)
+                masked_per = self.dual_net.mask_forward(n + lip, 0.2, 0)
+                masked_raw = self.dual_net.mask_forward(n, 0.2, 0)
+                diff = (masked_per - masked_raw) * 1e4
+                diff = (1 - one_hot(labels, self.args.num_cls))*diff.max(axis=1)[0].unsqueeze(dim=1)
+                lip_loss = self.loss_function(output + 2 * diff * self.args.eps * self.trained_ratio, labels)
+                # diff = (output - output_n)
+                # lip_loss = ((1 - one_hot(labels, self.args.num_cls)) * diff).abs().mean()
+                loss += lip_loss
         else:
             output = self.model(n)
             loss = self.loss_function(output, labels)

@@ -91,7 +91,7 @@ class DualNet(nn.Module):
                 counter += 1
         return counter - 1
 
-    def forward(self, x_1, x_2, eta_fixed, eta_float):
+    def forward(self, x_1, x_2, eta_fixed, eta_float, balance=True):
         self.counter = -1
         fixed_neurons = []
         df = torch.tensor(1, dtype=torch.float).cuda()
@@ -104,7 +104,7 @@ class DualNet(nn.Module):
                 if self.check_lip():
                     df += (x_1 * fixed).abs().mean()
 
-                h = self.set_hook(fixed, eta_fixed, eta_float)
+                h = self.set_hook(fixed, eta_fixed, eta_float, balance)
                 self.handles += [module.Act.register_forward_pre_hook(h)]
                 x_1 = module.Act(x_1)
                 x_2 = module.Act(x_2)
@@ -128,16 +128,19 @@ class DualNet(nn.Module):
             else:
                 return 0
 
-    # def forward(self, x, eta_fixed, eta_float):
-    #     self.counter = 0
-    #     for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
-    #         x = self.compute_pre_act(module, x)
-    #         if self.check_block(module) and i != len(self.net.layers) - 1:
-    #             h = self.set_hook(fixed, eta_fixed, eta_float)
-    #             self.handles += [module.Act.register_forward_pre_hook(h)]
-    #             x = module.Act(x)
-    #     self.remove_handles()
-    #     return x
+    def mask_forward(self, x, eta_fixed, eta_float):
+        self.counter = -1
+        fixed_neurons = []
+        for i, (fixed, module) in enumerate(zip(self.fixed_neurons, self.net.layers.children())):
+            x = self.compute_pre_act(module, x)
+            if self.check_block(module) and i != len(self.net.layers) - 1:
+                fixed_neurons += [fixed]
+
+                h = self.set_hook(fixed, eta_fixed, eta_float)
+                self.handles += [module.Act.register_forward_pre_hook(h)]
+                x = module.Act(x)
+        self.remove_handles()
+        return x
 
     def remove_handles(self):
         for h in self.handles:
@@ -145,10 +148,10 @@ class DualNet(nn.Module):
         self.handles.clear()
         return
 
-    def set_hook(self, fixed, eta_fixed, eta_float):
+    def set_hook(self, fixed, eta_fixed, eta_float, balance=True):
         def forward_pre_hook(m, inputs):
             x = inputs[0]
-            return self.x_mask(x, eta_fixed, fixed) + self.x_mask(x, eta_float, ~fixed)
+            return self.x_mask(x, eta_fixed, fixed, balance) + self.x_mask(x, eta_float, ~fixed, balance)
 
         return forward_pre_hook
 
@@ -181,12 +184,14 @@ class DualNet(nn.Module):
             return np.array(mask_mean).mean()
 
     @staticmethod
-    def x_mask(x, ratio, mask):
+    def x_mask(x, ratio, mask, balance=True):
         if ratio == 0:
             return x * mask
         else:
-            return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
-
+            if balance:
+                return x * (1 + ratio) * mask - x.detach() * mask.detach() * ratio
+            else:
+                return x * (1 + ratio) * mask
     @staticmethod
     def compute_pre_act(module, x):
         if type(module) == ConvBlock:

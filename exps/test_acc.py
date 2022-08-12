@@ -2,6 +2,7 @@ from dataloader.base import *
 from attack import set_attack
 from core.utils import to_device, accuracy, MetricLogger
 
+
 def test_acc(model, args):
     _, test_loader = set_loader(args)
     mean, std = set_mean_sed(args)
@@ -14,8 +15,9 @@ def test_acc(model, args):
         'alpha': args.alpha,
         'ord': args.ord
     }
-    atks = {'fgsm':set_attack(model, 'FGSM', args.devices[0], **attack_args),
-            'pgd': set_attack(model, 'PGD', args.devices[0], **attack_args)}
+    atks = {'fgsm': set_attack(model, 'FGSM', args.devices[0], **attack_args),
+            # 'pgd': set_attack(model, 'PGD', args.devices[0], **attack_args)
+            }
     metrics = MetricLogger()
     for images, labels in test_loader:
         images, labels = to_device(args.devices[0], images, labels)
@@ -28,4 +30,5 @@ def test_acc(model, args):
             top1, top5 = accuracy(pred_adv, labels)
             update_times = {name + 'top1': (top1, len(images))}
             metrics.update(**update_times)
+    print(metrics)
     return metrics

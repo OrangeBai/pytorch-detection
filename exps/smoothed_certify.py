@@ -18,6 +18,7 @@ def smooth_test(model, args):
 
     certify_res = ApproximateAccuracy(file_path).at_radii(np.linspace(0, 1, 256))
     output_path = os.path.join(args.exp_dir, 'certify.npy')
+    print(certify_res.mean())
     np.save(output_path, certify_res)
     return
 
@@ -36,7 +37,7 @@ class Normalize(nn.Module):
 
 
 def smooth_pred(model, args):
-    smoothed_classifier = Smooth(model, args.num_cls, args.sigma)
+    smoothed_classifier = Smooth(model, args.num_cls, args.sigma, args)
 
     # prepare output file
     outfile = os.path.join(args.exp_dir, 'smooth')
@@ -48,7 +49,7 @@ def smooth_pred(model, args):
     for i in range(len(dataset)):
 
         # only certify every args.skip examples, and stop after args.max examples
-        if i % 100 != 0:
+        if i % 50 != 0:
             continue
         if i == -1:
             break

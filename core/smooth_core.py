@@ -3,6 +3,7 @@ from scipy.stats import norm, binom_test
 import numpy as np
 from math import ceil
 from statsmodels.stats.proportion import proportion_confint
+from models.blocks import DualNet
 
 
 class Smooth(object):
@@ -11,15 +12,16 @@ class Smooth(object):
     # to abstain, Smooth returns this int
     ABSTAIN = -1
 
-    def __init__(self, base_classifier: torch.nn.Module, num_classes: int, sigma: float):
+    def __init__(self, base_classifier: torch.nn.Module, num_classes: int, sigma: float, args=None):
         """
         :param base_classifier: maps from [batch x channel x height x width] to [batch x num_classes]
         :param num_classes:
         :param sigma: the noise level hyperparameter
         """
-        self.base_classifier = base_classifier
+        self.base_classifier = DualNet(base_classifier, args)
         self.num_classes = num_classes
         self.sigma = sigma
+        self.args = args
 
     def certify(self, x: torch.tensor, n0: int, n: int, alpha: float, batch_size: int) -> (int, float):
         """ Monte Carlo algorithm for certifying that g's prediction around x is constant within some L2 radius.
@@ -89,8 +91,8 @@ class Smooth(object):
 
                 batch = x.repeat((this_batch_size, 1, 1, 1))
                 noise = torch.randn_like(batch, device='cuda') * self.sigma
-                predictions = self.base_classifier(batch + noise).argmax(1)
-                counts += self._count_arr(predictions.cpu().numpy(), self.num_classes)
+                predictions1, _, _ = self.base_classifier(batch + noise, batch, 0.00, -0.25, balance=False)
+                counts += self._count_arr(predictions1.argmax(1).cpu().numpy(), self.num_classes)
             return counts
 
     def _count_arr(self, arr: np.ndarray, length: int) -> np.ndarray:

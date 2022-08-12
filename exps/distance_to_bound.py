@@ -8,14 +8,14 @@ from matplotlib.pyplot import plot
 if __name__ == '__main__':
     arg_var = ['--dir', 'distance/dnn_bn', '--net', 'dnn', '--dataset', 'mnist',
                '--train_mode', 'std', '--val_mode', 'std',
-               '--epoch_type', 'step', '--total_step', '24000', '--epoch_step', '200', '--warmup', 0,
+               '--epoch_type', 'step', '--total_step', '3', '--epoch_step', '3', '--warmup', 0,
                '--lr_schedule', 'cyclic']
     for depth in ['2', '3', '5', '9', '17']:
         for width in ['100', '200', '400', '800', '1600']:
             arg_var_cur = arg_var + ['--depth', depth, '--width', width, '--exp_id', '_'.join([depth, width])]
-            # arg_parser = ArgParser(True, arg_var_cur)
-            # trainer = Trainer(arg_parser.get_args())
-            # trainer.train_model()
+            arg_parser = ArgParser(True, arg_var_cur)
+            trainer = Trainer(arg_parser.get_args())
+            trainer.train_model()
             arg_var_cur += ['--batch_size', '1']
             args = set_up_testing(arg_var_cur)
             _, test_loader = set_loader(args)

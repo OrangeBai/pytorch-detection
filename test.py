@@ -3,8 +3,8 @@ from exps.non_returnable import *
 from settings.test_setting import *
 
 if __name__ == '__main__':
-    argv = ['--dir', 'robust/noise_test3', '--exp_id', 'cer_0', '--net', 'cxfy42', '--dataset', 'cifar10',
-            '--batch_norm', '1', '--batch_size', '1',
+    argv = ['--dir', 'PAMI', '--exp_id', '16', '--net', 'vgg16', '--dataset', 'cifar10',
+            '--batch_norm', '1', '--batch_size', '1', '--data_bn', '0',
             '--test_name', 'smooth']
     args = set_up_testing(argv)
     model = build_model(args)

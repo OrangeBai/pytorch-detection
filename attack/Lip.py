@@ -25,4 +25,4 @@ class LipAttack(Attack):
             perturbation = grad / grad.norm(p=2, dim=(1, 2, 3)).view(len(grad), 1, 1, 1) * 0.0001
         else:
             perturbation = grad.sign() * 0.0001
-        return perturbation
+        return perturbation.detach()
